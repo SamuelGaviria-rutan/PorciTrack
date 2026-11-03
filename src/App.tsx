@@ -1,6 +1,6 @@
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react"
 
-type IconName = "home" | "sow" | "boar" | "piglet" | "growth" | "box" | "table" | "chart" | "calendar" | "settings" | "mic" | "plus" | "edit" | "pin" | "alert" | "pig" | "trend" | "chevron" | "logout" | "menu" | "x" | "check" | "trash" | "arrow" | "dots" | "list" | "grid" | "weight" | "clock" | "info"
+type IconName = "home" | "sow" | "boar" | "piglet" | "growth" | "box" | "table" | "chart" | "calendar" | "settings" | "mic" | "plus" | "edit" | "pin" | "alert" | "pig" | "trend" | "chevron" | "logout" | "menu" | "x" | "check" | "trash" | "arrow" | "dots" | "list" | "grid" | "weight" | "clock" | "info" | "syringe" | "bell" | "download" | "search" | "heart" | "baby" | "droplet"
 
 function Icon({
   name,
@@ -168,6 +168,40 @@ function Icon({
         <path d="M12 11v5m0-8h.01" />
       </>
     ),
+    syringe: (
+      <>
+        <path d="m18 2 4 4M17 7l2-2M5 19l-2 2m4-4-2 2M14 4l6 6-9 9-6-6Z" />
+        <path d="m8 10 6 6M3 11l2-2 10 10-2 2Z" />
+      </>
+    ),
+    bell: (
+      <>
+        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z" />
+        <path d="M10 21h4" />
+      </>
+    ),
+    download: (
+      <>
+        <path d="M12 3v12m-5-5 5 5 5-5" />
+        <path d="M4 19h16" />
+      </>
+    ),
+    search: (
+      <>
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-4-4" />
+      </>
+    ),
+    heart: (
+      <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" />
+    ),
+    baby: (
+      <>
+        <circle cx="12" cy="12" r="8" />
+        <path d="M9 10h.01M15 10h.01M9 15c1.5 1 4.5 1 6 0M12 4c0-2 3-2 3 0" />
+      </>
+    ),
+    droplet: <path d="M12 2S5 10 5 15a7 7 0 0 0 14 0c0-5-7-13-7-13Z" />,
   }
   return (
     <svg
@@ -213,7 +247,7 @@ const initialFarms: Farm[] = [
     municipality: "Santa Rosa de Osos",
     cycles: ["Plantel reproductivo", "Precebo", "Levante"],
     alerts: 3,
-    urgent: "Vacunación vence hoy",
+    urgent: "Vacuna Circovirus por vencer",
     lots: 8,
     animals: 1248,
     mortality: "1,8 %",
@@ -419,11 +453,13 @@ function Sidebar({
   setAccountOpen,
   active,
   onNavigate,
+  onLogout,
 }: {
   accountOpen: boolean
   setAccountOpen: (value: boolean) => void
   active: string
   onNavigate: (label: string) => void
+  onLogout: () => void
 }) {
   return (
     <aside className="sidebar">
@@ -444,7 +480,7 @@ function Sidebar({
         {accountOpen && (
           <div className="account-menu">
             <div className="account-menu-heading">Cuenta</div>
-            <button>
+            <button onClick={onLogout}>
               <Icon name="logout" size={18} /> Cerrar sesión
             </button>
           </div>
@@ -471,11 +507,13 @@ function MobileNavigation({
   setOpen,
   active,
   onNavigate,
+  onLogout,
 }: {
   open: boolean
   setOpen: (value: boolean) => void
   active: string
   onNavigate: (label: string) => void
+  onLogout: () => void
 }) {
   return (
     <>
@@ -514,7 +552,7 @@ function MobileNavigation({
               </button>
             ))}
           </nav>
-          <button className="mobile-logout">
+          <button className="mobile-logout" onClick={onLogout}>
             <Icon name="logout" size={18} />
             Cerrar sesión
           </button>
@@ -545,11 +583,20 @@ function MobileNavigation({
 type HeaderProps = {
   page: "home" | "cycle"
   cycle: ProductionCycle
+  farmName: string
   onAdd: () => void
   onCreateLot: () => void
+  onVoice: () => void
 }
 
-function Header({ page, cycle, onAdd, onCreateLot }: HeaderProps) {
+function Header({
+  page,
+  cycle,
+  farmName,
+  onAdd,
+  onCreateLot,
+  onVoice,
+}: HeaderProps) {
   return (
     <header className="page-header">
       <div>
@@ -558,7 +605,7 @@ function Header({ page, cycle, onAdd, onCreateLot }: HeaderProps) {
           {page === "cycle" && (
             <>
               <Icon name="chevron" size={14} />
-              <span>Granja La Esperanza</span>
+              <span>{farmName}</span>
               <Icon name="chevron" size={14} />
               <strong>{cycle}</strong>
             </>
@@ -569,7 +616,7 @@ function Header({ page, cycle, onAdd, onCreateLot }: HeaderProps) {
       </div>
       {page === "home" && (
         <div className="header-actions">
-          <button className="button secondary voice">
+          <button className="button secondary voice" onClick={onVoice}>
             <Icon name="mic" size={19} />
             Registro por voz
           </button>
@@ -591,6 +638,48 @@ function Header({ page, cycle, onAdd, onCreateLot }: HeaderProps) {
   )
 }
 
+function VoiceRegistrationModal({
+  onClose,
+  onStart,
+}: {
+  onClose: () => void
+  onStart: () => void
+}) {
+  return (
+    <DialogShell title="Registro por voz" onClose={onClose}>
+      <div className="voice-modal-content">
+        <span className="voice-modal-icon">
+          <Icon name="mic" size={27} />
+        </span>
+        <h3>Cuéntanos qué pasó en la granja</h3>
+        <p>
+          Puedes registrar movimientos, mortalidad, pesos, tratamientos, compras
+          y ventas usando una frase completa.
+        </p>
+        <div className="voice-examples">
+          <span>Ejemplos</span>
+          <q>Registrar 2 bajas en el lote DP-202604</q>
+          <q>Aplicar vacuna de Circovirus a la cerda #1305</q>
+          <q>Registrar compra de 420,5 kg de concentrado</q>
+        </div>
+        <div className="voice-tip">
+          <Icon name="info" size={17} />
+          Incluye el número del animal o el código del lote cuando aplique.
+        </div>
+      </div>
+      <div className="modal-actions">
+        <button className="button secondary" onClick={onClose}>
+          Cerrar
+        </button>
+        <button className="button primary" onClick={onStart}>
+          <Icon name="mic" size={18} />
+          Comenzar a hablar
+        </button>
+      </div>
+    </DialogShell>
+  )
+}
+
 function StatusBadge({ alerts }: { alerts: number }) {
   return alerts > 0 ? (
     <span className="status warning">
@@ -609,10 +698,12 @@ function FarmCard({
   farm,
   onEdit,
   onCycle,
+  onTool,
 }: {
   farm: Farm
   onEdit: () => void
   onCycle: (cycle: Cycle) => void
+  onTool: (tool: string) => void
 }) {
   return (
     <article className="farm-card">
@@ -677,7 +768,7 @@ function FarmCard({
         <span className="section-label">Herramientas</span>
         <div className="tool-list">
           {toolItems.map((item) => (
-            <button key={item.label}>
+            <button key={item.label} onClick={() => onTool(item.label)}>
               <Icon name={item.icon} size={17} />
               {item.label}
             </button>
@@ -805,7 +896,7 @@ function DialogShell({
   onClose,
   size = "normal",
 }: {
-  title: string
+  title: ReactNode
   children: ReactNode
   onClose: () => void
   size?: "normal" | "small" | "wide"
@@ -1026,6 +1117,26 @@ const formatDecimal = (value: number, decimals = 1) =>
     maximumFractionDigits: decimals,
   })
 
+const getLotMetrics = (lot: Lot) => {
+  const initialAnimals = Math.max(0, lot.initialAnimals)
+  const currentAnimals = Math.max(
+    0,
+    Math.min(initialAnimals, lot.currentAnimals),
+  )
+  const day = Math.max(0, lot.day)
+  const mortality =
+    initialAnimals > 0
+      ? ((initialAnimals - currentAnimals) / initialAnimals) * 100
+      : 0
+  const mortalityTone =
+    mortality > lot.mortalityGoal
+      ? "high"
+      : mortality >= lot.mortalityGoal * 0.8
+        ? "near"
+        : "ok"
+  return { initialAnimals, currentAnimals, day, mortality, mortalityTone }
+}
+
 function LotMenu({
   lot,
   onClose,
@@ -1039,7 +1150,7 @@ function LotMenu({
     <div className="lot-menu" role="menu">
       <button onClick={() => onAction("view", lot)} role="menuitem">
         <Icon name="arrow" size={16} />
-        Ver lote
+        Ver
       </button>
       <button onClick={() => onAction("edit", lot)} role="menuitem">
         <Icon name="edit" size={16} />
@@ -1078,7 +1189,7 @@ function LotCard({
   onMenu: () => void
   onAction: (action: "view" | "edit" | "finish" | "delete", lot: Lot) => void
 }) {
-  const mortalityOk = lot.mortality <= lot.mortalityGoal
+  const metrics = getLotMetrics(lot)
   return (
     <article className="lot-card">
       <div className="lot-card-top">
@@ -1113,13 +1224,14 @@ function LotCard({
       </div>
       <div className="lot-day">
         <Icon name="clock" size={15} />
-        Día {lot.day} del ciclo
+        Día {metrics.day} del ciclo
       </div>
       <div className="lot-stats">
         <div>
           <span>Animales</span>
           <strong>
-            {lot.currentAnimals} / {lot.initialAnimals} <em>animales</em>
+            {metrics.currentAnimals} / {metrics.initialAnimals}{" "}
+            <em>animales</em>
           </strong>
           <small>actuales / iniciales</small>
         </div>
@@ -1128,10 +1240,12 @@ function LotCard({
           <strong>{formatDecimal(lot.averageWeight)} kg</strong>
           <small>por animal</small>
         </div>
-        <div className={mortalityOk ? "mortality-ok" : "mortality-high"}>
+        <div className={`mortality-${metrics.mortalityTone}`}>
           <span>Mortalidad</span>
-          <strong>{formatDecimal(lot.mortality)} %</strong>
-          <small>meta {formatDecimal(lot.mortalityGoal)} %</small>
+          <strong>
+            {formatDecimal(metrics.mortality)} %{" "}
+            <em>· meta {formatDecimal(lot.mortalityGoal)} %</em>
+          </strong>
         </div>
       </div>
     </article>
@@ -1174,39 +1288,45 @@ function LotsTable({ lots }: { lots: Lot[] }) {
           </tr>
         </thead>
         <tbody>
-          {lots.map((lot) => (
-            <tr key={lot.id}>
-              <td>
-                <strong>{lot.code}</strong>
-              </td>
-              <td>
-                <span
-                  className={`status ${
-                    lot.status === "Activo" ? "positive" : "neutral"
-                  }`}
+          {lots.map((lot) => {
+            const metrics = getLotMetrics(lot)
+            return (
+              <tr key={lot.id}>
+                <td>
+                  <strong>{lot.code}</strong>
+                </td>
+                <td>
+                  <span
+                    className={`status ${
+                      lot.status === "Activo" ? "positive" : "neutral"
+                    }`}
+                  >
+                    {lot.status}
+                  </span>
+                </td>
+                <td>{metrics.day}</td>
+                <td>{lot.females}</td>
+                <td>{lot.males}</td>
+                <td>
+                  {metrics.currentAnimals} / {metrics.initialAnimals}
+                </td>
+                <td>{formatDecimal(lot.averageWeight)}</td>
+                <td>{lot.gpd.toLocaleString("es-CO")}</td>
+                <td
+                  className={
+                    metrics.mortalityTone === "high"
+                      ? "mortality-high"
+                      : metrics.mortalityTone === "near"
+                        ? "mortality-near"
+                        : "mortality-ok"
+                  }
                 >
-                  {lot.status}
-                </span>
-              </td>
-              <td>{lot.day}</td>
-              <td>{lot.females}</td>
-              <td>{lot.males}</td>
-              <td>
-                {lot.currentAnimals} / {lot.initialAnimals}
-              </td>
-              <td>{formatDecimal(lot.averageWeight)}</td>
-              <td>{lot.gpd.toLocaleString("es-CO")}</td>
-              <td
-                className={
-                  lot.mortality <= lot.mortalityGoal
-                    ? "mortality-ok"
-                    : "mortality-high"
-                }
-              >
-                {formatDecimal(lot.mortality)} %
-              </td>
-            </tr>
-          ))}
+                  {formatDecimal(metrics.mortality)} % · meta{" "}
+                  {formatDecimal(lot.mortalityGoal)} %
+                </td>
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>
@@ -1259,6 +1379,7 @@ function LotsList({
 }) {
   const [view, setView] = useState<"cards" | "table">("cards")
   const [menuOpen, setMenuOpen] = useState<number | null>(null)
+  const [deletingLot, setDeletingLot] = useState<Lot | null>(null)
   const cycleLots = lots.filter((lot) => lot.cycle === cycle)
   const activeLots = cycleLots.filter((lot) => lot.status === "Activo")
   const finishedLots = cycleLots.filter((lot) => lot.status === "Finalizado")
@@ -1268,8 +1389,7 @@ function LotsList({
       onUpdate({ ...lot, status: "Finalizado" })
       onNotice("Lote finalizado")
     } else if (kind === "delete") {
-      onDelete(lot)
-      onNotice("Lote eliminado")
+      setDeletingLot(lot)
     } else if (kind === "edit") {
       onNotice(`Edición de ${lot.code}`)
     } else {
@@ -1279,79 +1399,92 @@ function LotsList({
   if (loading) return <LotSkeletons />
   if (!cycleLots.length) return <LotsEmpty cycle={cycle} onCreate={onCreate} />
   return (
-    <div className="lots-content">
-      <div className="list-toolbar">
-        <p>
-          <strong>{cycleLots.length}</strong> lotes registrados en {cycle}
-        </p>
-        <div className="view-toggle" aria-label="Cambiar vista">
-          <button
-            className={view === "cards" ? "active" : ""}
-            onClick={() => setView("cards")}
-          >
-            <Icon name="grid" size={17} />
-            Tarjetas
-          </button>
-          <button
-            className={view === "table" ? "active" : ""}
-            onClick={() => setView("table")}
-          >
-            <Icon name="list" size={17} />
-            Ver en tabla
-          </button>
+    <>
+      <div className="lots-content">
+        <div className="list-toolbar">
+          <p>
+            <strong>{cycleLots.length}</strong> lotes registrados en {cycle}
+          </p>
+          <div className="view-toggle" aria-label="Cambiar vista">
+            <button
+              className={view === "cards" ? "active" : ""}
+              onClick={() => setView("cards")}
+            >
+              <Icon name="grid" size={17} />
+              Tarjetas
+            </button>
+            <button
+              className={view === "table" ? "active" : ""}
+              onClick={() => setView("table")}
+            >
+              <Icon name="list" size={17} />
+              Ver en tabla
+            </button>
+          </div>
         </div>
+        {view === "table" ? (
+          <LotsTable lots={cycleLots} />
+        ) : (
+          <>
+            <section className="lot-section">
+              <div className="lot-section-heading">
+                <div>
+                  <h2>Lotes activos</h2>
+                  <p>En seguimiento dentro del ciclo</p>
+                </div>
+                <span>{activeLots.length}</span>
+              </div>
+              <div className="lots-grid">
+                {activeLots.map((lot) => (
+                  <LotCard
+                    key={lot.id}
+                    lot={lot}
+                    menuOpen={menuOpen === lot.id}
+                    onMenu={() =>
+                      setMenuOpen(menuOpen === lot.id ? null : lot.id)
+                    }
+                    onAction={action}
+                  />
+                ))}
+              </div>
+            </section>
+            <section className="lot-section finished-section">
+              <div className="lot-section-heading">
+                <div>
+                  <h2>Lotes finalizados</h2>
+                  <p>Historial de lotes cerrados</p>
+                </div>
+                <span>{finishedLots.length}</span>
+              </div>
+              <div className="lots-grid">
+                {finishedLots.map((lot) => (
+                  <LotCard
+                    key={lot.id}
+                    lot={lot}
+                    menuOpen={menuOpen === lot.id}
+                    onMenu={() =>
+                      setMenuOpen(menuOpen === lot.id ? null : lot.id)
+                    }
+                    onAction={action}
+                  />
+                ))}
+              </div>
+            </section>
+          </>
+        )}
       </div>
-      {view === "table" ? (
-        <LotsTable lots={cycleLots} />
-      ) : (
-        <>
-          <section className="lot-section">
-            <div className="lot-section-heading">
-              <div>
-                <h2>Lotes activos</h2>
-                <p>En seguimiento dentro del ciclo</p>
-              </div>
-              <span>{activeLots.length}</span>
-            </div>
-            <div className="lots-grid">
-              {activeLots.map((lot) => (
-                <LotCard
-                  key={lot.id}
-                  lot={lot}
-                  menuOpen={menuOpen === lot.id}
-                  onMenu={() =>
-                    setMenuOpen(menuOpen === lot.id ? null : lot.id)
-                  }
-                  onAction={action}
-                />
-              ))}
-            </div>
-          </section>
-          <section className="lot-section finished-section">
-            <div className="lot-section-heading">
-              <div>
-                <h2>Lotes finalizados</h2>
-                <p>Historial de lotes cerrados</p>
-              </div>
-              <span>{finishedLots.length}</span>
-            </div>
-            <div className="lots-grid">
-              {finishedLots.map((lot) => (
-                <LotCard
-                  key={lot.id}
-                  lot={lot}
-                  menuOpen={menuOpen === lot.id}
-                  onMenu={() =>
-                    setMenuOpen(menuOpen === lot.id ? null : lot.id)
-                  }
-                  onAction={action}
-                />
-              ))}
-            </div>
-          </section>
-        </>
+      {deletingLot && (
+        <DeleteLotDialog
+          lot={deletingLot}
+          onClose={() => setDeletingLot(null)}
+          onConfirm={() => {
+            onDelete(deletingLot)
+            setDeletingLot(null)
+            onNotice("Lote eliminado")
+          }}
+        />
       )}
-    </div>
+    </>
   )
 }
 
@@ -1389,6 +1522,7 @@ function CreateLotModal({
   })
   const [submitted, setSubmitted] = useState(false)
   const [confirmExit, setConfirmExit] = useState(false)
+  const [confirming, setConfirming] = useState(false)
   const females = Number(draft.females) || 0
   const males = Number(draft.males) || 0
   const animals = females + males
@@ -1400,250 +1534,334 @@ function CreateLotModal({
       ? average > 40 || average < 3
       : average > 160 || average < 20)
   const dirty = Object.values(draft).some(Boolean)
+  const farmGoal = cycle === "Precebo" ? "29 kg" : null
   const attemptClose = () => (dirty ? setConfirmExit(true) : onClose())
   const submit = (event: FormEvent) => {
     event.preventDefault()
     setSubmitted(true)
     if (!draft.code.trim() || !draft.entryDate) return
-    onSave(draft)
+    setConfirming(true)
   }
   return (
     <>
       <DialogShell
-        title={`Crear lote de ${cycle}`}
+        title={
+          confirming ? "Confirma los datos del lote" : `Crear lote de ${cycle}`
+        }
         onClose={attemptClose}
         size="wide"
       >
         <form onSubmit={submit}>
           <div className="lot-form">
-            <section className="form-section">
-              <div className="form-section-heading">
-                <span>1</span>
-                <div>
-                  <h3>Datos del lote</h3>
-                  <p>Identificación y fecha de inicio</p>
-                </div>
-              </div>
-              <div className="form-grid">
-                <label
-                  className={`field ${
-                    submitted && !draft.code.trim() ? "has-error" : ""
-                  }`}
-                >
-                  <span>
-                    Código del lote <em>* obligatorio</em>
+            {confirming ? (
+              <div className="lot-confirmation">
+                <div className="confirmation-intro">
+                  <span className="confirmation-icon">
+                    <Icon name="check" size={22} />
                   </span>
-                  <input
-                    value={draft.code}
-                    onChange={(e) =>
-                      setDraft({ ...draft, code: e.target.value })
-                    }
-                    placeholder={
-                      cycle === "Precebo"
-                        ? "Ej. PC-2025-019"
-                        : "Ej. LV-2025-012"
-                    }
-                    aria-invalid={submitted && !draft.code.trim()}
-                  />
-                  {submitted && !draft.code.trim() && (
+                  <div>
+                    <h3>Revisa antes de crear el lote</h3>
+                    <p>Confirma que la información esté correcta.</p>
+                  </div>
+                </div>
+                <div className="confirmation-grid">
+                  <div>
+                    <span>Código del lote</span>
+                    <strong>{draft.code}</strong>
+                  </div>
+                  <div>
+                    <span>Fecha de ingreso</span>
+                    <strong>
+                      {new Date(
+                        `${draft.entryDate}T12:00:00`,
+                      ).toLocaleDateString("es-CO")}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>Animales iniciales</span>
+                    <strong>{animals} animales</strong>
                     <small>
-                      <Icon name="alert" size={14} />
-                      Escribe el código del lote
+                      {females} hembras + {males} machos
                     </small>
-                  )}
-                </label>
-                <label
-                  className={`field ${
-                    submitted && !draft.entryDate ? "has-error" : ""
-                  }`}
-                >
-                  <span>
-                    Fecha de ingreso <em>* obligatorio</em>
-                  </span>
-                  <input
-                    type="date"
-                    value={draft.entryDate}
-                    onChange={(e) =>
-                      setDraft({ ...draft, entryDate: e.target.value })
-                    }
-                    aria-invalid={submitted && !draft.entryDate}
-                  />
-                  {submitted && !draft.entryDate && (
+                  </div>
+                  <div>
+                    <span>Peso inicial total</span>
+                    <strong>
+                      {weight ? `${formatDecimal(weight)} kg` : "Sin registrar"}
+                    </strong>
                     <small>
-                      <Icon name="alert" size={14} />
-                      Selecciona la fecha de ingreso
+                      {average
+                        ? `${formatDecimal(average)} kg por animal`
+                        : "Sin promedio calculado"}
                     </small>
+                  </div>
+                  <div>
+                    <span>Peso objetivo final</span>
+                    <strong>
+                      {draft.targetWeight
+                        ? `${draft.targetWeight} kg`
+                        : "Sin registrar"}
+                    </strong>
+                    {farmGoal && <small>Meta de la granja: {farmGoal}</small>}
+                  </div>
+                  <div>
+                    <span>Ciclo</span>
+                    <strong>{cycle}</strong>
+                  </div>
+                </div>
+                {unusual && (
+                  <div className="weight-warning">
+                    <Icon name="alert" size={18} />
+                    <span>
+                      El peso promedio es inusual para {cycle.toLowerCase()}.
+                      Puedes crear el lote, pero te recomendamos revisarlo.
+                    </span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <section className="form-section">
+                  <div className="form-section-heading">
+                    <span>1</span>
+                    <div>
+                      <h3>Datos del lote</h3>
+                      <p>Identificación y fecha de inicio</p>
+                    </div>
+                  </div>
+                  <div className="form-grid">
+                    <label
+                      className={`field ${
+                        submitted && !draft.code.trim() ? "has-error" : ""
+                      }`}
+                    >
+                      <span>
+                        Código del lote <em>* obligatorio</em>
+                      </span>
+                      <input
+                        value={draft.code}
+                        onChange={(e) =>
+                          setDraft({ ...draft, code: e.target.value })
+                        }
+                        placeholder={
+                          cycle === "Precebo"
+                            ? "Ej. PC-2025-019"
+                            : "Ej. LV-2025-012"
+                        }
+                        aria-invalid={submitted && !draft.code.trim()}
+                      />
+                      {submitted && !draft.code.trim() && (
+                        <small>
+                          <Icon name="alert" size={14} />
+                          Escribe el código del lote
+                        </small>
+                      )}
+                    </label>
+                    <label
+                      className={`field ${
+                        submitted && !draft.entryDate ? "has-error" : ""
+                      }`}
+                    >
+                      <span>
+                        Fecha de ingreso <em>* obligatorio</em>
+                      </span>
+                      <input
+                        type="date"
+                        lang="es-CO"
+                        value={draft.entryDate}
+                        onChange={(e) =>
+                          setDraft({ ...draft, entryDate: e.target.value })
+                        }
+                        aria-invalid={submitted && !draft.entryDate}
+                      />
+                      {submitted && !draft.entryDate && (
+                        <small>
+                          <Icon name="alert" size={14} />
+                          Selecciona la fecha de ingreso
+                        </small>
+                      )}
+                    </label>
+                  </div>
+                </section>
+                <section className="form-section">
+                  <div className="form-section-heading">
+                    <span>2</span>
+                    <div>
+                      <h3>Animales</h3>
+                      <p>Distribución al ingreso</p>
+                    </div>
+                  </div>
+                  <div className="form-grid numeric-grid">
+                    <label className="field">
+                      <span>Hembras iniciales</span>
+                      <input
+                        inputMode="numeric"
+                        value={draft.females}
+                        onChange={(e) =>
+                          setDraft({
+                            ...draft,
+                            females: e.target.value.replace(/\D/g, ""),
+                          })
+                        }
+                        placeholder="Ej. 62"
+                      />
+                    </label>
+                    <label className="field">
+                      <span>Machos iniciales</span>
+                      <input
+                        inputMode="numeric"
+                        value={draft.males}
+                        onChange={(e) =>
+                          setDraft({
+                            ...draft,
+                            males: e.target.value.replace(/\D/g, ""),
+                          })
+                        }
+                        placeholder="Ej. 58"
+                      />
+                    </label>
+                  </div>
+                  <div className="calculated-value">
+                    <div>
+                      <span>Animales iniciales</span>
+                      <small>Se calcula automáticamente</small>
+                    </div>
+                    <strong>
+                      {females || males ? (
+                        <>
+                          {females} hembras + {males} machos ={" "}
+                          <b>{animals} animales</b>
+                        </>
+                      ) : (
+                        "—"
+                      )}
+                    </strong>
+                  </div>
+                </section>
+                <section className="form-section">
+                  <div className="form-section-heading">
+                    <span>3</span>
+                    <div>
+                      <h3>Pesos</h3>
+                      <p>Peso inicial y meta del ciclo</p>
+                    </div>
+                  </div>
+                  <div className="form-grid numeric-grid">
+                    <label className="field">
+                      <span>Peso inicial total (kg)</span>
+                      <input
+                        inputMode="decimal"
+                        value={draft.totalWeight}
+                        onChange={(e) =>
+                          setDraft({
+                            ...draft,
+                            totalWeight: e.target.value.replace(/[^\d,.]/g, ""),
+                          })
+                        }
+                        placeholder="Ej. 780,5"
+                      />
+                    </label>
+                    <label className="field suggested-field">
+                      <span>Peso objetivo final (kg)</span>
+                      <input
+                        inputMode="decimal"
+                        value={draft.targetWeight}
+                        onChange={(e) =>
+                          setDraft({
+                            ...draft,
+                            targetWeight: e.target.value.replace(
+                              /[^\d,.]/g,
+                              "",
+                            ),
+                          })
+                        }
+                        placeholder="Déjalo vacío o escribe la meta"
+                      />
+                      <small>
+                        <Icon name="info" size={13} />
+                        {farmGoal
+                          ? `Meta de la granja: ${farmGoal}`
+                          : "La granja no tiene una meta configurada"}
+                      </small>
+                    </label>
+                  </div>
+                  <div className="average-value">
+                    <span>Peso promedio por animal</span>
+                    <strong>
+                      {average ? `${formatDecimal(average)} kg` : "—"}
+                    </strong>
+                  </div>
+                  {unusual && (
+                    <div className="weight-warning">
+                      <Icon name="alert" size={18} />
+                      <span>
+                        Revisa el peso:{" "}
+                        {formatDecimal(average, average % 1 === 0 ? 0 : 1)} kg
+                        por animal es inusual en {cycle.toLowerCase()}.
+                      </span>
+                    </div>
                   )}
-                </label>
-              </div>
-            </section>
-            <section className="form-section">
-              <div className="form-section-heading">
-                <span>2</span>
-                <div>
-                  <h3>Animales</h3>
-                  <p>Distribución al ingreso</p>
-                </div>
-              </div>
-              <div className="form-grid numeric-grid">
-                <label className="field">
-                  <span>Hembras</span>
-                  <input
-                    inputMode="numeric"
-                    value={draft.females}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        females: e.target.value.replace(/\D/g, ""),
-                      })
-                    }
-                    placeholder="Ej. 62"
-                  />
-                </label>
-                <label className="field">
-                  <span>Machos</span>
-                  <input
-                    inputMode="numeric"
-                    value={draft.males}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        males: e.target.value.replace(/\D/g, ""),
-                      })
-                    }
-                    placeholder="Ej. 58"
-                  />
-                </label>
-              </div>
-              <div className="calculated-value">
-                <div>
-                  <span>Animales iniciales</span>
-                  <small>Se calcula automáticamente</small>
-                </div>
-                <strong>
-                  {females || males ? (
-                    <>
-                      {females} + {males} = <b>{animals}</b>
-                    </>
-                  ) : (
-                    "—"
-                  )}
-                </strong>
-              </div>
-            </section>
-            <section className="form-section">
-              <div className="form-section-heading">
-                <span>3</span>
-                <div>
-                  <h3>Peso</h3>
-                  <p>Peso inicial y meta del ciclo</p>
-                </div>
-              </div>
-              <div className="form-grid numeric-grid">
-                <label className="field">
-                  <span>Peso inicial total (kg)</span>
-                  <input
-                    inputMode="decimal"
-                    value={draft.totalWeight}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        totalWeight: e.target.value.replace(/[^\d,.]/g, ""),
-                      })
-                    }
-                    placeholder="Ej. 780,5"
-                  />
-                </label>
-                <label className="field suggested-field">
-                  <span>Peso objetivo (kg)</span>
-                  <input
-                    inputMode="decimal"
-                    value={draft.targetWeight}
-                    onChange={(e) =>
-                      setDraft({
-                        ...draft,
-                        targetWeight: e.target.value.replace(/[^\d,.]/g, ""),
-                      })
-                    }
-                    placeholder={cycle === "Precebo" ? "32,0" : "110,0"}
-                  />
-                  <small>
-                    <Icon name="info" size={13} />
-                    Tomado de la meta de la granja · editable
-                  </small>
-                </label>
-              </div>
-              <div className="average-value">
-                <span>Peso promedio por animal</span>
-                <strong>
-                  {average ? `${formatDecimal(average)} kg` : "—"}
-                </strong>
-              </div>
-              {unusual && (
-                <div className="weight-warning">
-                  <Icon name="alert" size={18} />
-                  <span>
-                    Revisa el peso:{" "}
-                    {formatDecimal(average, average % 1 === 0 ? 0 : 1)} kg por
-                    animal es inusual en {cycle.toLowerCase()}.
-                  </span>
-                </div>
-              )}
-            </section>
-            <details className="optional-section">
-              <summary>
-                <div>
-                  <strong>Datos opcionales</strong>
-                  <span>Concentrado, origen y observaciones</span>
-                </div>
-                <Icon name="chevron" size={18} />
-              </summary>
-              <div className="optional-fields">
-                <div className="form-grid">
-                  <label className="field">
-                    <span>Marca de concentrado</span>
-                    <input
-                      value={draft.feedBrand}
-                      onChange={(e) =>
-                        setDraft({ ...draft, feedBrand: e.target.value })
-                      }
-                      placeholder="Ej. NutriCerdo"
-                    />
-                  </label>
-                  <label className="field">
-                    <span>Origen</span>
-                    <input
-                      value={draft.origin}
-                      onChange={(e) =>
-                        setDraft({ ...draft, origin: e.target.value })
-                      }
-                      placeholder="Ej. Plantel reproductivo"
-                    />
-                  </label>
-                </div>
-                <label className="field">
-                  <span>Observaciones</span>
-                  <textarea
-                    value={draft.notes}
-                    onChange={(e) =>
-                      setDraft({ ...draft, notes: e.target.value })
-                    }
-                    placeholder="Escribe información relevante del lote"
-                  />
-                </label>
-              </div>
-            </details>
+                </section>
+                <details className="optional-section">
+                  <summary>
+                    <div>
+                      <strong>Trazabilidad (opcional)</strong>
+                      <span>Concentrado, origen y observaciones</span>
+                    </div>
+                    <Icon name="chevron" size={18} />
+                  </summary>
+                  <div className="optional-fields">
+                    <div className="form-grid">
+                      <label className="field">
+                        <span>Marca de concentrado</span>
+                        <input
+                          value={draft.feedBrand}
+                          onChange={(e) =>
+                            setDraft({ ...draft, feedBrand: e.target.value })
+                          }
+                          placeholder="Ej. NutriCerdo"
+                        />
+                      </label>
+                      <label className="field">
+                        <span>Origen</span>
+                        <input
+                          value={draft.origin}
+                          onChange={(e) =>
+                            setDraft({ ...draft, origin: e.target.value })
+                          }
+                          placeholder="Ej. Plantel reproductivo"
+                        />
+                      </label>
+                    </div>
+                    <label className="field">
+                      <span>Observaciones</span>
+                      <textarea
+                        value={draft.notes}
+                        onChange={(e) =>
+                          setDraft({ ...draft, notes: e.target.value })
+                        }
+                        placeholder="Escribe información relevante del lote"
+                      />
+                    </label>
+                  </div>
+                </details>
+              </>
+            )}
           </div>
           <div className="modal-actions large-actions">
             <button
               type="button"
               className="button secondary"
-              onClick={attemptClose}
+              onClick={confirming ? () => setConfirming(false) : attemptClose}
             >
-              Cancelar
+              {confirming ? "Volver a editar" : "Cancelar"}
             </button>
-            <button className="button primary" type="submit">
-              Crear lote
+            <button
+              className="button primary"
+              type={confirming ? "button" : "submit"}
+              onClick={confirming ? () => onSave(draft) : undefined}
+            >
+              {confirming ? "Confirmar y crear" : "Crear lote"}
             </button>
           </div>
         </form>
@@ -1719,6 +1937,7 @@ const mortalityRecords: MortalityRecord[] = [
 
 function LotDetailHeader({
   lot,
+  farmName,
   menuOpen,
   onMenu,
   onBack,
@@ -1727,6 +1946,7 @@ function LotDetailHeader({
   onDelete,
 }: {
   lot: Lot
+  farmName: string
   menuOpen: boolean
   onMenu: () => void
   onBack: () => void
@@ -1734,6 +1954,7 @@ function LotDetailHeader({
   onFinish: () => void
   onDelete: () => void
 }) {
+  const metrics = getLotMetrics(lot)
   return (
     <header className="lot-detail-header">
       <div className="breadcrumbs">
@@ -1745,7 +1966,7 @@ function LotDetailHeader({
           Inicio
         </button>
         <Icon name="chevron" size={14} />
-        <span>Granja La Esperanza</span>
+        <span>{farmName}</span>
         <Icon name="chevron" size={14} />
         <button onClick={onBack}>{lot.cycle}</button>
         <Icon name="chevron" size={14} />
@@ -1769,8 +1990,12 @@ function LotDetailHeader({
             </span>
           </div>
           <p>
-            {lot.currentAnimals} / {lot.initialAnimals} animales · Día {lot.day}{" "}
-            de {lot.cycle}
+            {metrics.currentAnimals} / {metrics.initialAnimals} animales · Día{" "}
+            {metrics.day} de {lot.cycle} ·{" "}
+            <span className={`mortality-${metrics.mortalityTone}`}>
+              Mortalidad {formatDecimal(metrics.mortality)} % · meta{" "}
+              {formatDecimal(lot.mortalityGoal)} %
+            </span>
           </p>
         </div>
         <div className="detail-menu-wrap">
@@ -1784,6 +2009,10 @@ function LotDetailHeader({
           </button>
           {menuOpen && (
             <div className="lot-menu detail-menu" role="menu">
+              <button role="menuitem" onClick={onMenu}>
+                <Icon name="arrow" size={16} />
+                Ver
+              </button>
               <button role="menuitem" onClick={onEdit}>
                 <Icon name="edit" size={16} />
                 Editar
@@ -1812,7 +2041,13 @@ function LotDetailHeader({
 }
 
 function SummaryTab({ lot }: { lot: Lot }) {
-  const mortalityOk = lot.mortality <= lot.mortalityGoal
+  const metrics = getLotMetrics(lot)
+  const mortalityTone =
+    metrics.mortalityTone === "high"
+      ? "metric-danger"
+      : metrics.mortalityTone === "near"
+        ? "metric-warning"
+        : "metric-success"
   const target = lot.cycle === "Precebo" ? 32 : 110
   return (
     <div className="tab-panel">
@@ -1820,13 +2055,13 @@ function SummaryTab({ lot }: { lot: Lot }) {
         <div>
           <span>Animales</span>
           <strong>
-            {lot.currentAnimals} <small>/ {lot.initialAnimals}</small>
+            {metrics.currentAnimals} <small>/ {metrics.initialAnimals}</small>
           </strong>
           <p>actuales / iniciales</p>
         </div>
         <div>
           <span>Día del ciclo</span>
-          <strong>{lot.day}</strong>
+          <strong>{metrics.day}</strong>
           <p>de {lot.cycle.toLowerCase()}</p>
         </div>
         <div>
@@ -1836,12 +2071,12 @@ function SummaryTab({ lot }: { lot: Lot }) {
           </strong>
           <p>objetivo {formatDecimal(target)} kg</p>
         </div>
-        <div className={mortalityOk ? "metric-success" : "metric-danger"}>
+        <div className={mortalityTone}>
           <span>Mortalidad</span>
           <strong>
-            {formatDecimal(lot.mortality)} <small>%</small>
+            {formatDecimal(metrics.mortality)} <small>%</small>
           </strong>
-          <p>meta {formatDecimal(lot.mortalityGoal)} %</p>
+          <p>· meta {formatDecimal(lot.mortalityGoal)} %</p>
         </div>
         <div>
           <span>Conversión alimenticia</span>
@@ -1860,26 +2095,34 @@ function SummaryTab({ lot }: { lot: Lot }) {
               <Icon name="clock" size={14} />2 próximos
             </span>
           </div>
-          <div className="upcoming-list">
-            <div>
-              <span className="treatment-date">
-                <b>18</b>MAR
-              </span>
+          {metrics.currentAnimals > 0 ? (
+            <div className="upcoming-list">
               <div>
-                <strong>Refuerzo vacuna Circovirus</strong>
-                <p>Para {lot.currentAnimals} animales · Vía intramuscular</p>
+                <span className="treatment-date">
+                  <b>18</b>MAR
+                </span>
+                <div>
+                  <strong>Refuerzo vacuna Circovirus</strong>
+                  <p>
+                    Para {metrics.currentAnimals} animales · Vía intramuscular
+                  </p>
+                </div>
+              </div>
+              <div>
+                <span className="treatment-date">
+                  <b>25</b>MAR
+                </span>
+                <div>
+                  <strong>Desparasitación interna</strong>
+                  <p>Para {metrics.currentAnimals} animales · Vía oral</p>
+                </div>
               </div>
             </div>
-            <div>
-              <span className="treatment-date">
-                <b>25</b>MAR
-              </span>
-              <div>
-                <strong>Desparasitación interna</strong>
-                <p>Para {lot.currentAnimals} animales · Vía oral</p>
-              </div>
+          ) : (
+            <div className="inline-empty">
+              No hay tratamientos programados porque el lote no tiene animales.
             </div>
-          </div>
+          )}
         </section>
         <section className="detail-section-card">
           <div className="card-section-title">
@@ -1926,19 +2169,29 @@ function SummaryTab({ lot }: { lot: Lot }) {
   )
 }
 
-function MortalityTab({ records }: { records: MortalityRecord[] }) {
+function MortalityTab({
+  lot,
+  records,
+}: {
+  lot: Lot
+  records: MortalityRecord[]
+}) {
+  const metrics = getLotMetrics(lot)
+  const deaths = Math.max(0, metrics.initialAnimals - metrics.currentAnimals)
   return (
     <div className="tab-panel">
       <div className="neutral-summary-cards">
         <div>
           <span>Mortalidad acumulada</span>
-          <strong>2</strong>
+          <strong>{deaths}</strong>
           <p>animales</p>
         </div>
         <div>
           <span>Tasa del lote</span>
-          <strong>1,7 %</strong>
-          <p>meta 2,5 %</p>
+          <strong className={`mortality-${metrics.mortalityTone}`}>
+            {formatDecimal(metrics.mortality)} %
+          </strong>
+          <p>· meta {formatDecimal(lot.mortalityGoal)} %</p>
         </div>
         <div>
           <span>Último registro</span>
@@ -2046,6 +2299,7 @@ function MortalityModal({
               </span>
               <input
                 type="date"
+                lang="es-CO"
                 value={form.date}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
               />
@@ -2192,12 +2446,15 @@ function HealthTab({
   lot,
   treatments,
   setTreatments,
+  readOnly,
 }: {
   lot: Lot
   treatments: Treatment[]
   setTreatments: (items: Treatment[]) => void
+  readOnly: boolean
 }) {
   const [selected, setSelected] = useState<number[]>([])
+  const metrics = getLotMetrics(lot)
   const apply = (ids: number[]) => {
     setTreatments(
       treatments.map((item) =>
@@ -2212,88 +2469,93 @@ function HealthTab({
         <div>
           <h2>Calendario sanitario</h2>
           <p>
-            Calculado para los {lot.currentAnimals} animales reales del lote
+            Calculado para los {metrics.currentAnimals} animales reales del lote
           </p>
         </div>
         <button
           className="button secondary apply-selected"
-          disabled={!selected.length}
+          disabled={!selected.length || readOnly}
           onClick={() => apply(selected)}
         >
           <Icon name="check" size={17} />
           Aplicar seleccionados ({selected.length})
         </button>
       </div>
-      <div className="treatments-list">
-        {treatments.map((item) => (
-          <article
-            className={`treatment-row ${item.applied ? "applied" : ""}`}
-            key={item.id}
-          >
-            <label className="treatment-check">
-              <input
-                type="checkbox"
-                disabled={item.applied}
-                checked={selected.includes(item.id)}
-                onChange={() =>
-                  setSelected(
-                    selected.includes(item.id)
-                      ? selected.filter((id) => id !== item.id)
-                      : [...selected, item.id],
-                  )
-                }
-              />
-              <span className="custom-checkbox">
-                {selected.includes(item.id) && (
-                  <Icon name="check" size={15} strokeWidth={2.5} />
-                )}
-              </span>
-            </label>
-            <span className="treatment-date large">
-              <b>{item.date.split(" ")[0]}</b>
-              {item.date.split(" ")[1]}
-            </span>
-            <div className="treatment-copy">
-              <div>
-                <h3>{item.name}</h3>
-                {item.overdue && !item.applied && (
-                  <span className="status critical">Vencido</span>
-                )}
-                {item.applied && (
-                  <span className="status positive">Aplicado</span>
-                )}
-              </div>
-              <p>
-                {item.method} · Para {lot.currentAnimals} animales · {item.date}
-              </p>
-            </div>
-            {!item.applied && (
-              <div className="treatment-actions">
-                <button
-                  className="text-button"
-                  onClick={() =>
-                    setTreatments(
-                      treatments.map((treatment) =>
-                        treatment.id === item.id
-                          ? { ...treatment, date: "01 ABR", overdue: false }
-                          : treatment,
-                      ),
+      {metrics.currentAnimals === 0 ? (
+        <div className="inline-empty health-empty">
+          No hay vacunas programadas porque este lote no tiene animales.
+        </div>
+      ) : (
+        <div className="treatments-list">
+          {treatments.map((item) => (
+            <article
+              className={`treatment-row ${item.applied ? "applied" : ""}`}
+              key={item.id}
+            >
+              <label className="treatment-check">
+                <input
+                  type="checkbox"
+                  disabled={item.applied || readOnly}
+                  checked={selected.includes(item.id)}
+                  onChange={() =>
+                    setSelected(
+                      selected.includes(item.id)
+                        ? selected.filter((id) => id !== item.id)
+                        : [...selected, item.id],
                     )
                   }
-                >
-                  Aplazar
-                </button>
-                <button
-                  className="button primary"
-                  onClick={() => apply([item.id])}
-                >
-                  Aplicar
-                </button>
+                />
+                <span className="custom-checkbox">
+                  {selected.includes(item.id) && (
+                    <Icon name="check" size={15} strokeWidth={2.5} />
+                  )}
+                </span>
+              </label>
+              <span className="treatment-date large">
+                <b>{item.date.split(" ")[0]}</b>
+                {item.date.split(" ")[1]}
+              </span>
+              <div className="treatment-copy">
+                <div>
+                  <h3>{item.name}</h3>
+                  {item.overdue && !item.applied && (
+                    <span className="status critical">Vencido</span>
+                  )}
+                  {item.applied && (
+                    <span className="status positive">Aplicado</span>
+                  )}
+                </div>
+                <p>
+                  {item.method} · Para {metrics.currentAnimals} animales ·{" "}
+                  {item.date}
+                </p>
               </div>
-            )}
-          </article>
-        ))}
-      </div>
+              {!item.applied && !readOnly && (
+                <div className="treatment-actions">
+                  <button
+                    className="text-button"
+                    onClick={() =>
+                      setTreatments(
+                        treatments.filter(
+                          (treatment) => treatment.id !== item.id,
+                        ),
+                      )
+                    }
+                  >
+                    Omitir
+                  </button>
+                  <button
+                    className="button primary"
+                    onClick={() => apply([item.id])}
+                  >
+                    Aplicar
+                  </button>
+                </div>
+              )}
+            </article>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -2331,7 +2593,7 @@ function TreatmentModal({
               <span>
                 Fecha <em>* obligatorio</em>
               </span>
-              <input type="date" />
+              <input type="date" lang="es-CO" />
             </label>
             <label className="field">
               <span>Producto</span>
@@ -2555,12 +2817,14 @@ function DeleteLotDialog({
 
 function LotDetail({
   lot,
+  farmName,
   onBack,
   onUpdate,
   onDelete,
   onNotice,
 }: {
   lot: Lot
+  farmName: string
   onBack: () => void
   onUpdate: (lot: Lot) => void
   onDelete: () => void
@@ -2572,6 +2836,7 @@ function LotDetail({
   const [treatmentModal, setTreatmentModal] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [records, setRecords] = useState(mortalityRecords)
+  const metrics = getLotMetrics(lot)
   const [treatments, setTreatments] = useState<Treatment[]>([
     {
       id: 1,
@@ -2617,10 +2882,21 @@ function LotDetail({
     },
   }
   const currentAction = action[tab]
+  const actionDisabled =
+    lot.status === "Finalizado" ||
+    ((tab === "Mortalidad" || tab === "Sanidad") &&
+      metrics.currentAnimals === 0)
+  const disabledReason =
+    lot.status === "Finalizado"
+      ? "Este lote está finalizado y es solo de consulta"
+      : metrics.currentAnimals === 0
+        ? "Este lote no tiene animales disponibles"
+        : ""
   return (
     <>
       <LotDetailHeader
         lot={lot}
+        farmName={farmName}
         menuOpen={menuOpen}
         onMenu={() => setMenuOpen(!menuOpen)}
         onBack={onBack}
@@ -2662,13 +2938,11 @@ function LotDetail({
         </div>
         {currentAction && (
           <div className="tab-action">
-            {tab === "Mortalidad" && lot.currentAnimals === 0 && (
-              <span>Este lote no tiene animales disponibles</span>
-            )}
+            {actionDisabled && <span>{disabledReason}</span>}
             <button
               className="button primary"
               onClick={currentAction.run}
-              disabled={tab === "Mortalidad" && lot.currentAnimals === 0}
+              disabled={actionDisabled}
             >
               <Icon name="plus" size={18} />
               {currentAction.label}
@@ -2677,12 +2951,13 @@ function LotDetail({
         )}
       </div>
       {tab === "Resumen" && <SummaryTab lot={lot} />}
-      {tab === "Mortalidad" && <MortalityTab records={records} />}
+      {tab === "Mortalidad" && <MortalityTab lot={lot} records={records} />}
       {tab === "Sanidad" && (
         <HealthTab
           lot={lot}
           treatments={treatments}
           setTreatments={setTreatments}
+          readOnly={lot.status === "Finalizado"}
         />
       )}
       {tab === "Compras" && <PurchasesTab />}
@@ -2692,13 +2967,13 @@ function LotDetail({
       )}
       {mortalityModal && (
         <MortalityModal
-          available={lot.currentAnimals}
+          available={metrics.currentAnimals}
           onClose={() => setMortalityModal(false)}
           onSave={(record) => {
             setRecords([record, ...records])
             const currentAnimals = Math.max(
               0,
-              lot.currentAnimals - record.quantity,
+              metrics.currentAnimals - record.quantity,
             )
             onUpdate({
               ...lot,
@@ -2734,6 +3009,3202 @@ function LotDetail({
   )
 }
 
+type SowStatus = "Gestación" | "Lactancia" | "Vacías" | "Reemplazos"
+type Sow = {
+  id: number
+  number: string
+  status: SowStatus
+  band: number
+  daysInStatus: number
+  probableFarrowing?: string
+  parity: number
+}
+
+const sowStatuses: SowStatus[] = [
+  "Gestación",
+  "Lactancia",
+  "Vacías",
+  "Reemplazos",
+]
+
+const initialSows: Sow[] = Array.from({ length: 26 }, (_, index) => {
+  const status: SowStatus =
+    index < 10
+      ? "Gestación"
+      : index < 17
+        ? "Lactancia"
+        : index < 22
+          ? "Vacías"
+          : "Reemplazos"
+  return {
+    id: 1304 + index,
+    number: `#${1304 + index}`,
+    status,
+    band: 37 + (index % 4),
+    daysInStatus:
+      status === "Gestación"
+        ? 94 + index * 2
+        : status === "Lactancia"
+          ? 4 + (index % 7)
+          : status === "Vacías"
+            ? 3 + (index % 8)
+            : 28 + index,
+    probableFarrowing:
+      status === "Gestación"
+        ? index === 0
+          ? "14/03/2026"
+          : `${18 + (index % 9)}/03/2026`
+        : undefined,
+    parity: 1 + (index % 6),
+  }
+})
+
+type BreedingAlert = {
+  id: number
+  sowNumber: string
+  type: "parto" | "vacuna" | "servicio"
+  title: string
+  detail: string
+  urgency: number
+}
+
+const initialBreedingAlerts: BreedingAlert[] = [
+  {
+    id: 1,
+    sowNumber: "#1304",
+    type: "parto",
+    title: "Parto atrasado",
+    detail: "FPP (fecha probable de parto): 14/03/2026 · 2 días de atraso",
+    urgency: 1,
+  },
+  {
+    id: 2,
+    sowNumber: "#1305",
+    type: "vacuna",
+    title: "Vacuna vencida",
+    detail: "Refuerzo de parvovirus vencido ayer",
+    urgency: 2,
+  },
+  {
+    id: 3,
+    sowNumber: "#1322",
+    type: "servicio",
+    title: "Servicio pendiente",
+    detail: "Celo detectado · atender antes de las 16:00",
+    urgency: 3,
+  },
+]
+
+function BreedingSkeletons() {
+  return (
+    <div className="sow-grid">
+      {[1, 2, 3, 4, 5, 6].map((item) => (
+        <div className="sow-card sow-skeleton" key={item}>
+          <div className="skeleton w-40" />
+          <div className="skeleton w-28" />
+          <div className="skeleton metric-skeleton" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+type RegisterOption = {
+  label: string
+  icon: IconName
+  action?: () => void
+}
+
+function RegisterMenu({
+  sow,
+  onClose,
+  onBirth,
+  onHealth,
+  onNotice,
+}: {
+  sow: Sow | null
+  onClose: () => void
+  onBirth: () => void
+  onHealth: () => void
+  onNotice: (text: string) => void
+}) {
+  const options: RegisterOption[] = [
+    { label: "Servicio y celo", icon: "heart" },
+    { label: "Gestación", icon: "calendar" },
+    { label: "Parto y lactancia", icon: "baby", action: onBirth },
+    { label: "Destete", icon: "piglet" },
+    { label: "Sanidad", icon: "syringe", action: onHealth },
+    { label: "Peso y condición corporal", icon: "weight" },
+  ]
+  return (
+    <div className="register-menu">
+      <div className="register-menu-heading">
+        <strong>Registrar evento</strong>
+        <span>
+          {sow ? `Cerda ${sow.number} seleccionada` : "Selecciona el momento"}
+        </span>
+      </div>
+      <div className="register-options">
+        {options.map((option) => (
+          <button
+            key={option.label}
+            onClick={() => {
+              if (option.action) option.action()
+              else onNotice(`${option.label}${sow ? ` · ${sow.number}` : ""}`)
+              onClose()
+            }}
+          >
+            <span>
+              <Icon name={option.icon} size={19} />
+            </span>
+            {option.label}
+            <Icon name="chevron" size={15} />
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function BreedingHeader({
+  farmName,
+  sowCount,
+  alerts,
+  bellOpen,
+  setBellOpen,
+  registerOpen,
+  setRegisterOpen,
+  onResolve,
+}: {
+  farmName: string
+  sowCount: number
+  alerts: BreedingAlert[]
+  bellOpen: boolean
+  setBellOpen: (value: boolean) => void
+  registerOpen: boolean
+  setRegisterOpen: (value: boolean) => void
+  onResolve: (alert: BreedingAlert) => void
+}) {
+  return (
+    <header className="page-header breeding-header">
+      <div>
+        <div className="breadcrumbs">
+          <span>Inicio</span>
+          <Icon name="chevron" size={14} />
+          <span>{farmName}</span>
+          <Icon name="chevron" size={14} />
+          <strong>Plantel reproductivo</strong>
+        </div>
+        <h1>Plantel reproductivo</h1>
+        <p>{sowCount} cerdas activas · Bandas 37 a 40</p>
+      </div>
+      <div className="header-actions breeding-actions">
+        <div className="bell-wrap">
+          <button
+            className="icon-button alert-bell"
+            aria-label="Alertas del plantel"
+            onClick={() => setBellOpen(!bellOpen)}
+          >
+            <Icon name="bell" size={20} />
+            {alerts.length > 0 && <span>{alerts.length}</span>}
+          </button>
+          {bellOpen && (
+            <div className="alerts-popover">
+              <div className="popover-heading">
+                <strong>Alertas</strong>
+                <span>Ordenadas por urgencia</span>
+              </div>
+              {alerts.length ? (
+                alerts
+                  .slice()
+                  .sort((a, b) => a.urgency - b.urgency)
+                  .map((alert) => (
+                    <div className="popover-alert" key={alert.id}>
+                      <span className={`alert-dot urgency-${alert.urgency}`} />
+                      <div>
+                        <strong>
+                          {alert.sowNumber} · {alert.title}
+                        </strong>
+                        <p>{alert.detail}</p>
+                        <button onClick={() => onResolve(alert)}>
+                          Resolver ahora
+                        </button>
+                      </div>
+                    </div>
+                  ))
+              ) : (
+                <div className="popover-empty">
+                  No tienes alertas pendientes.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="register-wrap">
+          <button
+            className="button primary"
+            onClick={() => setRegisterOpen(!registerOpen)}
+          >
+            <Icon name="plus" size={18} />
+            Registrar
+          </button>
+        </div>
+      </div>
+    </header>
+  )
+}
+
+function AttendToday({
+  alerts,
+  onAction,
+}: {
+  alerts: BreedingAlert[]
+  onAction: (alert: BreedingAlert) => void
+}) {
+  if (!alerts.length) return null
+  return (
+    <section className="attend-today">
+      <div className="attend-heading">
+        <div>
+          <span className="attend-icon">
+            <Icon name="alert" size={18} />
+          </span>
+          <div>
+            <h2>Atender hoy</h2>
+            <p>{alerts.length} acciones requieren tu atención</p>
+          </div>
+        </div>
+        <span className="status warning">Prioridad del día</span>
+      </div>
+      <div className="attend-list">
+        {alerts
+          .slice()
+          .sort((a, b) => a.urgency - b.urgency)
+          .map((alert) => (
+            <div className="attend-row" key={alert.id}>
+              <span className={`alert-dot urgency-${alert.urgency}`} />
+              <strong>{alert.sowNumber}</strong>
+              <div>
+                <b>{alert.title}</b>
+                <span>{alert.detail}</span>
+              </div>
+              <button
+                className={
+                  alert.urgency === 1 ? "button primary" : "button secondary"
+                }
+                onClick={() => onAction(alert)}
+              >
+                {alert.type === "parto"
+                  ? "Registrar parto"
+                  : alert.type === "vacuna"
+                    ? "Aplicar vacuna"
+                    : "Registrar servicio"}
+              </button>
+            </div>
+          ))}
+      </div>
+    </section>
+  )
+}
+
+function SowMenu({
+  sow,
+  onView,
+  onNotice,
+  onDelete,
+}: {
+  sow: Sow
+  onView: () => void
+  onNotice: (text: string) => void
+  onDelete: () => void
+}) {
+  return (
+    <div className="lot-menu sow-menu" role="menu">
+      <button onClick={onView}>
+        <Icon name="arrow" size={16} />
+        Ver ficha
+      </button>
+      <div className="menu-divider" />
+      <button onClick={() => onNotice(`${sow.number} marcada para descarte`)}>
+        <Icon name="alert" size={16} />
+        Marcar para descarte
+      </button>
+      <button onClick={() => onNotice(`Baja de ${sow.number}`)}>
+        <Icon name="logout" size={16} />
+        Registrar baja
+      </button>
+      <button className="delete-item" onClick={onDelete}>
+        <Icon name="trash" size={16} />
+        Eliminar cerda
+      </button>
+    </div>
+  )
+}
+
+function SowCard({
+  sow,
+  menuOpen,
+  onMenu,
+  onRegister,
+  onHealth,
+  onView,
+  onNotice,
+  onDelete,
+}: {
+  sow: Sow
+  menuOpen: boolean
+  onMenu: () => void
+  onRegister: () => void
+  onHealth: () => void
+  onView: () => void
+  onNotice: (text: string) => void
+  onDelete: () => void
+}) {
+  const delayed = sow.status === "Gestación" && sow.number === "#1304"
+  return (
+    <article className="sow-card">
+      <div className="sow-card-heading">
+        <div>
+          <span className="lot-label">Cerda</span>
+          <h3>{sow.number}</h3>
+        </div>
+        <div className="sow-card-menu">
+          <span className="status neutral">{sow.status}</span>
+          <button
+            className="dots-button"
+            aria-label={`Opciones de la cerda ${sow.number}`}
+            onClick={onMenu}
+          >
+            <Icon name="dots" size={20} />
+          </button>
+          {menuOpen && (
+            <SowMenu
+              sow={sow}
+              onView={onView}
+              onNotice={onNotice}
+              onDelete={onDelete}
+            />
+          )}
+        </div>
+      </div>
+      <div className="sow-data">
+        <div>
+          <span>Días en {sow.status.toLowerCase()}</span>
+          <strong>{sow.daysInStatus}</strong>
+        </div>
+        <div>
+          <span>Banda</span>
+          <strong>{sow.band}</strong>
+        </div>
+        {sow.status === "Gestación" && (
+          <div className={delayed ? "overdue-text" : ""}>
+            <span title="Fecha probable de parto" className="term-help">
+              FPP (fecha probable de parto)
+            </span>
+            <strong>{sow.probableFarrowing}</strong>
+          </div>
+        )}
+      </div>
+      <div className="sow-actions">
+        <button onClick={onRegister}>
+          <Icon name="plus" size={17} />
+          Registrar evento
+        </button>
+        <button onClick={onHealth}>
+          <Icon name="syringe" size={17} />
+          Sanidad
+        </button>
+        <button onClick={onView}>
+          <Icon name="arrow" size={17} />
+          Ver ficha
+        </button>
+      </div>
+    </article>
+  )
+}
+
+function SowTable({
+  sows,
+  onView,
+}: {
+  sows: Sow[]
+  onView: (sow: Sow) => void
+}) {
+  return (
+    <div className="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Número</th>
+            <th>Estado</th>
+            <th>Banda</th>
+            <th>Días en estado</th>
+            <th>FPP (fecha probable de parto)</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sows.map((sow) => (
+            <tr key={sow.id}>
+              <td>
+                <strong>{sow.number}</strong>
+              </td>
+              <td>
+                <span className="status neutral">{sow.status}</span>
+              </td>
+              <td>{sow.band}</td>
+              <td>{sow.daysInStatus}</td>
+              <td>{sow.probableFarrowing ?? "No aplica"}</td>
+              <td>
+                <button className="text-button" onClick={() => onView(sow)}>
+                  Ver ficha
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function BirthModal({
+  sow,
+  onClose,
+  onSave,
+}: {
+  sow: Sow
+  onClose: () => void
+  onSave: () => void
+}) {
+  const [form, setForm] = useState({
+    date: "",
+    alive: "",
+    dead: "",
+    mummified: "",
+    bodyCondition: "",
+    responsible: "",
+    notes: "",
+  })
+  const [submitted, setSubmitted] = useState(false)
+  const [confirmExit, setConfirmExit] = useState(false)
+  const dirty = Object.values(form).some(Boolean)
+  const alive = Number(form.alive) || 0
+  const dead = Number(form.dead) || 0
+  const mummified = Number(form.mummified) || 0
+  const total = alive + dead + mummified
+  const attemptClose = () => (dirty ? setConfirmExit(true) : onClose())
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    setSubmitted(true)
+    if (!form.date || !form.alive || !form.bodyCondition) return
+    onSave()
+  }
+  return (
+    <>
+      <DialogShell
+        title={`Registrar parto · ${sow.number}`}
+        onClose={attemptClose}
+        size="wide"
+      >
+        <form onSubmit={submit}>
+          <div className="form-content birth-form">
+            <div className="form-grid">
+              <label
+                className={`field ${
+                  submitted && !form.date ? "has-error" : ""
+                }`}
+              >
+                <span>
+                  Fecha del parto <em>* obligatorio</em>
+                </span>
+                <input
+                  type="date"
+                  lang="es-CO"
+                  value={form.date}
+                  onChange={(e) => setForm({ ...form, date: e.target.value })}
+                />
+                {submitted && !form.date && (
+                  <small>
+                    <Icon name="alert" size={14} />
+                    Selecciona la fecha del parto
+                  </small>
+                )}
+              </label>
+              <label className="field">
+                <span>Responsable</span>
+                <input
+                  value={form.responsible}
+                  onChange={(e) =>
+                    setForm({ ...form, responsible: e.target.value })
+                  }
+                  placeholder="Nombre del responsable"
+                />
+              </label>
+            </div>
+            <div className="birth-counts">
+              <label
+                className={`field ${
+                  submitted && !form.alive ? "has-error" : ""
+                }`}
+              >
+                <span>
+                  <abbr title="Nacidos vivos">NV</abbr> (nacidos vivos){" "}
+                  <em>* obligatorio</em>
+                </span>
+                <input
+                  inputMode="numeric"
+                  value={form.alive}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      alive: e.target.value.replace(/\D/g, ""),
+                    })
+                  }
+                  placeholder="Ej. 12"
+                />
+                {submitted && !form.alive && (
+                  <small>
+                    <Icon name="alert" size={14} />
+                    Escribe los nacidos vivos
+                  </small>
+                )}
+              </label>
+              <label className="field">
+                <span>
+                  <abbr title="Nacidos muertos">NAT</abbr> (nacidos muertos)
+                </span>
+                <input
+                  inputMode="numeric"
+                  value={form.dead}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      dead: e.target.value.replace(/\D/g, ""),
+                    })
+                  }
+                  placeholder="Ej. 1"
+                />
+              </label>
+              <label className="field">
+                <span>
+                  <abbr title="Momificados">MOM</abbr> (momificados)
+                </span>
+                <input
+                  inputMode="numeric"
+                  value={form.mummified}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      mummified: e.target.value.replace(/\D/g, ""),
+                    })
+                  }
+                  placeholder="Ej. 0"
+                />
+              </label>
+            </div>
+            <div className="calculated-value birth-total">
+              <div>
+                <span>Total de nacidos</span>
+                <small>Suma automática</small>
+              </div>
+              <strong>
+                {alive} vivos + {dead} muertos + {mummified} momificados ={" "}
+                <b>{total}</b>
+              </strong>
+            </div>
+            <div className="form-grid">
+              <label
+                className={`field ${
+                  submitted && !form.bodyCondition ? "has-error" : ""
+                }`}
+              >
+                <span>
+                  Condición corporal <em>* obligatorio</em>
+                </span>
+                <select
+                  value={form.bodyCondition}
+                  onChange={(e) =>
+                    setForm({ ...form, bodyCondition: e.target.value })
+                  }
+                >
+                  <option value="">Selecciona de 1 a 5</option>
+                  {[1, 2, 3, 4, 5].map((value) => (
+                    <option key={value}>{value}</option>
+                  ))}
+                </select>
+                {submitted && !form.bodyCondition && (
+                  <small>
+                    <Icon name="alert" size={14} />
+                    Selecciona la condición corporal
+                  </small>
+                )}
+              </label>
+              <label className="field">
+                <span>Observaciones</span>
+                <input
+                  value={form.notes}
+                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  placeholder="Información adicional"
+                />
+              </label>
+            </div>
+          </div>
+          <div className="modal-actions large-actions">
+            <button
+              type="button"
+              className="button secondary"
+              onClick={attemptClose}
+            >
+              Cancelar
+            </button>
+            <button className="button primary" type="submit">
+              Registrar parto
+            </button>
+          </div>
+        </form>
+      </DialogShell>
+      {confirmExit && (
+        <DialogShell
+          title="¿Salir sin guardar?"
+          onClose={() => setConfirmExit(false)}
+          size="small"
+        >
+          <div className="confirm-content">
+            <p>Perderás lo que escribiste.</p>
+          </div>
+          <div className="modal-actions">
+            <button className="button secondary" onClick={onClose}>
+              Salir sin guardar
+            </button>
+            <button
+              className="button primary"
+              onClick={() => setConfirmExit(false)}
+            >
+              Seguir editando
+            </button>
+          </div>
+        </DialogShell>
+      )}
+    </>
+  )
+}
+
+function SowHealthModal({
+  sow,
+  onClose,
+  onNotice,
+}: {
+  sow: Sow
+  onClose: () => void
+  onNotice: (text: string) => void
+}) {
+  const [selected, setSelected] = useState<number[]>([])
+  const [vaccines, setVaccines] = useState([
+    { id: 1, name: "Parvovirus", date: "16/03/2026", overdue: true },
+    { id: 2, name: "Leptospira", date: "19/03/2026", overdue: false },
+    { id: 3, name: "Erisipela", date: "22/03/2026", overdue: false },
+  ])
+  const apply = (ids: number[]) => {
+    setVaccines(vaccines.filter((vaccine) => !ids.includes(vaccine.id)))
+    setSelected([])
+    onNotice(ids.length > 1 ? "Vacunas aplicadas" : "Vacuna aplicada")
+  }
+  return (
+    <DialogShell
+      title={
+        <span className="modal-title-icon">
+          <Icon name="syringe" size={21} />
+          Sanidad · {sow.number}
+        </span>
+      }
+      onClose={onClose}
+      size="wide"
+    >
+      <div className="sow-health-content">
+        <div className="health-intro">
+          <div>
+            <h3>Calendario sanitario</h3>
+            <p>Selecciona una o varias vacunas para aplicarlas.</p>
+          </div>
+          <button
+            className="button secondary"
+            disabled={!selected.length}
+            onClick={() => apply(selected)}
+          >
+            Aplicar seleccionadas ({selected.length})
+          </button>
+        </div>
+        <div className="treatments-list">
+          {vaccines.map((vaccine) => (
+            <article className="treatment-row" key={vaccine.id}>
+              <label className="treatment-check">
+                <input
+                  type="checkbox"
+                  checked={selected.includes(vaccine.id)}
+                  onChange={() =>
+                    setSelected(
+                      selected.includes(vaccine.id)
+                        ? selected.filter((id) => id !== vaccine.id)
+                        : [...selected, vaccine.id],
+                    )
+                  }
+                />
+                <span className="custom-checkbox">
+                  {selected.includes(vaccine.id) && (
+                    <Icon name="check" size={15} />
+                  )}
+                </span>
+              </label>
+              <span className="activity-icon">
+                <Icon name="syringe" size={18} />
+              </span>
+              <div className="treatment-copy">
+                <div>
+                  <h3>{vaccine.name}</h3>
+                  {vaccine.overdue && (
+                    <span className="status critical">Vencida</span>
+                  )}
+                </div>
+                <p>Programada para {vaccine.date}</p>
+              </div>
+              <div className="treatment-actions">
+                <button
+                  className="text-button"
+                  onClick={() =>
+                    setVaccines(
+                      vaccines.filter((item) => item.id !== vaccine.id),
+                    )
+                  }
+                >
+                  Omitir
+                </button>
+                <button
+                  className="button primary"
+                  onClick={() => apply([vaccine.id])}
+                >
+                  Aplicar
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </DialogShell>
+  )
+}
+
+function SowPanel({
+  sow,
+  onClose,
+  onRegister,
+  onHealth,
+}: {
+  sow: Sow
+  onClose: () => void
+  onRegister: () => void
+  onHealth: () => void
+}) {
+  return (
+    <div
+      className="side-panel-backdrop"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <aside className="sow-panel" role="dialog" aria-modal="true">
+        <div className="panel-heading">
+          <div>
+            <span>Ficha de la cerda</span>
+            <h2>{sow.number}</h2>
+          </div>
+          <button className="icon-button" aria-label="Cerrar" onClick={onClose}>
+            <Icon name="x" size={20} />
+          </button>
+        </div>
+        <div className="panel-body">
+          <div className="panel-status">
+            <span className="status neutral">{sow.status}</span>
+            <span>
+              Banda {sow.band} · {sow.daysInStatus} días
+            </span>
+          </div>
+          <div className="panel-kpis">
+            <div>
+              <span title="Partos por hembra al año" className="term-help">
+                PHA (partos por hembra al año)
+              </span>
+              <strong>2,35</strong>
+            </div>
+            <div>
+              <span title="Destetados por hembra al año" className="term-help">
+                DHA (destetados por hembra al año)
+              </span>
+              <strong>25,8</strong>
+            </div>
+          </div>
+          <section className="cycle-history">
+            <div>
+              <h3>Historial de ciclos</h3>
+              <span>Más reciente primero</span>
+            </div>
+            {[sow.parity, sow.parity - 1, sow.parity - 2]
+              .filter((cycle) => cycle > 0)
+              .map((cycle, index) => (
+                <article key={cycle}>
+                  <div>
+                    <strong>Ciclo {cycle}</strong>
+                    {index === 0 && (
+                      <span className="status positive">Más reciente</span>
+                    )}
+                  </div>
+                  <p>
+                    Parto: {12 - index}/11/2025 · Destete: {4 - index}/12/2025
+                  </p>
+                  <div className="cycle-results">
+                    <span title="Nacidos vivos">NV: {12 - index}</span>
+                    <span title="Nacidos muertos">NAT: {index}</span>
+                    <span title="Momificados">MOM: 0</span>
+                  </div>
+                </article>
+              ))}
+          </section>
+        </div>
+        <div className="panel-actions">
+          <button className="button secondary" onClick={onHealth}>
+            <Icon name="syringe" size={17} />
+            Sanidad
+          </button>
+          <button className="button primary" onClick={onRegister}>
+            <Icon name="plus" size={17} />
+            Registrar evento
+          </button>
+        </div>
+      </aside>
+    </div>
+  )
+}
+
+function DeleteSowDialog({
+  sow,
+  onClose,
+  onConfirm,
+}: {
+  sow: Sow
+  onClose: () => void
+  onConfirm: () => void
+}) {
+  const [value, setValue] = useState("")
+  return (
+    <DialogShell title="Eliminar cerda" onClose={onClose} size="small">
+      <div className="delete-content">
+        <div className="danger-icon">
+          <Icon name="trash" size={22} />
+        </div>
+        <p>
+          Se eliminarán la ficha, los ciclos y todos los registros asociados a
+          {` ${sow.number}`}. Esta acción no se puede deshacer.
+        </p>
+        <label className="field">
+          <span>
+            Escribe <strong>{sow.number}</strong> para confirmar
+          </span>
+          <input
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={sow.number}
+          />
+        </label>
+      </div>
+      <div className="modal-actions">
+        <button className="button secondary" onClick={onClose}>
+          Cancelar
+        </button>
+        <button
+          className="button danger"
+          disabled={value !== sow.number}
+          onClick={onConfirm}
+        >
+          Eliminar cerda
+        </button>
+      </div>
+    </DialogShell>
+  )
+}
+
+function BreedingPage({
+  farmName,
+  onNotice,
+}: {
+  farmName: string
+  onNotice: (text: string) => void
+}) {
+  const [sows, setSows] = useState(initialSows)
+  const [loading, setLoading] = useState(true)
+  const [status, setStatus] = useState<SowStatus>("Gestación")
+  const [band, setBand] = useState("Todas")
+  const [query, setQuery] = useState("")
+  const [tableView, setTableView] = useState(false)
+  const [menuOpen, setMenuOpen] = useState<number | null>(null)
+  const [registerOpen, setRegisterOpen] = useState(false)
+  const [registerSow, setRegisterSow] = useState<Sow | null>(null)
+  const [bellOpen, setBellOpen] = useState(false)
+  const [alerts, setAlerts] = useState(initialBreedingAlerts)
+  const [panelSow, setPanelSow] = useState<Sow | null>(null)
+  const [birthSow, setBirthSow] = useState<Sow | null>(null)
+  const [healthSow, setHealthSow] = useState<Sow | null>(null)
+  const [deletingSow, setDeletingSow] = useState<Sow | null>(null)
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setLoading(false), 700)
+    return () => window.clearTimeout(timer)
+  }, [])
+
+  const filtered = sows.filter(
+    (sow) =>
+      sow.status === status &&
+      (band === "Todas" || sow.band === Number(band)) &&
+      sow.number.includes(query.trim()),
+  )
+  const openRegister = (sow: Sow | null) => {
+    setRegisterSow(sow)
+    setRegisterOpen(true)
+    setMenuOpen(null)
+  }
+  const resolveAlert = (alert: BreedingAlert) => {
+    const sow = sows.find((item) => item.number === alert.sowNumber) ?? null
+    setBellOpen(false)
+    if (alert.type === "parto" && sow) setBirthSow(sow)
+    else if (alert.type === "vacuna" && sow) setHealthSow(sow)
+    else openRegister(sow)
+    setAlerts(alerts.filter((item) => item.id !== alert.id))
+  }
+  return (
+    <>
+      <div className="breeding-page">
+        <BreedingHeader
+          farmName={farmName}
+          sowCount={sows.length}
+          alerts={alerts}
+          bellOpen={bellOpen}
+          setBellOpen={setBellOpen}
+          registerOpen={registerOpen}
+          setRegisterOpen={(value) => {
+            setRegisterSow(null)
+            setRegisterOpen(value)
+          }}
+          onResolve={resolveAlert}
+        />
+        {registerOpen && (
+          <RegisterMenu
+            sow={registerSow}
+            onClose={() => setRegisterOpen(false)}
+            onBirth={() => {
+              if (registerSow) setBirthSow(registerSow)
+              else onNotice("Selecciona una cerda para registrar el parto")
+            }}
+            onHealth={() => {
+              if (registerSow) setHealthSow(registerSow)
+              else onNotice("Selecciona una cerda para registrar Sanidad")
+            }}
+            onNotice={onNotice}
+          />
+        )}
+        <AttendToday alerts={alerts} onAction={resolveAlert} />
+        <section className="sow-directory">
+          <div className="sow-toolbar">
+            <div className="sow-tabs">
+              {sowStatuses.map((item) => (
+                <button
+                  className={status === item ? "active" : ""}
+                  onClick={() => setStatus(item)}
+                  key={item}
+                >
+                  {item}
+                  <span>
+                    {sows.filter((sow) => sow.status === item).length}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="sow-view-actions">
+              <button
+                className="button secondary"
+                onClick={() => onNotice("Descarga del plantel preparada")}
+              >
+                <Icon name="download" size={17} />
+                Descargar
+              </button>
+              <button
+                className="button secondary"
+                onClick={() => setTableView(!tableView)}
+              >
+                <Icon name={tableView ? "grid" : "table"} size={17} />
+                {tableView ? "Ver tarjetas" : "Ver en tabla"}
+              </button>
+            </div>
+          </div>
+          <div className="sow-filters">
+            <label className="search-field">
+              <Icon name="search" size={18} />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Buscar por número"
+              />
+            </label>
+            <label className="band-filter">
+              <span>Banda</span>
+              <select value={band} onChange={(e) => setBand(e.target.value)}>
+                <option>Todas</option>
+                {[37, 38, 39, 40].map((value) => (
+                  <option key={value}>{value}</option>
+                ))}
+              </select>
+            </label>
+            <div className="terms-help">
+              <span title="Partos por hembra al año">
+                PHA (partos por hembra al año)
+              </span>
+              <span title="Destetados por hembra al año">
+                DHA (destetados por hembra al año)
+              </span>
+              <span title="Nacidos vivos">NV (nacidos vivos)</span>
+              <span title="Nacidos muertos">NAT (nacidos muertos)</span>
+              <span title="Momificados">MOM (momificados)</span>
+            </div>
+          </div>
+          {loading ? (
+            <BreedingSkeletons />
+          ) : tableView ? (
+            <SowTable sows={filtered} onView={setPanelSow} />
+          ) : (
+            <div className="sow-grid">
+              {filtered.map((sow) => (
+                <SowCard
+                  key={sow.id}
+                  sow={sow}
+                  menuOpen={menuOpen === sow.id}
+                  onMenu={() =>
+                    setMenuOpen(menuOpen === sow.id ? null : sow.id)
+                  }
+                  onRegister={() => openRegister(sow)}
+                  onHealth={() => {
+                    setMenuOpen(null)
+                    setHealthSow(sow)
+                  }}
+                  onView={() => {
+                    setMenuOpen(null)
+                    setPanelSow(sow)
+                  }}
+                  onNotice={(text) => {
+                    setMenuOpen(null)
+                    onNotice(text)
+                  }}
+                  onDelete={() => {
+                    setMenuOpen(null)
+                    setDeletingSow(sow)
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+      {birthSow && (
+        <BirthModal
+          sow={birthSow}
+          onClose={() => setBirthSow(null)}
+          onSave={() => {
+            setBirthSow(null)
+            onNotice("Parto registrado")
+          }}
+        />
+      )}
+      {healthSow && (
+        <SowHealthModal
+          sow={healthSow}
+          onClose={() => setHealthSow(null)}
+          onNotice={onNotice}
+        />
+      )}
+      {panelSow && (
+        <SowPanel
+          sow={panelSow}
+          onClose={() => setPanelSow(null)}
+          onRegister={() => {
+            setPanelSow(null)
+            openRegister(panelSow)
+          }}
+          onHealth={() => {
+            setHealthSow(panelSow)
+            setPanelSow(null)
+          }}
+        />
+      )}
+      {deletingSow && (
+        <DeleteSowDialog
+          sow={deletingSow}
+          onClose={() => setDeletingSow(null)}
+          onConfirm={() => {
+            setSows(sows.filter((sow) => sow.id !== deletingSow.id))
+            setDeletingSow(null)
+            onNotice("Cerda eliminada")
+          }}
+        />
+      )}
+    </>
+  )
+}
+
+type ReproducerKind = "Macho" | "Semen"
+type ReproducerStatus = "Activo" | "Fallecido" | "Descartado"
+type Reproducer = {
+  id: number
+  name: string
+  kind: ReproducerKind
+  method: "Monta natural" | "Inseminación"
+  status: ReproducerStatus
+  servicesThisMonth: number
+  lastService: string
+  breed: string
+}
+
+const initialReproducers: Reproducer[] = [
+  {
+    id: 1,
+    name: "Macho Duroc 01",
+    kind: "Macho",
+    method: "Monta natural",
+    status: "Activo",
+    servicesThisMonth: 18,
+    lastService: "14/03/2026",
+    breed: "Duroc",
+  },
+  {
+    id: 2,
+    name: "Semen Pietrain",
+    kind: "Semen",
+    method: "Inseminación",
+    status: "Activo",
+    servicesThisMonth: 26,
+    lastService: "15/03/2026",
+    breed: "Pietrain",
+  },
+]
+
+type ReproducerTab = "Resumen" | "Servicios" | "Sanidad" | "Consumo" | "Desempeño"
+
+const reproducerTabs: ReproducerTab[] = [
+  "Resumen",
+  "Servicios",
+  "Sanidad",
+  "Consumo",
+  "Desempeño",
+]
+
+function ReproducerHeader({
+  farmName,
+  moreOpen,
+  setMoreOpen,
+  onAdd,
+  onNotice,
+}: {
+  farmName: string
+  moreOpen: boolean
+  setMoreOpen: (value: boolean) => void
+  onAdd: () => void
+  onNotice: (text: string) => void
+}) {
+  return (
+    <header className="page-header reproducer-header">
+      <div>
+        <div className="breadcrumbs">
+          <span>Inicio</span>
+          <Icon name="chevron" size={14} />
+          <span>{farmName}</span>
+          <Icon name="chevron" size={14} />
+          <strong>Reproductor</strong>
+        </div>
+        <h1>Reproductor</h1>
+        <p>Gestiona machos reproductores y semen disponible</p>
+      </div>
+      <div className="header-actions">
+        <div className="more-wrap">
+          <button
+            className="button secondary"
+            onClick={() => setMoreOpen(!moreOpen)}
+          >
+            <Icon name="dots" size={18} />
+            Más
+          </button>
+          {moreOpen && (
+            <div className="more-menu">
+              <button
+                onClick={() => {
+                  onNotice("Campos personalizados")
+                  setMoreOpen(false)
+                }}
+              >
+                <Icon name="settings" size={17} />
+                Campos personalizados
+              </button>
+              <button
+                onClick={() => {
+                  onNotice("Histórico de facturas")
+                  setMoreOpen(false)
+                }}
+              >
+                <Icon name="table" size={17} />
+                Histórico de facturas
+              </button>
+            </div>
+          )}
+        </div>
+        <button className="button primary" onClick={onAdd}>
+          <Icon name="plus" size={18} />
+          Agregar reproductor
+        </button>
+      </div>
+    </header>
+  )
+}
+
+function ReproducerCard({
+  reproducer,
+  onView,
+}: {
+  reproducer: Reproducer
+  onView: () => void
+}) {
+  return (
+    <article className="reproducer-card">
+      <div className="reproducer-card-heading">
+        <span
+          className={`reproducer-kind ${
+            reproducer.kind === "Macho" ? "male" : "semen"
+          }`}
+        >
+          <Icon
+            name={reproducer.kind === "Macho" ? "boar" : "droplet"}
+            size={20}
+          />
+        </span>
+        <div>
+          <h2>{reproducer.name}</h2>
+          <p>
+            {reproducer.method} · {reproducer.breed}
+          </p>
+        </div>
+        <span
+          className={`status ${
+            reproducer.status === "Activo" ? "positive" : "neutral"
+          }`}
+        >
+          {reproducer.status}
+        </span>
+      </div>
+      <div className="reproducer-stats">
+        <div>
+          <span>Servicios del mes</span>
+          <strong>{reproducer.servicesThisMonth}</strong>
+        </div>
+        <div>
+          <span>Último servicio</span>
+          <strong>{reproducer.lastService}</strong>
+        </div>
+      </div>
+      <button className="reproducer-view" onClick={onView}>
+        Ver detalle
+        <Icon name="arrow" size={16} />
+      </button>
+    </article>
+  )
+}
+
+function AddReproducerModal({
+  reproducer,
+  onClose,
+  onSave,
+}: {
+  reproducer?: Reproducer
+  onClose: () => void
+  onSave: (reproducer: Reproducer) => void
+}) {
+  const [form, setForm] = useState({
+    name: reproducer?.name ?? "",
+    kind: reproducer?.kind ?? "",
+    breed: reproducer?.breed ?? "",
+  })
+  const [submitted, setSubmitted] = useState(false)
+  const [confirmExit, setConfirmExit] = useState(false)
+  const dirty = reproducer
+    ? form.name !== reproducer.name ||
+      form.kind !== reproducer.kind ||
+      form.breed !== reproducer.breed
+    : Object.values(form).some(Boolean)
+  const attemptClose = () => (dirty ? setConfirmExit(true) : onClose())
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    setSubmitted(true)
+    if (!form.name || !form.kind) return
+    const kind = form.kind as ReproducerKind
+    onSave({
+      id: reproducer?.id ?? Date.now(),
+      name: form.name,
+      kind,
+      method: kind === "Macho" ? "Monta natural" : "Inseminación",
+      status: reproducer?.status ?? "Activo",
+      servicesThisMonth: reproducer?.servicesThisMonth ?? 0,
+      lastService: reproducer?.lastService ?? "Sin registros",
+      breed: form.breed || "Sin especificar",
+    })
+  }
+  return (
+    <>
+      <DialogShell
+        title={reproducer ? "Editar reproductor" : "Agregar reproductor"}
+        onClose={attemptClose}
+      >
+        <form onSubmit={submit}>
+          <div className="form-content">
+            <label
+              className={`field ${submitted && !form.name ? "has-error" : ""}`}
+            >
+              <span>
+                Nombre <em>* obligatorio</em>
+              </span>
+              <input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Ej. Macho Duroc 02"
+              />
+              {submitted && !form.name && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Escribe el nombre
+                </small>
+              )}
+            </label>
+            <label
+              className={`field ${submitted && !form.kind ? "has-error" : ""}`}
+            >
+              <span>
+                Tipo <em>* obligatorio</em>
+              </span>
+              <select
+                value={form.kind}
+                onChange={(e) => setForm({ ...form, kind: e.target.value })}
+              >
+                <option value="">Selecciona</option>
+                <option>Macho</option>
+                <option>Semen</option>
+              </select>
+              {submitted && !form.kind && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Selecciona el tipo
+                </small>
+              )}
+            </label>
+            <label className="field">
+              <span>Raza o línea genética</span>
+              <input
+                value={form.breed}
+                onChange={(e) => setForm({ ...form, breed: e.target.value })}
+                placeholder="Ej. Duroc"
+              />
+            </label>
+          </div>
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="button secondary"
+              onClick={attemptClose}
+            >
+              Cancelar
+            </button>
+            <button className="button primary" type="submit">
+              {reproducer ? "Guardar cambios" : "Agregar reproductor"}
+            </button>
+          </div>
+        </form>
+      </DialogShell>
+      {confirmExit && (
+        <DialogShell
+          title="¿Salir sin guardar?"
+          onClose={() => setConfirmExit(false)}
+          size="small"
+        >
+          <div className="confirm-content">
+            <p>Perderás lo que escribiste.</p>
+          </div>
+          <div className="modal-actions">
+            <button className="button secondary" onClick={onClose}>
+              Salir sin guardar
+            </button>
+            <button
+              className="button primary"
+              onClick={() => setConfirmExit(false)}
+            >
+              Seguir editando
+            </button>
+          </div>
+        </DialogShell>
+      )}
+    </>
+  )
+}
+
+function RegisterServiceModal({
+  reproducer,
+  onClose,
+  onSave,
+}: {
+  reproducer: Reproducer
+  onClose: () => void
+  onSave: () => void
+}) {
+  const [date, setDate] = useState("")
+  const [sow, setSow] = useState("")
+  const [submitted, setSubmitted] = useState(false)
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    setSubmitted(true)
+    if (!date || !sow) return
+    onSave()
+  }
+  return (
+    <DialogShell title="Registrar servicio" onClose={onClose}>
+      <form onSubmit={submit}>
+        <div className="form-content">
+          <div className="service-reproducer">
+            <Icon
+              name={reproducer.kind === "Macho" ? "boar" : "droplet"}
+              size={19}
+            />
+            <div>
+              <strong>{reproducer.name}</strong>
+              <span>{reproducer.method}</span>
+            </div>
+          </div>
+          <div className="form-grid">
+            <label className={`field ${submitted && !date ? "has-error" : ""}`}>
+              <span>
+                Fecha <em>* obligatorio</em>
+              </span>
+              <input
+                type="date"
+                lang="es-CO"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </label>
+            <label className={`field ${submitted && !sow ? "has-error" : ""}`}>
+              <span>
+                Cerda <em>* obligatorio</em>
+              </span>
+              <input
+                value={sow}
+                onChange={(e) => setSow(e.target.value)}
+                placeholder="Ej. #1304"
+              />
+            </label>
+          </div>
+          <label className="field">
+            <span>Observaciones</span>
+            <textarea placeholder="Información adicional del servicio" />
+          </label>
+        </div>
+        <div className="modal-actions">
+          <button type="button" className="button secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="button primary" type="submit">
+            Registrar servicio
+          </button>
+        </div>
+      </form>
+    </DialogShell>
+  )
+}
+
+function DeleteReproducerDialog({
+  reproducer,
+  onClose,
+  onConfirm,
+}: {
+  reproducer: Reproducer
+  onClose: () => void
+  onConfirm: () => void
+}) {
+  const [value, setValue] = useState("")
+  return (
+    <DialogShell title="Eliminar reproductor" onClose={onClose} size="small">
+      <div className="delete-content">
+        <div className="danger-icon">
+          <Icon name="trash" size={22} />
+        </div>
+        <p>
+          Se eliminarán el reproductor y todos sus servicios, registros
+          sanitarios y datos de desempeño. Esta acción no se puede deshacer.
+        </p>
+        <label className="field">
+          <span>
+            Escribe <strong>{reproducer.name}</strong> para confirmar
+          </span>
+          <input
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={reproducer.name}
+          />
+        </label>
+      </div>
+      <div className="modal-actions">
+        <button className="button secondary" onClick={onClose}>
+          Cancelar
+        </button>
+        <button
+          className="button danger"
+          disabled={value !== reproducer.name}
+          onClick={onConfirm}
+        >
+          Eliminar reproductor
+        </button>
+      </div>
+    </DialogShell>
+  )
+}
+
+function ReproducerDetail({
+  reproducer,
+  onBack,
+  onUpdate,
+  onDelete,
+  onNotice,
+}: {
+  reproducer: Reproducer
+  onBack: () => void
+  onUpdate: (reproducer: Reproducer) => void
+  onDelete: () => void
+  onNotice: (text: string) => void
+}) {
+  const [tab, setTab] = useState<ReproducerTab>("Resumen")
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [serviceOpen, setServiceOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  return (
+    <>
+      <header className="reproducer-detail-header">
+        <div className="breadcrumbs">
+          <span>Inicio</span>
+          <Icon name="chevron" size={14} />
+          <button onClick={onBack}>Reproductor</button>
+          <Icon name="chevron" size={14} />
+          <strong>{reproducer.name}</strong>
+        </div>
+        <div className="reproducer-detail-title">
+          <div>
+            <div>
+              <h1>{reproducer.name}</h1>
+              <span
+                className={`status ${
+                  reproducer.status === "Activo" ? "positive" : "neutral"
+                }`}
+              >
+                {reproducer.status}
+              </span>
+            </div>
+            <p>
+              {reproducer.method} · {reproducer.breed}
+            </p>
+          </div>
+          <div className="header-actions">
+            <button
+              className="button secondary"
+              onClick={() => setEditOpen(true)}
+            >
+              <Icon name="edit" size={17} />
+              Editar
+            </button>
+            <button
+              className="button primary"
+              onClick={() => setServiceOpen(true)}
+              disabled={reproducer.status !== "Activo"}
+            >
+              <Icon name="plus" size={17} />
+              Registrar servicio
+            </button>
+            <div className="detail-menu-wrap">
+              <button
+                className="detail-menu-button"
+                aria-label="Más opciones"
+                onClick={() => setMenuOpen(!menuOpen)}
+              >
+                <Icon name="dots" size={21} />
+              </button>
+              {menuOpen && (
+                <div className="lot-menu detail-menu">
+                  <button onClick={() => onNotice("Histórico exportado")}>
+                    <Icon name="download" size={16} />
+                    Descargar histórico
+                  </button>
+                  <div className="menu-divider" />
+                  <button
+                    className="delete-item"
+                    onClick={() => {
+                      setMenuOpen(false)
+                      setDeleteOpen(true)
+                    }}
+                  >
+                    <Icon name="trash" size={16} />
+                    Eliminar
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+      <div className="lot-tabs-wrap reproducer-tabs">
+        <nav className="lot-tabs">
+          {reproducerTabs.map((item) => (
+            <button
+              className={tab === item ? "active" : ""}
+              onClick={() => setTab(item)}
+              key={item}
+            >
+              {item}
+            </button>
+          ))}
+        </nav>
+      </div>
+      <div className="reproducer-tab-content">
+        {tab === "Resumen" && (
+          <div className="reproducer-summary">
+            <div className="detail-metrics">
+              <div>
+                <span>Servicios del mes</span>
+                <strong>{reproducer.servicesThisMonth}</strong>
+                <p>{reproducer.method}</p>
+              </div>
+              <div>
+                <span>Último servicio</span>
+                <strong className="date-kpi">{reproducer.lastService}</strong>
+                <p>Registro más reciente</p>
+              </div>
+              <div>
+                <span>Estado</span>
+                <strong className="text-kpi">{reproducer.status}</strong>
+                <p>Disponible para servicios</p>
+              </div>
+            </div>
+            {reproducer.kind === "Semen" && (
+              <div className="applicable-notice">
+                <Icon name="info" size={18} />
+                Quedan 12 dosis disponibles de este lote de semen.
+              </div>
+            )}
+            <section className="records-card">
+              <div className="records-heading">
+                <div>
+                  <h2>Actividad reciente</h2>
+                  <p>Últimos movimientos del reproductor</p>
+                </div>
+              </div>
+              <div className="activity-list">
+                <div>
+                  <span className="activity-icon">
+                    <Icon name="heart" size={17} />
+                  </span>
+                  <div>
+                    <strong>Servicio registrado</strong>
+                    <p>Cerda #1304 · {reproducer.method}</p>
+                  </div>
+                  <time>14 mar</time>
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
+        {tab === "Servicios" && (
+          <section className="records-card">
+            <div className="records-heading">
+              <div>
+                <h2>Historial de servicios</h2>
+                <p>{reproducer.servicesThisMonth} servicios este mes</p>
+              </div>
+            </div>
+            <div className="table-wrap borderless">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Cerda</th>
+                    <th>Método</th>
+                    <th>Responsable</th>
+                    <th>Resultado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>14/03/2026</td>
+                    <td>#1304</td>
+                    <td>{reproducer.method}</td>
+                    <td>Andrés Mejía</td>
+                    <td>
+                      <span className="status positive">Confirmado</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>11/03/2026</td>
+                    <td>#1311</td>
+                    <td>{reproducer.method}</td>
+                    <td>Carlos Ríos</td>
+                    <td>
+                      <span className="status neutral">Pendiente</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+        {tab === "Sanidad" && (
+          <div className="detail-empty">
+            <div className="empty-lot-art">
+              <Icon name="syringe" size={34} />
+            </div>
+            <h2>Sanidad</h2>
+            <p>Vacunas y tratamientos asociados a {reproducer.name}.</p>
+          </div>
+        )}
+        {tab === "Consumo" && (
+          <section className="records-card">
+            <div className="records-heading">
+              <div>
+                <h2>
+                  {reproducer.kind === "Macho"
+                    ? "Consumo de alimento"
+                    : "Consumo de dosis"}
+                </h2>
+                <p>Registros del mes actual</p>
+              </div>
+            </div>
+            <div className="table-wrap borderless">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Concepto</th>
+                    <th>Cantidad</th>
+                    <th>Responsable</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>15/03/2026</td>
+                    <td>
+                      {reproducer.kind === "Macho"
+                        ? "Concentrado reproductor"
+                        : "Dosis utilizada"}
+                    </td>
+                    <td>
+                      {reproducer.kind === "Macho" ? "3,2 kg" : "1 dosis"}
+                    </td>
+                    <td>Andrés Mejía</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+        {tab === "Desempeño" && (
+          <div className="performance-tab">
+            <div className="performance-kpis">
+              <div>
+                <span>Tasa de concepción</span>
+                <strong>
+                  {reproducer.kind === "Macho" ? "88,9 %" : "92,3 %"}
+                </strong>
+                <p>Meta 88,0 %</p>
+              </div>
+              <div>
+                <span>Lechones por servicio</span>
+                <strong>{reproducer.kind === "Macho" ? "11,8" : "12,4"}</strong>
+                <p>Promedio confirmado</p>
+              </div>
+              <div>
+                <span>Servicios del mes</span>
+                <strong>{reproducer.servicesThisMonth}</strong>
+                <p>Marzo de 2026</p>
+              </div>
+            </div>
+            <section className="records-card">
+              <div className="records-heading">
+                <div>
+                  <h2>Indicadores complementarios</h2>
+                  <p>Seguimiento del desempeño reproductivo</p>
+                </div>
+              </div>
+              <div className="table-wrap borderless">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Indicador</th>
+                      <th>Periodo actual</th>
+                      <th>Periodo anterior</th>
+                      <th>Variación</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Repeticiones</td>
+                      <td>2</td>
+                      <td>3</td>
+                      <td className="mortality-ok">−1</td>
+                    </tr>
+                    <tr>
+                      <td>Partos confirmados</td>
+                      <td>16</td>
+                      <td>14</td>
+                      <td className="mortality-ok">+2</td>
+                    </tr>
+                    <tr>
+                      <td>Promedio de intervalo</td>
+                      <td>5,2 días</td>
+                      <td>5,6 días</td>
+                      <td className="mortality-ok">−0,4</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        )}
+      </div>
+      {serviceOpen && (
+        <RegisterServiceModal
+          reproducer={reproducer}
+          onClose={() => setServiceOpen(false)}
+          onSave={() => {
+            onUpdate({
+              ...reproducer,
+              servicesThisMonth: reproducer.servicesThisMonth + 1,
+              lastService: new Date().toLocaleDateString("es-CO"),
+            })
+            setServiceOpen(false)
+            onNotice("Servicio registrado")
+          }}
+        />
+      )}
+      {editOpen && (
+        <AddReproducerModal
+          reproducer={reproducer}
+          onClose={() => setEditOpen(false)}
+          onSave={(updated) => {
+            onUpdate(updated)
+            setEditOpen(false)
+            onNotice("Cambios guardados")
+          }}
+        />
+      )}
+      {deleteOpen && (
+        <DeleteReproducerDialog
+          reproducer={reproducer}
+          onClose={() => setDeleteOpen(false)}
+          onConfirm={onDelete}
+        />
+      )}
+    </>
+  )
+}
+
+function ReproducerPage({
+  farmName,
+  onNotice,
+}: {
+  farmName: string
+  onNotice: (text: string) => void
+}) {
+  const [reproducers, setReproducers] = useState(initialReproducers)
+  const [kind, setKind] = useState<"Todos" | ReproducerKind>("Todos")
+  const [status, setStatus] = useState<"Todos" | ReproducerStatus>("Todos")
+  const [moreOpen, setMoreOpen] = useState(false)
+  const [addOpen, setAddOpen] = useState(false)
+  const [selected, setSelected] = useState<Reproducer | null>(null)
+  const filtered = reproducers.filter(
+    (reproducer) =>
+      (kind === "Todos" || reproducer.kind === kind) &&
+      (status === "Todos" || reproducer.status === status),
+  )
+  if (selected) {
+    return (
+      <ReproducerDetail
+        reproducer={selected}
+        onBack={() => setSelected(null)}
+        onUpdate={(updated) => {
+          setSelected(updated)
+          setReproducers(
+            reproducers.map((item) =>
+              item.id === updated.id ? updated : item,
+            ),
+          )
+        }}
+        onDelete={() => {
+          setReproducers(reproducers.filter((item) => item.id !== selected.id))
+          setSelected(null)
+          onNotice("Reproductor eliminado")
+        }}
+        onNotice={onNotice}
+      />
+    )
+  }
+  return (
+    <>
+      <div className="reproducer-page">
+        <ReproducerHeader
+          farmName={farmName}
+          moreOpen={moreOpen}
+          setMoreOpen={setMoreOpen}
+          onAdd={() => setAddOpen(true)}
+          onNotice={onNotice}
+        />
+        <div className="reproducer-filters">
+          <div className="filter-group">
+            <span>Tipo</span>
+            {(["Todos", "Macho", "Semen"] as const).map((item) => (
+              <button
+                className={kind === item ? "active" : ""}
+                onClick={() => setKind(item)}
+                key={item}
+              >
+                {item === "Macho" ? "Machos" : item}
+              </button>
+            ))}
+          </div>
+          <div className="filter-group">
+            <span>Estado</span>
+            {(["Todos", "Activo", "Fallecido", "Descartado"] as const).map(
+              (item) => (
+                <button
+                  className={status === item ? "active" : ""}
+                  onClick={() => setStatus(item)}
+                  key={item}
+                >
+                  {item === "Activo"
+                    ? "Activos"
+                    : item === "Fallecido"
+                      ? "Fallecidos"
+                      : item === "Descartado"
+                        ? "Descartados"
+                        : item}
+                </button>
+              ),
+            )}
+          </div>
+        </div>
+        <div className="reproducer-grid">
+          {filtered.map((reproducer) => (
+            <ReproducerCard
+              key={reproducer.id}
+              reproducer={reproducer}
+              onView={() => setSelected(reproducer)}
+            />
+          ))}
+        </div>
+      </div>
+      {addOpen && (
+        <AddReproducerModal
+          onClose={() => setAddOpen(false)}
+          onSave={(reproducer) => {
+            setReproducers([...reproducers, reproducer])
+            setAddOpen(false)
+            onNotice("Reproductor agregado")
+          }}
+        />
+      )}
+    </>
+  )
+}
+
+type InventoryCategory = "Alimentos" | "Medicamentos"
+type InventoryView = "Inventario" | "Historial" | "Conteo físico"
+
+type FoodItem = {
+  id: number
+  name: string
+  stock: number
+  minimum: number
+  unit: string
+  lot: string
+  lastPurchase: string
+}
+
+type MedicineItem = {
+  id: number
+  name: string
+  stock: number
+  minimum: number
+  sealed: number
+  open: number
+  openLevel: number
+  empty: number
+  expiry: string
+}
+
+const initialFoodItems: FoodItem[] = [
+  {
+    id: 1,
+    name: "Concentrado precebo",
+    stock: 1260,
+    minimum: 600,
+    unit: "kg",
+    lot: "ALI-2503",
+    lastPurchase: "08/03/2026",
+  },
+  {
+    id: 2,
+    name: "Concentrado levante",
+    stock: 480,
+    minimum: 700,
+    unit: "kg",
+    lot: "ALI-2488",
+    lastPurchase: "02/03/2026",
+  },
+  {
+    id: 3,
+    name: "Concentrado gestación",
+    stock: 920,
+    minimum: 500,
+    unit: "kg",
+    lot: "ALI-2510",
+    lastPurchase: "10/03/2026",
+  },
+]
+
+const initialMedicineItems: MedicineItem[] = [
+  {
+    id: 1,
+    name: "Vacuna Circovirus",
+    stock: 4,
+    minimum: 3,
+    sealed: 3,
+    open: 1,
+    openLevel: 40,
+    empty: 2,
+    expiry: "18/03/2026",
+  },
+  {
+    id: 2,
+    name: "Oxitocina 10 UI",
+    stock: 2,
+    minimum: 4,
+    sealed: 2,
+    open: 0,
+    openLevel: 0,
+    empty: 1,
+    expiry: "30/04/2026",
+  },
+  {
+    id: 3,
+    name: "Hierro dextrano",
+    stock: 7,
+    minimum: 3,
+    sealed: 6,
+    open: 1,
+    openLevel: 75,
+    empty: 0,
+    expiry: "15/08/2026",
+  },
+]
+
+type InventoryAttention = {
+  id: number
+  category: InventoryCategory
+  product: string
+  title: string
+  detail: string
+  action: "Dar de baja" | "Registrar compra"
+  critical: boolean
+}
+
+const initialInventoryAttention: InventoryAttention[] = [
+  {
+    id: 1,
+    category: "Medicamentos",
+    product: "Vacuna Circovirus",
+    title: "Medicamento por vencer",
+    detail: "Vence el 18/03/2026 · quedan 4 ítems",
+    action: "Dar de baja",
+    critical: true,
+  },
+  {
+    id: 2,
+    category: "Medicamentos",
+    product: "Oxitocina 10 UI",
+    title: "Stock bajo",
+    detail: "2 ítems disponibles · mínimo 4",
+    action: "Registrar compra",
+    critical: false,
+  },
+  {
+    id: 3,
+    category: "Alimentos",
+    product: "Concentrado levante",
+    title: "Stock bajo",
+    detail: "480 kg disponibles · mínimo 700 kg",
+    action: "Registrar compra",
+    critical: false,
+  },
+]
+
+function InventoryHeader({
+  farmName,
+  onPurchase,
+}: {
+  farmName: string
+  onPurchase: () => void
+}) {
+  return (
+    <header className="page-header inventory-header">
+      <div>
+        <div className="breadcrumbs">
+          <span>Inicio</span>
+          <Icon name="chevron" size={14} />
+          <span>{farmName}</span>
+          <Icon name="chevron" size={14} />
+          <strong>Inventario</strong>
+        </div>
+        <h1>Inventario</h1>
+        <p>Alimentos, medicamentos y movimientos de la granja</p>
+      </div>
+      <div className="header-actions">
+        <button className="button primary" onClick={onPurchase}>
+          <Icon name="plus" size={18} />
+          Registrar compra
+        </button>
+      </div>
+    </header>
+  )
+}
+
+function InventoryAttentionSection({
+  items,
+  onAction,
+}: {
+  items: InventoryAttention[]
+  onAction: (item: InventoryAttention) => void
+}) {
+  if (!items.length) return null
+  return (
+    <section className="inventory-attention">
+      <div className="inventory-section-heading">
+        <div>
+          <span className="attend-icon">
+            <Icon name="alert" size={18} />
+          </span>
+          <div>
+            <h2>Requiere atención</h2>
+            <p>{items.length} productos necesitan una acción</p>
+          </div>
+        </div>
+      </div>
+      <div className="inventory-attention-list">
+        {items.map((item) => (
+          <div className="inventory-attention-row" key={item.id}>
+            <span
+              className={`alert-dot ${
+                item.critical ? "urgency-1" : "urgency-2"
+              }`}
+            />
+            <div>
+              <strong>{item.product}</strong>
+              <span>
+                {item.title} · {item.detail}
+              </span>
+            </div>
+            <button
+              className={
+                item.action === "Dar de baja"
+                  ? "button danger-outline"
+                  : "button secondary"
+              }
+              onClick={() => onAction(item)}
+            >
+              {item.action}
+            </button>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function InventoryRowMenu({
+  onHistory,
+  onEdit,
+  onCount,
+  onRemove,
+}: {
+  onHistory: () => void
+  onEdit: () => void
+  onCount: () => void
+  onRemove: () => void
+}) {
+  return (
+    <div className="lot-menu inventory-row-menu">
+      <button onClick={onHistory}>
+        <Icon name="clock" size={16} />
+        Ver historial
+      </button>
+      <button onClick={onEdit}>
+        <Icon name="edit" size={16} />
+        Editar
+      </button>
+      <button onClick={onCount}>
+        <Icon name="check" size={16} />
+        Contar
+      </button>
+      <div className="menu-divider" />
+      <button className="delete-item" onClick={onRemove}>
+        <Icon name="trash" size={16} />
+        Dar de baja
+      </button>
+    </div>
+  )
+}
+
+function FoodInventoryTable({
+  items,
+  menuOpen,
+  setMenuOpen,
+  onView,
+  onNotice,
+  onRemove,
+}: {
+  items: FoodItem[]
+  menuOpen: string | null
+  setMenuOpen: (value: string | null) => void
+  onView: (view: InventoryView) => void
+  onNotice: (text: string) => void
+  onRemove: (item: FoodItem) => void
+}) {
+  return (
+    <div className="table-wrap inventory-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Lote</th>
+            <th>Stock actual</th>
+            <th>Stock mínimo</th>
+            <th>Última compra</th>
+            <th>Estado</th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => {
+            const low = item.stock < item.minimum
+            const key = `food-${item.id}`
+            return (
+              <tr key={item.id}>
+                <td>
+                  <strong>{item.name}</strong>
+                </td>
+                <td>{item.lot}</td>
+                <td>
+                  {formatDecimal(item.stock)} {item.unit}
+                </td>
+                <td>
+                  {formatDecimal(item.minimum)} {item.unit}
+                </td>
+                <td>{item.lastPurchase}</td>
+                <td>
+                  <span className={`status ${low ? "warning" : "positive"}`}>
+                    {low ? "Stock bajo" : "Disponible"}
+                  </span>
+                </td>
+                <td className="row-actions-cell">
+                  <button
+                    className="dots-button"
+                    aria-label={`Acciones de ${item.name}`}
+                    onClick={() => setMenuOpen(menuOpen === key ? null : key)}
+                  >
+                    <Icon name="dots" size={20} />
+                  </button>
+                  {menuOpen === key && (
+                    <InventoryRowMenu
+                      onHistory={() => {
+                        setMenuOpen(null)
+                        onView("Historial")
+                      }}
+                      onEdit={() => {
+                        setMenuOpen(null)
+                        onNotice(`Edición de ${item.name}`)
+                      }}
+                      onCount={() => {
+                        setMenuOpen(null)
+                        onView("Conteo físico")
+                      }}
+                      onRemove={() => {
+                        setMenuOpen(null)
+                        onRemove(item)
+                      }}
+                    />
+                  )}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function MedicineInventoryTable({
+  items,
+  menuOpen,
+  setMenuOpen,
+  onView,
+  onNotice,
+  onRemove,
+}: {
+  items: MedicineItem[]
+  menuOpen: string | null
+  setMenuOpen: (value: string | null) => void
+  onView: (view: InventoryView) => void
+  onNotice: (text: string) => void
+  onRemove: (item: MedicineItem) => void
+}) {
+  return (
+    <div className="table-wrap inventory-table medicine-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Medicamento</th>
+            <th>Presentaciones</th>
+            <th>Stock</th>
+            <th>Vencimiento</th>
+            <th>Estado</th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => {
+            const low = item.stock < item.minimum
+            const key = `medicine-${item.id}`
+            return (
+              <tr key={item.id}>
+                <td>
+                  <strong>{item.name}</strong>
+                </td>
+                <td>
+                  <div className="container-summary">
+                    <span>
+                      {item.sealed} sellados · {item.open} abierto
+                      {item.open ? ` (${item.openLevel} % restante)` : ""} ·{" "}
+                      {item.empty} vacíos
+                    </span>
+                    {item.open > 0 && (
+                      <div className="bottle-level">
+                        <span style={{ width: `${item.openLevel}%` }} />
+                      </div>
+                    )}
+                  </div>
+                </td>
+                <td>{item.stock} ítems</td>
+                <td>
+                  <span
+                    className={
+                      item.id === 1 ? "expiry-date urgent" : "expiry-date"
+                    }
+                  >
+                    {item.expiry}
+                  </span>
+                </td>
+                <td>
+                  <span
+                    className={`status ${
+                      item.id === 1 ? "critical" : low ? "warning" : "positive"
+                    }`}
+                  >
+                    {item.id === 1
+                      ? "Por vencer"
+                      : low
+                        ? "Stock bajo"
+                        : "Disponible"}
+                  </span>
+                </td>
+                <td className="row-actions-cell">
+                  <button
+                    className="dots-button"
+                    aria-label={`Acciones de ${item.name}`}
+                    onClick={() => setMenuOpen(menuOpen === key ? null : key)}
+                  >
+                    <Icon name="dots" size={20} />
+                  </button>
+                  {menuOpen === key && (
+                    <InventoryRowMenu
+                      onHistory={() => {
+                        setMenuOpen(null)
+                        onView("Historial")
+                      }}
+                      onEdit={() => {
+                        setMenuOpen(null)
+                        onNotice(`Edición de ${item.name}`)
+                      }}
+                      onCount={() => {
+                        setMenuOpen(null)
+                        onView("Conteo físico")
+                      }}
+                      onRemove={() => {
+                        setMenuOpen(null)
+                        onRemove(item)
+                      }}
+                    />
+                  )}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function InventoryHistory({ category }: { category: InventoryCategory }) {
+  return (
+    <div className="table-wrap inventory-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Producto</th>
+            <th>Movimiento</th>
+            <th>Cantidad</th>
+            <th>Responsable</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>15/03/2026</td>
+            <td>
+              {category === "Alimentos"
+                ? "Concentrado precebo"
+                : "Vacuna Circovirus"}
+            </td>
+            <td>
+              <span className="status positive">Compra</span>
+            </td>
+            <td>{category === "Alimentos" ? "420,0 kg" : "4 ítems"}</td>
+            <td>Andrés Mejía</td>
+          </tr>
+          <tr>
+            <td>13/03/2026</td>
+            <td>
+              {category === "Alimentos"
+                ? "Concentrado levante"
+                : "Hierro dextrano"}
+            </td>
+            <td>
+              <span className="status neutral">Consumo</span>
+            </td>
+            <td>{category === "Alimentos" ? "85,5 kg" : "1 ítem"}</td>
+            <td>Carlos Ríos</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+type CountItem = {
+  id: number
+  name: string
+  system: number
+  unit: string
+}
+
+function PhysicalCount({
+  category,
+  foods,
+  medicines,
+  onSave,
+}: {
+  category: InventoryCategory
+  foods: FoodItem[]
+  medicines: MedicineItem[]
+  onSave: () => void
+}) {
+  const items: CountItem[] =
+    category === "Alimentos"
+      ? foods.map((item) => ({
+          id: item.id,
+          name: item.name,
+          system: item.stock,
+          unit: item.unit,
+        }))
+      : medicines.map((item) => ({
+          id: item.id,
+          name: item.name,
+          system: item.stock,
+          unit: "ítems",
+        }))
+  const [counts, setCounts] = useState<Record<number, string>>({})
+  return (
+    <div className="physical-count">
+      <div className="count-heading">
+        <div>
+          <h2>Conteo físico</h2>
+          <p>
+            Escribe lo que encuentras. La diferencia se calcula automáticamente.
+          </p>
+        </div>
+        <button className="button secondary" onClick={onSave}>
+          Guardar conteo
+        </button>
+      </div>
+      <div className="count-list">
+        {items.map((item) => {
+          const value = counts[item.id] ?? ""
+          const parsed = value ? Number(value.replace(",", ".")) : null
+          const difference = parsed === null ? null : parsed - item.system
+          return (
+            <div className="count-row" key={item.id}>
+              <div>
+                <strong>{item.name}</strong>
+                <span>
+                  Sistema: {formatDecimal(item.system)} {item.unit}
+                </span>
+              </div>
+              <label className="field count-field">
+                <span>Conteo real</span>
+                <input
+                  inputMode="decimal"
+                  value={value}
+                  onChange={(e) =>
+                    setCounts({
+                      ...counts,
+                      [item.id]: e.target.value.replace(/[^\d,.]/g, ""),
+                    })
+                  }
+                  placeholder="Vacío"
+                />
+              </label>
+              <div
+                className={`count-difference ${
+                  difference === null
+                    ? ""
+                    : difference === 0
+                      ? "match"
+                      : "different"
+                }`}
+              >
+                <span>Diferencia</span>
+                <strong>
+                  {difference === null
+                    ? "—"
+                    : `${
+                        difference > 0 ? "+" : ""
+                      }${formatDecimal(difference)} ${item.unit}`}
+                </strong>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+type PurchaseDraft = {
+  category: InventoryCategory
+  product: string
+  quantity: number
+}
+
+function PurchaseModal({
+  category,
+  product,
+  onClose,
+  onSave,
+}: {
+  category: InventoryCategory
+  product?: string
+  onClose: () => void
+  onSave: (purchase: PurchaseDraft) => void
+}) {
+  const [form, setForm] = useState({
+    category,
+    product: product ?? "",
+    quantity: "",
+    date: "",
+    supplier: "",
+  })
+  const [invoice, setInvoice] = useState("")
+  const [submitted, setSubmitted] = useState(false)
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    setSubmitted(true)
+    if (!form.product || !form.quantity || !form.date) return
+    onSave({
+      category: form.category,
+      product: form.product,
+      quantity: Number(form.quantity.replace(",", ".")),
+    })
+  }
+  return (
+    <DialogShell title="Registrar compra" onClose={onClose} size="wide">
+      <form onSubmit={submit}>
+        <div className="form-content purchase-form">
+          <div className="form-grid">
+            <label className="field">
+              <span>Tipo de inventario</span>
+              <select
+                value={form.category}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    category: e.target.value as InventoryCategory,
+                    product: "",
+                  })
+                }
+              >
+                <option>Alimentos</option>
+                <option>Medicamentos</option>
+              </select>
+            </label>
+            <label
+              className={`field ${
+                submitted && !form.product ? "has-error" : ""
+              }`}
+            >
+              <span>
+                Producto <em>* obligatorio</em>
+              </span>
+              <input
+                value={form.product}
+                onChange={(e) => setForm({ ...form, product: e.target.value })}
+                placeholder="Escribe o selecciona el producto"
+              />
+              {submitted && !form.product && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Elige un producto
+                </small>
+              )}
+            </label>
+            <label
+              className={`field ${
+                submitted && !form.quantity ? "has-error" : ""
+              }`}
+            >
+              <span>
+                Cantidad <em>* obligatorio</em>
+              </span>
+              <input
+                inputMode="decimal"
+                value={form.quantity}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    quantity: e.target.value.replace(/[^\d,.]/g, ""),
+                  })
+                }
+                placeholder={
+                  form.category === "Alimentos" ? "Ej. 420,5 kg" : "Ej. 6 ítems"
+                }
+              />
+              {submitted && !form.quantity && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Escribe la cantidad comprada
+                </small>
+              )}
+            </label>
+            <label
+              className={`field ${submitted && !form.date ? "has-error" : ""}`}
+            >
+              <span>
+                Fecha de compra <em>* obligatorio</em>
+              </span>
+              <input
+                type="date"
+                lang="es-CO"
+                value={form.date}
+                onChange={(e) => setForm({ ...form, date: e.target.value })}
+              />
+              {submitted && !form.date && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Selecciona la fecha de compra
+                </small>
+              )}
+            </label>
+            <label className="field">
+              <span>Proveedor</span>
+              <input
+                value={form.supplier}
+                onChange={(e) => setForm({ ...form, supplier: e.target.value })}
+                placeholder="Nombre del proveedor"
+              />
+            </label>
+            <label className="field invoice-upload">
+              <span>Foto de la factura</span>
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                onChange={(e) => setInvoice(e.target.files?.[0]?.name ?? "")}
+              />
+              <span className="upload-control">
+                <Icon name="download" size={18} />
+                {invoice || "Seleccionar archivo"}
+              </span>
+            </label>
+          </div>
+        </div>
+        <div className="modal-actions large-actions">
+          <button type="button" className="button secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="button primary" type="submit">
+            Registrar compra
+          </button>
+        </div>
+      </form>
+    </DialogShell>
+  )
+}
+
+function InventoryPage({
+  farmName,
+  attention,
+  setAttention,
+  onNotice,
+}: {
+  farmName: string
+  attention: InventoryAttention[]
+  setAttention: (items: InventoryAttention[]) => void
+  onNotice: (text: string) => void
+}) {
+  const [category, setCategory] = useState<InventoryCategory>("Alimentos")
+  const [view, setView] = useState<InventoryView>("Inventario")
+  const [foods, setFoods] = useState(initialFoodItems)
+  const [medicines, setMedicines] = useState(initialMedicineItems)
+  const [query, setQuery] = useState("")
+  const [statusFilter, setStatusFilter] = useState("Todos")
+  const [menuOpen, setMenuOpen] = useState<string | null>(null)
+  const [purchase, setPurchase] = useState<{
+    category: InventoryCategory
+    product?: string
+  } | null>(null)
+
+  const filteredFoods = foods.filter(
+    (item) =>
+      item.name.toLowerCase().includes(query.toLowerCase()) &&
+      (statusFilter === "Todos" ||
+        (statusFilter === "Stock bajo"
+          ? item.stock < item.minimum
+          : item.stock >= item.minimum)),
+  )
+  const filteredMedicines = medicines.filter(
+    (item) =>
+      item.name.toLowerCase().includes(query.toLowerCase()) &&
+      (statusFilter === "Todos" ||
+        (statusFilter === "Stock bajo"
+          ? item.stock < item.minimum
+          : item.stock >= item.minimum)),
+  )
+  const foodTotal = foods.reduce((sum, item) => sum + item.stock, 0)
+  const medicineTotal = medicines.reduce((sum, item) => sum + item.stock, 0)
+
+  return (
+    <>
+      <div className="inventory-page">
+        <InventoryHeader
+          farmName={farmName}
+          onPurchase={() => setPurchase({ category })}
+        />
+        <InventoryAttentionSection
+          items={attention}
+          onAction={(item) => {
+            if (item.action === "Registrar compra") {
+              setPurchase({
+                category: item.category,
+                product: item.product,
+              })
+            } else {
+              setMedicines(
+                medicines.map((medicine) =>
+                  medicine.name === item.product
+                    ? {
+                        ...medicine,
+                        stock: 0,
+                        sealed: 0,
+                        open: 0,
+                        openLevel: 0,
+                        empty: medicine.empty + medicine.sealed + medicine.open,
+                      }
+                    : medicine,
+                ),
+              )
+              setAttention(attention.filter((alert) => alert.id !== item.id))
+              onNotice(`${item.product} dado de baja`)
+            }
+          }}
+        />
+        <div className="inventory-kpis">
+          <div>
+            <span className="inventory-kpi-icon food">
+              <Icon name="box" size={22} />
+            </span>
+            <div>
+              <span>Alimento disponible</span>
+              <strong>{formatDecimal(foodTotal)} kg</strong>
+            </div>
+          </div>
+          <div>
+            <span className="inventory-kpi-icon medicine">
+              <Icon name="syringe" size={22} />
+            </span>
+            <div>
+              <span>Medicamentos</span>
+              <strong>{medicineTotal} ítems</strong>
+            </div>
+          </div>
+        </div>
+        <section className="inventory-workspace">
+          <div className="inventory-main-tabs">
+            {(["Alimentos", "Medicamentos"] as const).map((item) => (
+              <button
+                className={category === item ? "active" : ""}
+                onClick={() => {
+                  setCategory(item)
+                  setQuery("")
+                  setStatusFilter("Todos")
+                }}
+                key={item}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+          <div className="inventory-view-bar">
+            <div className="inventory-views">
+              {(["Inventario", "Historial", "Conteo físico"] as const).map(
+                (item) => (
+                  <button
+                    className={view === item ? "active" : ""}
+                    onClick={() => setView(item)}
+                    key={item}
+                  >
+                    {item}
+                  </button>
+                ),
+              )}
+            </div>
+            {view === "Inventario" && (
+              <div className="inventory-filters">
+                <label className="search-field">
+                  <Icon name="search" size={17} />
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder={`Buscar en ${category.toLowerCase()}`}
+                  />
+                </label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option>Todos</option>
+                  <option>Disponible</option>
+                  <option>Stock bajo</option>
+                </select>
+              </div>
+            )}
+          </div>
+          <div className="inventory-view-content">
+            {view === "Inventario" &&
+              (category === "Alimentos" ? (
+                <FoodInventoryTable
+                  items={filteredFoods}
+                  menuOpen={menuOpen}
+                  setMenuOpen={setMenuOpen}
+                  onView={setView}
+                  onNotice={onNotice}
+                  onRemove={(item) => {
+                    setFoods(foods.filter((food) => food.id !== item.id))
+                    onNotice(`${item.name} dado de baja`)
+                  }}
+                />
+              ) : (
+                <MedicineInventoryTable
+                  items={filteredMedicines}
+                  menuOpen={menuOpen}
+                  setMenuOpen={setMenuOpen}
+                  onView={setView}
+                  onNotice={onNotice}
+                  onRemove={(item) => {
+                    setMedicines(
+                      medicines.filter((medicine) => medicine.id !== item.id),
+                    )
+                    onNotice(`${item.name} dado de baja`)
+                  }}
+                />
+              ))}
+            {view === "Historial" && <InventoryHistory category={category} />}
+            {view === "Conteo físico" && (
+              <PhysicalCount
+                key={category}
+                category={category}
+                foods={foods}
+                medicines={medicines}
+                onSave={() => onNotice("Conteo físico guardado")}
+              />
+            )}
+          </div>
+        </section>
+      </div>
+      {purchase && (
+        <PurchaseModal
+          category={purchase.category}
+          product={purchase.product}
+          onClose={() => setPurchase(null)}
+          onSave={(draft) => {
+            if (draft.category === "Alimentos") {
+              const existing = foods.find(
+                (item) =>
+                  item.name.toLowerCase() === draft.product.toLowerCase(),
+              )
+              setFoods(
+                existing
+                  ? foods.map((item) =>
+                      item.id === existing.id
+                        ? { ...item, stock: item.stock + draft.quantity }
+                        : item,
+                    )
+                  : [
+                      ...foods,
+                      {
+                        id: Date.now(),
+                        name: draft.product,
+                        stock: draft.quantity,
+                        minimum: 0,
+                        unit: "kg",
+                        lot: "Sin lote",
+                        lastPurchase: new Date().toLocaleDateString("es-CO"),
+                      },
+                    ],
+              )
+            } else {
+              const existing = medicines.find(
+                (item) =>
+                  item.name.toLowerCase() === draft.product.toLowerCase(),
+              )
+              setMedicines(
+                existing
+                  ? medicines.map((item) =>
+                      item.id === existing.id
+                        ? { ...item, stock: item.stock + draft.quantity }
+                        : item,
+                    )
+                  : [
+                      ...medicines,
+                      {
+                        id: Date.now(),
+                        name: draft.product,
+                        stock: draft.quantity,
+                        minimum: 0,
+                        sealed: draft.quantity,
+                        open: 0,
+                        openLevel: 0,
+                        empty: 0,
+                        expiry: "Sin registrar",
+                      },
+                    ],
+              )
+            }
+            setAttention(
+              attention.filter(
+                (item) =>
+                  item.product.toLowerCase() !== draft.product.toLowerCase(),
+              ),
+            )
+            setPurchase(null)
+            onNotice("Compra registrada")
+          }}
+        />
+      )}
+    </>
+  )
+}
+
+function PorciTablePage({ farmName }: { farmName: string }) {
+  return (
+    <div className="connected-tool-page">
+      <header className="page-header connected-page-header">
+        <div>
+          <div className="breadcrumbs">
+            <span>Inicio</span>
+            <Icon name="chevron" size={14} />
+            <span>{farmName}</span>
+            <Icon name="chevron" size={14} />
+            <strong>PorciTabla</strong>
+          </div>
+          <h1>PorciTabla</h1>
+          <p>Consulta consolidada de indicadores productivos</p>
+        </div>
+      </header>
+      <div className="connected-toolbar">
+        <label className="search-field">
+          <Icon name="search" size={17} />
+          <input placeholder="Buscar lote o indicador" />
+        </label>
+        <div className="view-toggle">
+          <button className="active">Mes actual</button>
+          <button>Últimos 90 días</button>
+        </div>
+      </div>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Ciclo</th>
+              <th>Lote</th>
+              <th>Animales</th>
+              <th>Peso promedio (kg)</th>
+              <th>Mortalidad</th>
+              <th>GPD (g/día)</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Precebo</td>
+              <td>
+                <strong>PR-2026-11</strong>
+              </td>
+              <td>118 / 120</td>
+              <td>18,4</td>
+              <td className="mortality-ok">1,7 % · meta 2,5 %</td>
+              <td>468</td>
+              <td>
+                <span className="status positive">Activo</span>
+              </td>
+            </tr>
+            <tr>
+              <td>Levante</td>
+              <td>
+                <strong>LV-2026-08</strong>
+              </td>
+              <td>99 / 100</td>
+              <td>54,8</td>
+              <td className="mortality-ok">1,0 % · meta 2,0 %</td>
+              <td>714</td>
+              <td>
+                <span className="status positive">Activo</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function DashboardsPage({ farmName }: { farmName: string }) {
+  return (
+    <div className="connected-tool-page">
+      <header className="page-header connected-page-header">
+        <div>
+          <div className="breadcrumbs">
+            <span>Inicio</span>
+            <Icon name="chevron" size={14} />
+            <span>{farmName}</span>
+            <Icon name="chevron" size={14} />
+            <strong>Tableros</strong>
+          </div>
+          <h1>Tableros</h1>
+          <p>Indicadores clave de producción y gestión</p>
+        </div>
+      </header>
+      <div className="dashboard-kpis">
+        <div>
+          <span>Animales activos</span>
+          <strong>2.762</strong>
+          <p>Todos los ciclos</p>
+        </div>
+        <div>
+          <span>Mortalidad general</span>
+          <strong>1,8 %</strong>
+          <p className="mortality-ok">Dentro de la meta</p>
+        </div>
+        <div>
+          <span>Lotes activos</span>
+          <strong>18</strong>
+          <p>Precebo y Levante</p>
+        </div>
+      </div>
+      <div className="dashboard-grid">
+        <section className="records-card">
+          <div className="records-heading">
+            <div>
+              <h2>Animales por ciclo</h2>
+              <p>Distribución actual</p>
+            </div>
+          </div>
+          <div className="simple-bars">
+            <div>
+              <span>Plantel reproductivo</span>
+              <b style={{ width: "34%" }} />
+              <strong>26</strong>
+            </div>
+            <div>
+              <span>Precebo</span>
+              <b style={{ width: "72%" }} />
+              <strong>1.248</strong>
+            </div>
+            <div>
+              <span>Levante</span>
+              <b style={{ width: "58%" }} />
+              <strong>894</strong>
+            </div>
+          </div>
+        </section>
+        <section className="records-card">
+          <div className="records-heading">
+            <div>
+              <h2>Alertas por área</h2>
+              <p>Requieren seguimiento</p>
+            </div>
+          </div>
+          <div className="dashboard-alert-list">
+            <div>
+              <span className="alert-dot urgency-1" />
+              <span>Inventario</span>
+              <strong>3</strong>
+            </div>
+            <div>
+              <span className="alert-dot urgency-2" />
+              <span>Plantel reproductivo</span>
+              <strong>2</strong>
+            </div>
+            <div>
+              <span className="alert-dot urgency-3" />
+              <span>Precebo</span>
+              <strong>1</strong>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   const [farms, setFarms] = useState(initialFarms)
   const [lots, setLots] = useState(initialLots)
@@ -2741,10 +6212,18 @@ export default function App() {
   const [cycleLoading, setCycleLoading] = useState(false)
   const [modal, setModal] = useState<"add" | "edit" | null>(null)
   const [lotModal, setLotModal] = useState(false)
+  const [voiceOpen, setVoiceOpen] = useState(false)
   const [editing, setEditing] = useState<Farm | null>(null)
   const [deleting, setDeleting] = useState<Farm | null>(null)
   const [toast, setToast] = useState("")
-  const [page, setPage] = useState<"home" | "cycle" | "lot">("home")
+  const [inventoryAttention, setInventoryAttention] = useState(
+    initialInventoryAttention,
+  )
+  const [page, setPage] =
+    useState<"home" | "cycle" | "lot" | "breeding" | "reproducer" | "inventory" | "porciTable" | "dashboards">(
+      "home",
+    )
+  const [selectedFarm, setSelectedFarm] = useState<Farm>(initialFarms[0])
   const [activeCycle, setActiveCycle] = useState<ProductionCycle>("Precebo")
   const [selectedLot, setSelectedLot] = useState<Lot | null>(null)
   const [accountOpen, setAccountOpen] = useState(false)
@@ -2799,10 +6278,20 @@ export default function App() {
     setModal("edit")
   }
   const openCycle = (farm: Farm, cycle: Cycle) => {
-    if (
-      farm.name === "Granja La Esperanza" &&
-      (cycle === "Precebo" || cycle === "Levante")
-    ) {
+    setSelectedFarm(farm)
+    if (cycle === "Reproductor") {
+      setPage("reproducer")
+      setSelectedLot(null)
+      window.scrollTo({ top: 0, behavior: "smooth" })
+      return
+    }
+    if (cycle === "Plantel reproductivo") {
+      setPage("breeding")
+      setSelectedLot(null)
+      window.scrollTo({ top: 0, behavior: "smooth" })
+      return
+    }
+    if (cycle === "Precebo" || cycle === "Levante") {
       setActiveCycle(cycle)
       setPage("cycle")
       setCycleLoading(true)
@@ -2814,6 +6303,21 @@ export default function App() {
     if (label === "Inicio") {
       setPage("home")
       setSelectedLot(null)
+    } else if (label === "Plantel reproductivo") {
+      setPage("breeding")
+      setSelectedLot(null)
+    } else if (label === "Reproductor") {
+      setPage("reproducer")
+      setSelectedLot(null)
+    } else if (label === "Inventario") {
+      setPage("inventory")
+      setSelectedLot(null)
+    } else if (label === "PorciTabla") {
+      setPage("porciTable")
+      setSelectedLot(null)
+    } else if (label === "Tableros") {
+      setPage("dashboards")
+      setSelectedLot(null)
     } else if (label === "Precebo" || label === "Levante") {
       setActiveCycle(label)
       setPage("cycle")
@@ -2822,6 +6326,10 @@ export default function App() {
       window.setTimeout(() => setCycleLoading(false), 650)
     }
     setMobileOpen(false)
+  }
+  const openTool = (farm: Farm, tool: string) => {
+    setSelectedFarm(farm)
+    navigate(tool)
   }
   const saveLot = (draft: LotDraft) => {
     const females = Number(draft.females) || 0
@@ -2857,31 +6365,80 @@ export default function App() {
     setEditing(null)
     setToast("Granja eliminada")
   }
+  const updateInventoryAttention = (items: InventoryAttention[]) => {
+    setInventoryAttention(items)
+    setFarms((current) =>
+      current.map((farm) =>
+        farm.name === "Granja La Esperanza"
+          ? {
+              ...farm,
+              alerts: items.length,
+              urgent: items[0]?.title ?? "Todo está al día",
+            }
+          : farm,
+      ),
+    )
+  }
 
   return (
     <div className="app-shell">
       <Sidebar
         accountOpen={accountOpen}
         setAccountOpen={setAccountOpen}
-        active={page === "home" ? "Inicio" : activeCycle}
+        active={
+          page === "home"
+            ? "Inicio"
+            : page === "breeding"
+              ? "Plantel reproductivo"
+              : page === "reproducer"
+                ? "Reproductor"
+                : page === "inventory"
+                  ? "Inventario"
+                  : page === "porciTable"
+                    ? "PorciTabla"
+                    : page === "dashboards"
+                      ? "Tableros"
+                      : activeCycle
+        }
         onNavigate={navigate}
+        onLogout={() => setToast("Sesión cerrada")}
       />
       <MobileNavigation
         open={mobileOpen}
         setOpen={setMobileOpen}
-        active={page === "home" ? "Inicio" : activeCycle}
+        active={
+          page === "home"
+            ? "Inicio"
+            : page === "breeding"
+              ? "Plantel reproductivo"
+              : page === "reproducer"
+                ? "Reproductor"
+                : page === "inventory"
+                  ? "Inventario"
+                  : page === "porciTable"
+                    ? "PorciTabla"
+                    : page === "dashboards"
+                      ? "Tableros"
+                      : activeCycle
+        }
         onNavigate={navigate}
+        onLogout={() => {
+          setMobileOpen(false)
+          setToast("Sesión cerrada")
+        }}
       />
       <main>
-        {page !== "lot" && (
+        {(page === "home" || page === "cycle") && (
           <Header
             page={page}
             cycle={activeCycle}
+            farmName={selectedFarm.name}
             onAdd={() => {
               setEditing(null)
               setModal("add")
             }}
             onCreateLot={() => setLotModal(true)}
+            onVoice={() => setVoiceOpen(true)}
           />
         )}
         {page === "home" ? (
@@ -2907,6 +6464,7 @@ export default function App() {
                     farm={farm}
                     onEdit={() => openEdit(farm)}
                     onCycle={(cycle) => openCycle(farm, cycle)}
+                    onTool={(tool) => openTool(farm, tool)}
                   />
                 ))}
               </div>
@@ -2936,9 +6494,25 @@ export default function App() {
               window.scrollTo({ top: 0, behavior: "smooth" })
             }}
           />
+        ) : page === "breeding" ? (
+          <BreedingPage farmName={selectedFarm.name} onNotice={setToast} />
+        ) : page === "reproducer" ? (
+          <ReproducerPage farmName={selectedFarm.name} onNotice={setToast} />
+        ) : page === "inventory" ? (
+          <InventoryPage
+            farmName={selectedFarm.name}
+            attention={inventoryAttention}
+            setAttention={updateInventoryAttention}
+            onNotice={setToast}
+          />
+        ) : page === "porciTable" ? (
+          <PorciTablePage farmName={selectedFarm.name} />
+        ) : page === "dashboards" ? (
+          <DashboardsPage farmName={selectedFarm.name} />
         ) : selectedLot ? (
           <LotDetail
             lot={selectedLot}
+            farmName={selectedFarm.name}
             onBack={() => setPage("cycle")}
             onUpdate={(updated) => {
               setSelectedLot(updated)
@@ -2990,6 +6564,15 @@ export default function App() {
           cycle={activeCycle}
           onClose={() => setLotModal(false)}
           onSave={saveLot}
+        />
+      )}
+      {voiceOpen && (
+        <VoiceRegistrationModal
+          onClose={() => setVoiceOpen(false)}
+          onStart={() => {
+            setVoiceOpen(false)
+            setToast("Escuchando registro por voz")
+          }}
         />
       )}
       {toast && (
