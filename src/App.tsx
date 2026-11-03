@@ -443,6 +443,7 @@ type NavigationItem = {
 
 const navigation: NavigationItem[] = [
   { label: "Inicio", icon: "home" },
+  { label: "Resumen", icon: "chart" },
   { label: "Plantel reproductivo", icon: "sow" },
   { label: "Reproductor", icon: "boar" },
   { label: "Precebo", icon: "piglet" },
@@ -504,6 +505,7 @@ function Sidebar({
   onNavigate,
   onSelectFarm,
   onLogout,
+  alertCounts,
 }: {
   farms: Farm[]
   selectedFarm: Farm
@@ -514,6 +516,7 @@ function Sidebar({
   onNavigate: (label: string) => void
   onSelectFarm: (farm: Farm) => void
   onLogout: () => void
+  alertCounts: Record<string, number>
 }) {
   const [farmMenuOpen, setFarmMenuOpen] = useState(false)
   const cycles = cycleOrder
@@ -572,6 +575,16 @@ function Sidebar({
       {!isHome && (
         <nav className="context-navigation" aria-label="Navegación principal">
           <div className="sidebar-nav-group">
+            <span className="sidebar-group-label">Granja</span>
+            <button
+              className={`nav-item ${active === "Resumen" ? "active" : ""}`}
+              onClick={() => onNavigate("Resumen")}
+            >
+              <Icon name="chart" size={19} />
+              <span>Resumen</span>
+            </button>
+          </div>
+          <div className="sidebar-nav-group">
             <span className="sidebar-group-label">Ciclos</span>
             {cycles.map((item) => (
               <button
@@ -581,6 +594,9 @@ function Sidebar({
               >
                 <Icon name={item.icon} size={19} />
                 <span>{item.label}</span>
+                {(alertCounts[item.label] ?? 0) > 0 && (
+                  <b className="nav-alert-count">{alertCounts[item.label]}</b>
+                )}
               </button>
             ))}
           </div>
@@ -594,8 +610,8 @@ function Sidebar({
               >
                 <Icon name={item.icon} size={19} />
                 <span>{item.label}</span>
-                {item.label === "Inventario" && selectedFarm.alerts > 0 && (
-                  <b className="nav-alert-count">{selectedFarm.alerts}</b>
+                {(alertCounts[item.label] ?? 0) > 0 && (
+                  <b className="nav-alert-count">{alertCounts[item.label]}</b>
                 )}
               </button>
             ))}
@@ -649,6 +665,7 @@ function MobileNavigation({
   onNavigate,
   onSelectFarm,
   onLogout,
+  alertCounts,
 }: {
   farms: Farm[]
   selectedFarm: Farm
@@ -659,6 +676,7 @@ function MobileNavigation({
   onNavigate: (label: string) => void
   onSelectFarm: (farm: Farm) => void
   onLogout: () => void
+  alertCounts: Record<string, number>
 }) {
   const [farmMenuOpen, setFarmMenuOpen] = useState(false)
   const cycles = cycleOrder
@@ -667,8 +685,11 @@ function MobileNavigation({
       (cycle) =>
         navigation.find((item) => item.label === cycle) as NavigationItem,
     )
+  const summaryItem = navigation.find(
+    (item) => item.label === "Resumen",
+  ) as NavigationItem
   const mobileItems = (
-    isHome ? [navigation[0]] : [navigation[0], ...cycles, ...toolItems]
+    isHome ? [navigation[0]] : [summaryItem, ...cycles, ...toolItems]
   ).slice(0, 4)
   return (
     <>
@@ -738,6 +759,17 @@ function MobileNavigation({
           </div>
           {!isHome && (
             <nav aria-label="Menú móvil">
+              <span className="sidebar-group-label">Granja</span>
+              <button
+                className={active === "Resumen" ? "active" : ""}
+                onClick={() => {
+                  onNavigate("Resumen")
+                  setOpen(false)
+                }}
+              >
+                <Icon name="chart" size={19} />
+                Resumen
+              </button>
               <span className="sidebar-group-label">Ciclos</span>
               {cycles.map((item) => (
                 <button
@@ -750,6 +782,9 @@ function MobileNavigation({
                 >
                   <Icon name={item.icon} size={19} />
                   {item.label}
+                  {(alertCounts[item.label] ?? 0) > 0 && (
+                    <b className="nav-alert-count">{alertCounts[item.label]}</b>
+                  )}
                 </button>
               ))}
               <span className="sidebar-group-label">Herramientas</span>
@@ -764,8 +799,8 @@ function MobileNavigation({
                 >
                   <Icon name={item.icon} size={19} />
                   {item.label}
-                  {item.label === "Inventario" && selectedFarm.alerts > 0 && (
-                    <b className="nav-alert-count">{selectedFarm.alerts}</b>
+                  {(alertCounts[item.label] ?? 0) > 0 && (
+                    <b className="nav-alert-count">{alertCounts[item.label]}</b>
                   )}
                 </button>
               ))}
@@ -779,7 +814,9 @@ function MobileNavigation({
             </span>
           </div>
           <button
-            className="mobile-settings"
+            className={`mobile-settings ${
+              active === "Ajustes" ? "active" : ""
+            }`}
             onClick={() => onNavigate("Ajustes")}
           >
             <Icon name="settings" size={18} />
@@ -928,11 +965,13 @@ function StatusBadge({ alerts }: { alerts: number }) {
 function FarmCard({
   farm,
   onEdit,
+  onSummary,
   onCycle,
   onTool,
 }: {
   farm: Farm
   onEdit: () => void
+  onSummary: () => void
   onCycle: (cycle: Cycle) => void
   onTool: (tool: string) => void
 }) {
@@ -955,6 +994,10 @@ function FarmCard({
             <Icon name="pin" size={15} />
             {farm.municipality}
           </p>
+          <button className="farm-summary-link" onClick={onSummary}>
+            Ver resumen
+            <Icon name="arrow" size={15} />
+          </button>
         </div>
         <StatusBadge alerts={farm.alerts} />
       </div>
@@ -1366,6 +1409,121 @@ const formatDate = (date: Date) =>
     month: "2-digit",
     year: "numeric",
   })
+
+function DatePicker({
+  value,
+  onChange,
+  min,
+  max,
+  label = "Seleccionar fecha",
+}: {
+  value: string
+  onChange: (value: string) => void
+  min?: string
+  max?: string
+  label?: string
+}) {
+  const selectedDate = value ? new Date(`${value}T12:00:00`) : null
+  const [open, setOpen] = useState(false)
+  const [visibleMonth, setVisibleMonth] = useState(
+    () => selectedDate ?? new Date(2026, 2, 1, 12),
+  )
+  useEffect(() => {
+    const closeOtherPicker = (event: Event) => {
+      if ((event as CustomEvent<string>).detail !== label) setOpen(false)
+    }
+    window.addEventListener("porci-date-picker-open", closeOtherPicker)
+    return () =>
+      window.removeEventListener("porci-date-picker-open", closeOtherPicker)
+  }, [label])
+  const year = visibleMonth.getFullYear()
+  const month = visibleMonth.getMonth()
+  const firstWeekday = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const toIso = (day: number) =>
+    `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(
+      2,
+      "0",
+    )}`
+  return (
+    <div className="date-picker">
+      <button
+        type="button"
+        className={`date-picker-trigger ${value ? "" : "placeholder"}`}
+        onClick={() => {
+          if (!open) {
+            window.dispatchEvent(
+              new CustomEvent("porci-date-picker-open", { detail: label }),
+            )
+          }
+          setOpen(!open)
+        }}
+        aria-label={label}
+        aria-expanded={open}
+      >
+        <span>{selectedDate ? formatDate(selectedDate) : "dd/mm/aaaa"}</span>
+        <Icon name="calendar" size={18} />
+      </button>
+      {open && (
+        <div className="date-picker-popover">
+          <div className="date-picker-heading">
+            <button
+              type="button"
+              className="icon-button"
+              aria-label="Mes anterior"
+              onClick={() => setVisibleMonth(new Date(year, month - 1, 1, 12))}
+            >
+              <Icon name="chevron" size={17} />
+            </button>
+            <strong>
+              {visibleMonth.toLocaleDateString("es-CO", {
+                month: "long",
+                year: "numeric",
+              })}
+            </strong>
+            <button
+              type="button"
+              className="icon-button"
+              aria-label="Mes siguiente"
+              onClick={() => setVisibleMonth(new Date(year, month + 1, 1, 12))}
+            >
+              <Icon name="chevron" size={17} />
+            </button>
+          </div>
+          <div className="date-picker-weekdays">
+            {["D", "L", "M", "M", "J", "V", "S"].map((day, index) => (
+              <span key={`${day}-${index}`}>{day}</span>
+            ))}
+          </div>
+          <div className="date-picker-grid">
+            {Array.from({ length: firstWeekday }, (_, index) => (
+              <span key={`empty-${index}`} />
+            ))}
+            {Array.from({ length: daysInMonth }, (_, index) => {
+              const day = index + 1
+              const iso = toIso(day)
+              const disabled = Boolean((min && iso < min) || (max && iso > max))
+              return (
+                <button
+                  type="button"
+                  className={value === iso ? "selected" : ""}
+                  disabled={disabled}
+                  onClick={() => {
+                    onChange(iso)
+                    setOpen(false)
+                  }}
+                  key={iso}
+                >
+                  {day}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 const getLotMetrics = (lot: Lot) => {
   const initialAnimals = Math.max(0, lot.initialAnimals)
@@ -1920,14 +2078,12 @@ function CreateLotModal({
                     <span>
                       Fecha de ingreso <em>* obligatorio</em>
                     </span>
-                    <input
-                      type="date"
-                      lang="es-CO"
+                    <DatePicker
                       value={draft.entryDate}
-                      onChange={(e) =>
-                        setDraft({ ...draft, entryDate: e.target.value })
+                      onChange={(value) =>
+                        setDraft({ ...draft, entryDate: value })
                       }
-                      aria-invalid={submitted && !draft.entryDate}
+                      label="Seleccionar fecha de ingreso"
                     />
                     {submitted && !draft.entryDate && (
                       <small>
@@ -2554,11 +2710,10 @@ function MortalityModal({
               <span>
                 Fecha <em>* obligatorio</em>
               </span>
-              <input
-                type="date"
-                lang="es-CO"
+              <DatePicker
                 value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
+                onChange={(value) => setForm({ ...form, date: value })}
+                label="Seleccionar fecha de mortalidad"
               />
               {submitted && !form.date && (
                 <small>
@@ -2885,13 +3040,10 @@ function TreatmentModal({
               <span>
                 Fecha <em>* obligatorio</em>
               </span>
-              <input
-                type="date"
-                lang="es-CO"
+              <DatePicker
                 value={form.date}
-                onChange={(event) =>
-                  setForm({ ...form, date: event.target.value })
-                }
+                onChange={(value) => setForm({ ...form, date: value })}
+                label="Seleccionar fecha del tratamiento"
               />
             </label>
             <label className="field">
@@ -2960,7 +3112,250 @@ function TreatmentModal({
   )
 }
 
-function PurchasesTab() {
+type LotMovement = {
+  id: number
+  date: string
+  party: string
+  females: number
+  males: number
+  totalWeight: number
+  value?: number
+  invoice?: string
+}
+
+function LotMovementModal({
+  kind,
+  available,
+  onClose,
+  onSave,
+}: {
+  kind: "Compra" | "Venta"
+  available: number
+  onClose: () => void
+  onSave: (movement: LotMovement) => void
+}) {
+  const [form, setForm] = useState({
+    date: "",
+    party: "",
+    females: "",
+    males: "",
+    totalWeight: "",
+    value: "",
+  })
+  const [invoice, setInvoice] = useState("")
+  const [submitted, setSubmitted] = useState(false)
+  const [confirmExit, setConfirmExit] = useState(false)
+  const females = Number(form.females) || 0
+  const males = Number(form.males) || 0
+  const animals = females + males
+  const exceedsAvailable = animals > available
+  const dirty = Object.values(form).some(Boolean) || Boolean(invoice)
+  const attemptClose = () => (dirty ? setConfirmExit(true) : onClose())
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    setSubmitted(true)
+    if (
+      !form.date ||
+      !form.party.trim() ||
+      animals === 0 ||
+      !form.totalWeight ||
+      exceedsAvailable ||
+      (kind === "Venta" && !form.value)
+    )
+      return
+    onSave({
+      id: Date.now(),
+      date: formatDate(new Date(`${form.date}T12:00:00`)),
+      party: form.party.trim(),
+      females,
+      males,
+      totalWeight: Number(
+        form.totalWeight.replace(/\./g, "").replace(",", "."),
+      ),
+      value:
+        kind === "Venta" ? Number(form.value.replace(/[^\d]/g, "")) : undefined,
+      invoice: kind === "Compra" ? invoice : undefined,
+    })
+  }
+  if (confirmExit) {
+    return (
+      <DiscardChangesDialog
+        onDiscard={onClose}
+        onKeepEditing={() => setConfirmExit(false)}
+      />
+    )
+  }
+  return (
+    <DialogShell
+      title={`Registrar ${kind.toLowerCase()}`}
+      onClose={attemptClose}
+      size="wide"
+    >
+      <form onSubmit={submit}>
+        <div className="form-content lot-movement-form">
+          <div className="available-banner">
+            <Icon name="pig" size={20} />
+            <span>Animales disponibles</span>
+            <strong>{available} animales</strong>
+          </div>
+          <div className="form-grid">
+            <label
+              className={`field ${submitted && !form.date ? "has-error" : ""}`}
+            >
+              <span>
+                Fecha <em>* obligatorio</em>
+              </span>
+              <DatePicker
+                value={form.date}
+                onChange={(value) => setForm({ ...form, date: value })}
+                label={`Seleccionar fecha de ${kind.toLowerCase()}`}
+              />
+            </label>
+            <label
+              className={`field ${
+                submitted && !form.party.trim() ? "has-error" : ""
+              }`}
+            >
+              <span>
+                {kind === "Compra" ? "Proveedor" : "Comprador"}{" "}
+                <em>* obligatorio</em>
+              </span>
+              <input
+                value={form.party}
+                onChange={(event) =>
+                  setForm({ ...form, party: event.target.value })
+                }
+                placeholder={
+                  kind === "Compra"
+                    ? "Nombre del proveedor"
+                    : "Nombre del comprador"
+                }
+              />
+            </label>
+            <label className="field">
+              <span>Hembras</span>
+              <input
+                inputMode="numeric"
+                value={form.females}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    females: event.target.value.replace(/\D/g, ""),
+                  })
+                }
+                placeholder="Ej. 20"
+              />
+            </label>
+            <label className="field">
+              <span>Machos</span>
+              <input
+                inputMode="numeric"
+                value={form.males}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    males: event.target.value.replace(/\D/g, ""),
+                  })
+                }
+                placeholder="Ej. 20"
+              />
+            </label>
+            <label
+              className={`field ${
+                submitted && !form.totalWeight ? "has-error" : ""
+              }`}
+            >
+              <span>
+                Peso total (kg) <em>* obligatorio</em>
+              </span>
+              <input
+                inputMode="decimal"
+                value={form.totalWeight}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    totalWeight: event.target.value.replace(/[^\d,.]/g, ""),
+                  })
+                }
+                placeholder="Ej. 1.250,0"
+              />
+            </label>
+            {kind === "Venta" ? (
+              <label
+                className={`field ${
+                  submitted && !form.value ? "has-error" : ""
+                }`}
+              >
+                <span>
+                  Valor total <em>* obligatorio</em>
+                </span>
+                <input
+                  inputMode="numeric"
+                  value={form.value}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      value: event.target.value.replace(/\D/g, ""),
+                    })
+                  }
+                  placeholder="Ej. 9.500.000"
+                />
+              </label>
+            ) : (
+              <label className="field invoice-upload">
+                <span>Foto de la factura</span>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={(event) =>
+                    setInvoice(event.target.files?.[0]?.name ?? "")
+                  }
+                />
+                <span className="upload-control">
+                  <Icon name="download" size={18} />
+                  {invoice || "Seleccionar archivo"}
+                </span>
+              </label>
+            )}
+          </div>
+          <div
+            className={`calculated-value ${
+              exceedsAvailable ? "calculated-error" : ""
+            }`}
+          >
+            <div>
+              <span>Total de animales</span>
+              <small>Hembras más machos</small>
+            </div>
+            <strong>
+              {females} hembras + {males} machos = <b>{animals} animales</b>
+            </strong>
+          </div>
+          {exceedsAvailable && (
+            <div className="form-inline-error">
+              <Icon name="alert" size={17} />
+              El total no puede superar los {available} animales disponibles.
+            </div>
+          )}
+        </div>
+        <div className="modal-actions">
+          <button
+            type="button"
+            className="button secondary"
+            onClick={attemptClose}
+          >
+            Cancelar
+          </button>
+          <button className="button primary" type="submit">
+            Registrar {kind.toLowerCase()}
+          </button>
+        </div>
+      </form>
+    </DialogShell>
+  )
+}
+
+function PurchasesTab({ records }: { records: LotMovement[] }) {
   return (
     <div className="tab-panel">
       <div className="neutral-summary-cards">
@@ -2995,10 +3390,22 @@ function PurchasesTab() {
                 <th>Concepto</th>
                 <th>Proveedor</th>
                 <th>Cantidad</th>
-                <th>Valor total</th>
+                <th>Factura / valor total</th>
               </tr>
             </thead>
             <tbody>
+              {records.map((record) => (
+                <tr key={record.id}>
+                  <td>{record.date}</td>
+                  <td>Compra de animales</td>
+                  <td>{record.party}</td>
+                  <td>
+                    {record.females + record.males} animales ·{" "}
+                    {formatDecimal(record.totalWeight)} kg
+                  </td>
+                  <td>{record.invoice || "Sin factura adjunta"}</td>
+                </tr>
+              ))}
               <tr>
                 <td>08/03/2026</td>
                 <td>Concentrado iniciador</td>
@@ -3021,7 +3428,7 @@ function PurchasesTab() {
   )
 }
 
-function SalesTab() {
+function SalesTab({ records }: { records: LotMovement[] }) {
   return (
     <div className="tab-panel">
       <div className="neutral-summary-cards">
@@ -3061,6 +3468,26 @@ function SalesTab() {
               </tr>
             </thead>
             <tbody>
+              {records.map((record) => (
+                <tr key={record.id}>
+                  <td>{record.date}</td>
+                  <td>{record.party}</td>
+                  <td>{record.females + record.males} animales</td>
+                  <td>{formatDecimal(record.totalWeight)} kg</td>
+                  <td>
+                    {record.value
+                      ? `$ ${Math.round(
+                          record.value / record.totalWeight,
+                        ).toLocaleString("es-CO")}/kg`
+                      : "Sin registrar"}
+                  </td>
+                  <td>
+                    {record.value
+                      ? `$ ${record.value.toLocaleString("es-CO")}`
+                      : "Sin registrar"}
+                  </td>
+                </tr>
+              ))}
               <tr>
                 <td>12/03/2026</td>
                 <td>Comercializadora del Norte</td>
@@ -3164,8 +3591,12 @@ function LotDetail({
   const [menuOpen, setMenuOpen] = useState(false)
   const [mortalityModal, setMortalityModal] = useState(false)
   const [treatmentModal, setTreatmentModal] = useState(false)
+  const [purchaseModal, setPurchaseModal] = useState(false)
+  const [saleModal, setSaleModal] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [records, setRecords] = useState(mortalityRecords)
+  const [purchaseRecords, setPurchaseRecords] = useState<LotMovement[]>([])
+  const [saleRecords, setSaleRecords] = useState<LotMovement[]>([])
   const metrics = getLotMetrics(lot)
   const [treatments, setTreatments] = useState<Treatment[]>([
     {
@@ -3204,11 +3635,11 @@ function LotDetail({
     },
     Compras: {
       label: "Registrar compra",
-      run: () => onNotice("Formulario de compra abierto"),
+      run: () => setPurchaseModal(true),
     },
     Ventas: {
       label: "Registrar venta",
-      run: () => onNotice("Formulario de venta abierto"),
+      run: () => setSaleModal(true),
     },
   }
   const currentAction = action[tab]
@@ -3280,8 +3711,8 @@ function LotDetail({
           readOnly={lot.status === "Finalizado"}
         />
       )}
-      {tab === "Compras" && <PurchasesTab />}
-      {tab === "Ventas" && <SalesTab />}
+      {tab === "Compras" && <PurchasesTab records={purchaseRecords} />}
+      {tab === "Ventas" && <SalesTab records={saleRecords} />}
       {(tab === "Liquidación" || tab === "Identificación") && (
         <EmptyDetailTab tab={tab} />
       )}
@@ -3318,6 +3749,30 @@ function LotDetail({
           }}
         />
       )}
+      {purchaseModal && (
+        <LotMovementModal
+          kind="Compra"
+          available={metrics.currentAnimals}
+          onClose={() => setPurchaseModal(false)}
+          onSave={(movement) => {
+            setPurchaseRecords([movement, ...purchaseRecords])
+            setPurchaseModal(false)
+            onNotice("Compra registrada")
+          }}
+        />
+      )}
+      {saleModal && (
+        <LotMovementModal
+          kind="Venta"
+          available={metrics.currentAnimals}
+          onClose={() => setSaleModal(false)}
+          onSave={(movement) => {
+            setSaleRecords([movement, ...saleRecords])
+            setSaleModal(false)
+            onNotice("Venta registrada")
+          }}
+        />
+      )}
       {deleteOpen && (
         <DeleteLotDialog
           lot={lot}
@@ -3329,7 +3784,7 @@ function LotDetail({
   )
 }
 
-type SowStatus = "Gestación" | "Lactancia" | "Vacías" | "Reemplazos"
+type SowStatus = "Gestación" | "Lactancia" | "Vacía" | "Reemplazo"
 type Sow = {
   id: number
   number: string
@@ -3338,13 +3793,14 @@ type Sow = {
   daysInStatus: number
   probableFarrowing?: string
   parity: number
+  attention?: "overdue" | "vaccine"
 }
 
 const sowStatuses: SowStatus[] = [
   "Gestación",
   "Lactancia",
-  "Vacías",
-  "Reemplazos",
+  "Vacía",
+  "Reemplazo",
 ]
 
 const initialSows: Sow[] = Array.from({ length: 26 }, (_, index) => {
@@ -3354,8 +3810,8 @@ const initialSows: Sow[] = Array.from({ length: 26 }, (_, index) => {
       : index < 17
         ? "Lactancia"
         : index < 22
-          ? "Vacías"
-          : "Reemplazos"
+          ? "Vacía"
+          : "Reemplazo"
   return {
     id: 1304 + index,
     number: `#${1304 + index}`,
@@ -3366,7 +3822,7 @@ const initialSows: Sow[] = Array.from({ length: 26 }, (_, index) => {
         ? 94 + index * 2
         : status === "Lactancia"
           ? 4 + (index % 7)
-          : status === "Vacías"
+          : status === "Vacía"
             ? 3 + (index % 8)
             : 28 + index,
     probableFarrowing:
@@ -3376,6 +3832,7 @@ const initialSows: Sow[] = Array.from({ length: 26 }, (_, index) => {
           : `${18 + (index % 9)}/03/2026`
         : undefined,
     parity: 1 + (index % 6),
+    attention: index === 0 ? "overdue" : index === 1 ? "vaccine" : undefined,
   }
 })
 
@@ -3692,7 +4149,13 @@ function SowCard({
   onNotice: (text: string) => void
   onDelete: () => void
 }) {
-  const delayed = sow.status === "Gestación" && sow.number === "#1304"
+  const delayed = sow.attention === "overdue"
+  const statusTone =
+    sow.attention === "overdue"
+      ? "critical"
+      : sow.attention === "vaccine"
+        ? "warning"
+        : "neutral"
   return (
     <article className="sow-card">
       <div className="sow-card-heading">
@@ -3701,7 +4164,7 @@ function SowCard({
           <h3>{sow.number}</h3>
         </div>
         <div className="sow-card-menu">
-          <span className="status neutral">{sow.status}</span>
+          <span className={`status ${statusTone}`}>{sow.status}</span>
           <button
             className="dots-button"
             aria-label={`Opciones de la cerda ${sow.number}`}
@@ -3721,7 +4184,11 @@ function SowCard({
       </div>
       <div className="sow-data">
         <div>
-          <span>Días en {sow.status.toLowerCase()}</span>
+          <span>
+            {sow.status === "Vacía"
+              ? "Días como vacía"
+              : `Días en ${sow.status.toLowerCase()}`}
+          </span>
           <strong>{sow.daysInStatus}</strong>
         </div>
         <div>
@@ -3782,7 +4249,17 @@ function SowTable({
                 <strong>{sow.number}</strong>
               </td>
               <td>
-                <span className="status neutral">{sow.status}</span>
+                <span
+                  className={`status ${
+                    sow.attention === "overdue"
+                      ? "critical"
+                      : sow.attention === "vaccine"
+                        ? "warning"
+                        : "neutral"
+                  }`}
+                >
+                  {sow.status}
+                </span>
               </td>
               <td>{sow.band}</td>
               <td>{sow.daysInStatus}</td>
@@ -3855,11 +4332,10 @@ function BirthModal({
               <span>
                 Fecha del parto <em>* obligatorio</em>
               </span>
-              <input
-                type="date"
-                lang="es-CO"
+              <DatePicker
                 value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
+                onChange={(value) => setForm({ ...form, date: value })}
+                label="Seleccionar fecha del parto"
               />
               {submitted && !form.date && (
                 <small>
@@ -4134,7 +4610,17 @@ function SowPanel({
         </div>
         <div className="panel-body">
           <div className="panel-status">
-            <span className="status neutral">{sow.status}</span>
+            <span
+              className={`status ${
+                sow.attention === "overdue"
+                  ? "critical"
+                  : sow.attention === "vaccine"
+                    ? "warning"
+                    : "neutral"
+              }`}
+            >
+              {sow.status}
+            </span>
             <span>
               Banda {sow.band} · {sow.daysInStatus} días
             </span>
@@ -4829,11 +5315,10 @@ function RegisterServiceModal({
               <span>
                 Fecha <em>* obligatorio</em>
               </span>
-              <input
-                type="date"
-                lang="es-CO"
+              <DatePicker
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
+                onChange={setDate}
+                label="Seleccionar fecha del servicio"
               />
             </label>
             <label className={`field ${submitted && !sow ? "has-error" : ""}`}>
@@ -6160,11 +6645,10 @@ function PurchaseModal({
               <span>
                 Fecha de compra <em>* obligatorio</em>
               </span>
-              <input
-                type="date"
-                lang="es-CO"
+              <DatePicker
                 value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
+                onChange={(value) => setForm({ ...form, date: value })}
+                label="Seleccionar fecha de compra"
               />
               {submitted && !form.date && (
                 <small>
@@ -6751,13 +7235,10 @@ function NewPediluvioPanel({
                 <span>
                   Fecha <em>* obligatorio</em>
                 </span>
-                <input
-                  type="date"
-                  lang="es-CO"
+                <DatePicker
                   value={form.date}
-                  onChange={(event) =>
-                    setForm({ ...form, date: event.target.value })
-                  }
+                  onChange={(value) => setForm({ ...form, date: value })}
+                  label="Seleccionar fecha del registro"
                 />
               </label>
               <label
@@ -7023,11 +7504,10 @@ function PorciTablePage({ farmName }: { farmName: string }) {
                 </label>
                 <label>
                   <b>Fecha</b>
-                  <input
-                    type="date"
-                    lang="es-CO"
+                  <DatePicker
                     value={dateFilter}
-                    onChange={(event) => setDateFilter(event.target.value)}
+                    onChange={setDateFilter}
+                    label="Filtrar por fecha"
                   />
                 </label>
                 <button
@@ -7152,6 +7632,573 @@ function PorciTablePage({ farmName }: { farmName: string }) {
         />
       )}
     </>
+  )
+}
+
+function FarmSummaryPage({
+  farm,
+  lots,
+  inventoryAttention,
+  onNavigate,
+  onCycle,
+}: {
+  farm: Farm
+  lots: Lot[]
+  inventoryAttention: InventoryAttention[]
+  onNavigate: (label: string) => void
+  onCycle: (cycle: Cycle) => void
+}) {
+  const activeLots = lots.filter(
+    (lot) => lot.farmId === farm.id && lot.status === "Activo",
+  )
+  const alerts = [
+    ...inventoryAttention.map((item) => ({
+      id: `inventory-${item.id}`,
+      title: item.title,
+      detail: `${item.product} · ${item.detail}`,
+      urgency: item.critical ? 1 : 2,
+      module: "Inventario",
+    })),
+    ...(farm.cycles.includes("Plantel reproductivo")
+      ? [
+          {
+            id: "breeding-birth",
+            title: "Parto atrasado",
+            detail: "Una cerda requiere seguimiento hoy.",
+            urgency: 1,
+            module: "Plantel reproductivo",
+          },
+          {
+            id: "breeding-vaccine",
+            title: "Vacuna vencida",
+            detail: "Hay una vacuna pendiente por aplicar.",
+            urgency: 2,
+            module: "Plantel reproductivo",
+          },
+          {
+            id: "breeding-service",
+            title: "Servicio pendiente",
+            detail: "Una cerda en celo requiere atención hoy.",
+            urgency: 3,
+            module: "Plantel reproductivo",
+          },
+        ]
+      : []),
+    ...activeLots
+      .filter((lot) => lot.mortality > lot.mortalityGoal)
+      .map((lot) => ({
+        id: `lot-${lot.id}`,
+        title: "Mortalidad sobre la meta",
+        detail: `${lot.code} · ${formatDecimal(lot.mortality)} % frente a meta de ${formatDecimal(lot.mortalityGoal)} %`,
+        urgency: 1,
+        module: lot.cycle,
+      })),
+  ].sort((a, b) => a.urgency - b.urgency)
+  return (
+    <div className="connected-tool-page farm-summary-page">
+      <header className="page-header connected-page-header">
+        <div>
+          <div className="breadcrumbs">
+            <span>Inicio</span>
+            <Icon name="chevron" size={14} />
+            <span>{farm.name}</span>
+            <Icon name="chevron" size={14} />
+            <strong>Resumen</strong>
+          </div>
+          <h1>Resumen · {farm.name}</h1>
+          <p>{farm.municipality} · estado actual de la operación</p>
+        </div>
+      </header>
+      <div className="farm-summary-kpis">
+        <div>
+          <span>Alertas pendientes</span>
+          <strong>{alerts.length}</strong>
+          <p>Ordenadas por urgencia</p>
+        </div>
+        <div>
+          <span>Lotes activos</span>
+          <strong>{activeLots.length}</strong>
+          <p>En Precebo y Levante</p>
+        </div>
+        <div
+          className={
+            Number(farm.mortality.replace(",", ".").replace(" %", "")) >
+            Number(farm.goal.replace(/[^\d,]/g, "").replace(",", "."))
+              ? "kpi-danger"
+              : "kpi-positive"
+          }
+        >
+          <span>Mortalidad del mes</span>
+          <strong>{farm.mortality}</strong>
+          <p>Meta {farm.goal}</p>
+        </div>
+      </div>
+      <div className="farm-summary-grid">
+        <section className="records-card summary-alerts-card">
+          <div className="records-heading">
+            <div>
+              <h2>Alertas de la granja</h2>
+              <p>Primero aparecen las que requieren atención inmediata.</p>
+            </div>
+          </div>
+          {alerts.length ? (
+            <div className="summary-alert-list">
+              {alerts.map((alert) => (
+                <button key={alert.id} onClick={() => onNavigate(alert.module)}>
+                  <span className={`alert-dot urgency-${alert.urgency}`} />
+                  <span>
+                    <strong>{alert.title}</strong>
+                    <small>{alert.detail}</small>
+                  </span>
+                  <Icon name="arrow" size={17} />
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="summary-empty">
+              <Icon name="check" size={24} />
+              <strong>Todo está al día</strong>
+              <p>No hay alertas pendientes para esta granja.</p>
+            </div>
+          )}
+        </section>
+        <section className="records-card summary-lots-card">
+          <div className="records-heading">
+            <div>
+              <h2>Lotes activos por ciclo</h2>
+              <p>Animales actualmente en producción.</p>
+            </div>
+          </div>
+          <div className="summary-cycle-lots">
+            {(["Precebo", "Levante"] as const).map((cycle) => {
+              const cycleLots = activeLots.filter((lot) => lot.cycle === cycle)
+              return (
+                <button
+                  key={cycle}
+                  disabled={!farm.cycles.includes(cycle)}
+                  onClick={() => onCycle(cycle)}
+                >
+                  <span>
+                    <Icon
+                      name={cycle === "Precebo" ? "piglet" : "growth"}
+                      size={20}
+                    />
+                    {cycle}
+                  </span>
+                  <strong>{cycleLots.length} lotes</strong>
+                  <small>
+                    {cycleLots
+                      .reduce(
+                        (sum, lot) => sum + getLotMetrics(lot).currentAnimals,
+                        0,
+                      )
+                      .toLocaleString("es-CO")}{" "}
+                    animales
+                  </small>
+                </button>
+              )
+            })}
+          </div>
+        </section>
+      </div>
+      <section className="summary-cycle-access">
+        <div>
+          <h2>Accesos a los ciclos</h2>
+          <p>Entra directamente al ciclo que necesitas gestionar.</p>
+        </div>
+        <div>
+          {cycleOrder
+            .filter((cycle) => farm.cycles.includes(cycle))
+            .map((cycle) => (
+              <button
+                className="button secondary"
+                key={cycle}
+                onClick={() => onCycle(cycle)}
+              >
+                <Icon
+                  name={
+                    navigation.find((item) => item.label === cycle)?.icon ??
+                    "arrow"
+                  }
+                  size={18}
+                />
+                {cycle}
+              </button>
+            ))}
+        </div>
+      </section>
+    </div>
+  )
+}
+
+type CalendarEventType = "Vacuna" | "Parto probable" | "Pediluvio"
+type FarmCalendarEvent = {
+  id: number
+  farmId: number
+  date: string
+  type: CalendarEventType
+  title: string
+  detail: string
+  action: string
+}
+
+const farmCalendarEvents: FarmCalendarEvent[] = initialFarms.flatMap(
+  (farm, index) => [
+    {
+      id: farm.id * 10 + 1,
+      farmId: farm.id,
+      date: `2026-03-${String(18 + index).padStart(2, "0")}`,
+      type: "Vacuna",
+      title: "Refuerzo de parvovirus",
+      detail: `Aplicación programada para el plantel de ${farm.name}.`,
+      action: "Aplicar vacuna",
+    },
+    {
+      id: farm.id * 10 + 2,
+      farmId: farm.id,
+      date: `2026-03-${String(20 + index).padStart(2, "0")}`,
+      type: "Parto probable",
+      title: `Parto probable · Cerda #${1304 + index}`,
+      detail: "Revisar signos de parto y preparar el área de maternidad.",
+      action: "Registrar parto",
+    },
+    {
+      id: farm.id * 10 + 3,
+      farmId: farm.id,
+      date: `2026-03-${String(16 + index).padStart(2, "0")}`,
+      type: "Pediluvio",
+      title: "Control de pediluvio",
+      detail: "Renovar solución desinfectante del acceso principal.",
+      action: "Marcar como hecho",
+    },
+  ],
+)
+
+function CalendarPage({
+  farm,
+  onNotice,
+}: {
+  farm: Farm
+  onNotice: (text: string) => void
+}) {
+  const [visibleMonth, setVisibleMonth] = useState(new Date(2026, 2, 1, 12))
+  const [filter, setFilter] = useState<"Todos" | CalendarEventType>("Todos")
+  const [selectedEvent, setSelectedEvent] = useState<FarmCalendarEvent | null>(
+    null,
+  )
+  const [completedEvents, setCompletedEvents] = useState<number[]>([])
+  const events = farmCalendarEvents.filter(
+    (event) =>
+      event.farmId === farm.id && (filter === "Todos" || event.type === filter),
+  )
+  const year = visibleMonth.getFullYear()
+  const month = visibleMonth.getMonth()
+  const firstWeekday = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  return (
+    <>
+      <div className="connected-tool-page calendar-page">
+        <header className="page-header connected-page-header">
+          <div>
+            <div className="breadcrumbs">
+              <span>Inicio</span>
+              <Icon name="chevron" size={14} />
+              <span>{farm.name}</span>
+              <Icon name="chevron" size={14} />
+              <strong>Calendario</strong>
+            </div>
+            <h1>Calendario · {farm.name}</h1>
+            <p>Vacunas, partos probables y controles operativos.</p>
+          </div>
+        </header>
+        <div className="calendar-toolbar">
+          <div className="calendar-month-control">
+            <button
+              className="icon-button"
+              aria-label="Mes anterior"
+              onClick={() => setVisibleMonth(new Date(year, month - 1, 1, 12))}
+            >
+              <Icon name="chevron" size={19} />
+            </button>
+            <strong>
+              {visibleMonth.toLocaleDateString("es-CO", {
+                month: "long",
+                year: "numeric",
+              })}
+            </strong>
+            <button
+              className="icon-button"
+              aria-label="Mes siguiente"
+              onClick={() => setVisibleMonth(new Date(year, month + 1, 1, 12))}
+            >
+              <Icon name="chevron" size={19} />
+            </button>
+          </div>
+          <div className="calendar-filters" aria-label="Filtrar eventos">
+            {(["Todos", "Vacuna", "Parto probable", "Pediluvio"] as const).map(
+              (item) => (
+                <button
+                  className={`${filter === item ? "active" : ""} ${
+                    item === "Todos"
+                      ? ""
+                      : `event-${item.toLowerCase().replace(" ", "-")}`
+                  }`}
+                  onClick={() => setFilter(item)}
+                  key={item}
+                >
+                  {item}
+                </button>
+              ),
+            )}
+          </div>
+        </div>
+        <div className="month-calendar">
+          <div className="month-weekdays">
+            {["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"].map((day) => (
+              <span key={day}>{day}</span>
+            ))}
+          </div>
+          <div className="month-grid">
+            {Array.from({ length: firstWeekday }, (_, index) => (
+              <div className="outside" key={`empty-${index}`} />
+            ))}
+            {Array.from({ length: daysInMonth }, (_, index) => {
+              const day = index + 1
+              const iso = `${year}-${String(month + 1).padStart(
+                2,
+                "0",
+              )}-${String(day).padStart(2, "0")}`
+              const dayEvents = events.filter((event) => event.date === iso)
+              return (
+                <div className="month-day" key={iso}>
+                  <span>{day}</span>
+                  {dayEvents.map((event) => (
+                    <button
+                      className={`calendar-event event-${event.type
+                        .toLowerCase()
+                        .replace(" ", "-")} ${
+                        completedEvents.includes(event.id) ? "completed" : ""
+                      }`}
+                      onClick={() => setSelectedEvent(event)}
+                      key={event.id}
+                    >
+                      <b>{event.type}</b>
+                      <small>
+                        {event.title}
+                        {completedEvents.includes(event.id) ? " · Hecho" : ""}
+                      </small>
+                    </button>
+                  ))}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+      {selectedEvent && (
+        <DialogShell
+          title={selectedEvent.title}
+          onClose={() => setSelectedEvent(null)}
+          size="small"
+        >
+          <div className="calendar-event-detail">
+            <span
+              className={`calendar-event-type event-${selectedEvent.type
+                .toLowerCase()
+                .replace(" ", "-")}`}
+            >
+              {selectedEvent.type}
+            </span>
+            <strong>
+              {formatDate(new Date(`${selectedEvent.date}T12:00:00`))}
+            </strong>
+            <p>{selectedEvent.detail}</p>
+          </div>
+          <div className="modal-actions">
+            <button
+              className="button secondary"
+              onClick={() => setSelectedEvent(null)}
+            >
+              Cerrar
+            </button>
+            <button
+              className="button primary"
+              disabled={completedEvents.includes(selectedEvent.id)}
+              onClick={() => {
+                setCompletedEvents([...completedEvents, selectedEvent.id])
+                onNotice(`${selectedEvent.action} · hecho`)
+                setSelectedEvent(null)
+              }}
+            >
+              {completedEvents.includes(selectedEvent.id)
+                ? "Evento completado"
+                : selectedEvent.action}
+            </button>
+          </div>
+        </DialogShell>
+      )}
+    </>
+  )
+}
+
+function SettingsPage({
+  farms,
+  selectedFarm,
+  onNotice,
+}: {
+  farms: Farm[]
+  selectedFarm: Farm
+  onNotice: (text: string) => void
+}) {
+  const [feedUnit, setFeedUnit] = useState("kg")
+  const [medicineUnit, setMedicineUnit] = useState("ítems")
+  return (
+    <div className="connected-tool-page settings-page">
+      <header className="page-header connected-page-header">
+        <div>
+          <div className="breadcrumbs">
+            <span>Inicio</span>
+            <Icon name="chevron" size={14} />
+            <strong>Ajustes</strong>
+          </div>
+          <h1>Ajustes</h1>
+          <p>Configura granjas, alimentación, unidades y permisos.</p>
+        </div>
+        <div className="header-actions">
+          <button
+            className="button primary"
+            onClick={() => onNotice("Ajustes guardados")}
+          >
+            Guardar ajustes
+          </button>
+        </div>
+      </header>
+      <div className="settings-sections">
+        <section className="settings-card">
+          <div className="settings-card-heading">
+            <span>
+              <Icon name="pig" size={21} />
+            </span>
+            <div>
+              <h2>Granjas y ciclos</h2>
+              <p>Consulta las granjas y sus ciclos activos.</p>
+            </div>
+          </div>
+          <div className="settings-farm-list">
+            {farms.map((farm) => (
+              <div key={farm.id}>
+                <div>
+                  <strong>{farm.name}</strong>
+                  <span>{farm.municipality}</span>
+                </div>
+                <div>
+                  {farm.cycles.map((cycle) => (
+                    <span className="settings-cycle" key={cycle}>
+                      {cycle}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section className="settings-card">
+          <div className="settings-card-heading">
+            <span>
+              <Icon name="box" size={21} />
+            </span>
+            <div>
+              <h2>Programa de alimentación y unidades</h2>
+              <p>Define cómo se registran las salidas del inventario.</p>
+            </div>
+          </div>
+          <div className="settings-form-grid">
+            <label className="field">
+              <span>Granja</span>
+              <input value={selectedFarm.name} readOnly />
+            </label>
+            <label className="field">
+              <span>Unidad para alimento</span>
+              <select
+                value={feedUnit}
+                onChange={(event) => setFeedUnit(event.target.value)}
+              >
+                <option>kg</option>
+                <option>toneladas</option>
+                <option>bultos</option>
+              </select>
+            </label>
+            <label className="field">
+              <span>Unidad para medicamentos</span>
+              <select
+                value={medicineUnit}
+                onChange={(event) => setMedicineUnit(event.target.value)}
+              >
+                <option>ítems</option>
+                <option>frascos</option>
+                <option>ml</option>
+              </select>
+            </label>
+            <label className="field">
+              <span>Consumo esperado en Precebo</span>
+              <input defaultValue="1,4 kg por animal/día" />
+            </label>
+            <label className="field">
+              <span>Consumo esperado en Levante</span>
+              <input defaultValue="2,6 kg por animal/día" />
+            </label>
+          </div>
+          <div className="settings-inventory-output">
+            <div>
+              <span>Última salida de alimento</span>
+              <strong>420,0 {feedUnit}</strong>
+              <small>Concentrado de Precebo · hoy</small>
+            </div>
+            <div>
+              <span>Última salida de medicamentos</span>
+              <strong>4 {medicineUnit}</strong>
+              <small>Vacuna Circovirus · hoy</small>
+            </div>
+          </div>
+        </section>
+        <section className="settings-card">
+          <div className="settings-card-heading">
+            <span>
+              <Icon name="settings" size={21} />
+            </span>
+            <div>
+              <h2>Usuarios y roles</h2>
+              <p>Define el nivel de acceso de cada persona.</p>
+            </div>
+          </div>
+          <div className="role-grid">
+            {[
+              {
+                role: "Administrador",
+                description:
+                  "Gestiona granjas, usuarios y toda la información.",
+              },
+              {
+                role: "Supervisor",
+                description: "Revisa resultados y aprueba registros.",
+              },
+              {
+                role: "Operario",
+                description: "Registra actividades y consulta su granja.",
+              },
+            ].map((item) => (
+              <article key={item.role}>
+                <span className="avatar">{item.role.slice(0, 2)}</span>
+                <div>
+                  <h3>{item.role}</h3>
+                  <p>{item.description}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      </div>
+    </div>
   )
 }
 
@@ -7514,23 +8561,21 @@ function DashboardsPage({
         </div>
         <label>
           <span>Desde</span>
-          <input
-            type="date"
-            lang="es-CO"
+          <DatePicker
             value={startDate}
             max={endDate}
-            onChange={(event) => setStartDate(event.target.value)}
+            onChange={setStartDate}
+            label="Seleccionar fecha inicial"
           />
         </label>
         <label>
           <span>Hasta</span>
-          <input
-            type="date"
-            lang="es-CO"
+          <DatePicker
             value={endDate}
             min={startDate}
             max={today}
-            onChange={(event) => setEndDate(event.target.value)}
+            onChange={setEndDate}
+            label="Seleccionar fecha final"
           />
         </label>
       </div>
@@ -7694,7 +8739,7 @@ export default function App() {
       ],
     })
   const [page, setPage] =
-    useState<"home" | "cycle" | "lot" | "breeding" | "reproducer" | "inventory" | "porciTable" | "dashboards">(
+    useState<"home" | "farmSummary" | "cycle" | "lot" | "breeding" | "reproducer" | "inventory" | "porciTable" | "dashboards" | "calendar" | "settings">(
       "home",
     )
   const [selectedFarm, setSelectedFarm] = useState<Farm>(initialFarms[0])
@@ -7720,6 +8765,17 @@ export default function App() {
         .toLocaleString("es-CO"),
     [farms],
   )
+  const alertCounts: Record<string, number> = {
+    "Plantel reproductivo": selectedFarm.cycles.includes("Plantel reproductivo")
+      ? initialBreedingAlerts.length
+      : 0,
+    Inventario: (inventoryAttentionByFarm[selectedFarm.id] ?? []).length,
+    PorciTabla:
+      ({ 1: 2, 2: 1, 3: 2 } as Record<number, number>)[selectedFarm.id] ?? 0,
+    Tableros: 0,
+    Calendario:
+      ({ 1: 2, 2: 1, 3: 2 } as Record<number, number>)[selectedFarm.id] ?? 0,
+  }
   const saveFarm = (draft: FarmDraft) => {
     if (editing) {
       setFarms(
@@ -7777,6 +8833,9 @@ export default function App() {
     if (label === "Inicio") {
       setPage("home")
       setSelectedLot(null)
+    } else if (label === "Resumen") {
+      setPage("farmSummary")
+      setSelectedLot(null)
     } else if (label === "Plantel reproductivo") {
       setPage("breeding")
       setSelectedLot(null)
@@ -7792,6 +8851,12 @@ export default function App() {
     } else if (label === "Tableros") {
       setPage("dashboards")
       setSelectedLot(null)
+    } else if (label === "Calendario") {
+      setPage("calendar")
+      setSelectedLot(null)
+    } else if (label === "Ajustes") {
+      setPage("settings")
+      setSelectedLot(null)
     } else if (label === "Precebo" || label === "Levante") {
       setActiveCycle(label)
       setPage("cycle")
@@ -7806,32 +8871,10 @@ export default function App() {
     navigate(tool)
   }
   const changeFarm = (farm: Farm) => {
-    const currentCycle: Cycle | null =
-      page === "breeding"
-        ? "Plantel reproductivo"
-        : page === "reproducer"
-          ? "Reproductor"
-          : page === "cycle" || page === "lot"
-            ? activeCycle
-            : null
-    if (page === "home") {
-      const firstCycle = farm.cycles[0]
-      if (firstCycle) openCycle(farm, firstCycle)
-      else setSelectedFarm(farm)
-      return
-    }
-    if (currentCycle && !farm.cycles.includes(currentCycle)) {
-      const firstCycle = farm.cycles[0]
-      if (firstCycle) openCycle(farm, firstCycle)
-      else {
-        setSelectedFarm(farm)
-        setPage("home")
-      }
-      return
-    }
     setSelectedFarm(farm)
     setSelectedLot(null)
-    if (page === "lot") setPage("cycle")
+    setPage("farmSummary")
+    window.scrollTo({ top: 0, behavior: "smooth" })
   }
   const saveLot = (draft: LotDraft) => {
     const females = Number(draft.females) || 0
@@ -7890,6 +8933,26 @@ export default function App() {
       urgent: items[0]?.title ?? "Todo está al día",
     }))
   }
+  const activeNavigation =
+    page === "home"
+      ? "Inicio"
+      : page === "farmSummary"
+        ? "Resumen"
+        : page === "breeding"
+          ? "Plantel reproductivo"
+          : page === "reproducer"
+            ? "Reproductor"
+            : page === "inventory"
+              ? "Inventario"
+              : page === "porciTable"
+                ? "PorciTabla"
+                : page === "dashboards"
+                  ? "Tableros"
+                  : page === "calendar"
+                    ? "Calendario"
+                    : page === "settings"
+                      ? "Ajustes"
+                      : activeCycle
 
   return (
     <div className="app-shell">
@@ -7899,24 +8962,11 @@ export default function App() {
         isHome={page === "home"}
         accountOpen={accountOpen}
         setAccountOpen={setAccountOpen}
-        active={
-          page === "home"
-            ? "Inicio"
-            : page === "breeding"
-              ? "Plantel reproductivo"
-              : page === "reproducer"
-                ? "Reproductor"
-                : page === "inventory"
-                  ? "Inventario"
-                  : page === "porciTable"
-                    ? "PorciTabla"
-                    : page === "dashboards"
-                      ? "Tableros"
-                      : activeCycle
-        }
+        active={activeNavigation}
         onNavigate={navigate}
         onSelectFarm={changeFarm}
         onLogout={() => setToast("Sesión cerrada")}
+        alertCounts={alertCounts}
       />
       <MobileNavigation
         farms={farms}
@@ -7924,23 +8974,10 @@ export default function App() {
         isHome={page === "home"}
         open={mobileOpen}
         setOpen={setMobileOpen}
-        active={
-          page === "home"
-            ? "Inicio"
-            : page === "breeding"
-              ? "Plantel reproductivo"
-              : page === "reproducer"
-                ? "Reproductor"
-                : page === "inventory"
-                  ? "Inventario"
-                  : page === "porciTable"
-                    ? "PorciTabla"
-                    : page === "dashboards"
-                      ? "Tableros"
-                      : activeCycle
-        }
+        active={activeNavigation}
         onNavigate={navigate}
         onSelectFarm={changeFarm}
+        alertCounts={alertCounts}
         onLogout={() => {
           setMobileOpen(false)
           setToast("Sesión cerrada")
@@ -7982,6 +9019,7 @@ export default function App() {
                     key={farm.id}
                     farm={farm}
                     onEdit={() => openEdit(farm)}
+                    onSummary={() => changeFarm(farm)}
                     onCycle={(cycle) => openCycle(farm, cycle)}
                     onTool={(tool) => openTool(farm, tool)}
                   />
@@ -7991,6 +9029,14 @@ export default function App() {
               <EmptyState onAdd={() => setModal("add")} />
             )}
           </>
+        ) : page === "farmSummary" ? (
+          <FarmSummaryPage
+            farm={selectedFarm}
+            lots={lots}
+            inventoryAttention={inventoryAttentionByFarm[selectedFarm.id] ?? []}
+            onNavigate={navigate}
+            onCycle={(cycle) => openCycle(selectedFarm, cycle)}
+          />
         ) : page === "cycle" ? (
           <LotsList
             cycle={activeCycle}
@@ -8037,6 +9083,14 @@ export default function App() {
           <PorciTablePage farmName={selectedFarm.name} />
         ) : page === "dashboards" ? (
           <DashboardsPage farmName={selectedFarm.name} onNotice={setToast} />
+        ) : page === "calendar" ? (
+          <CalendarPage farm={selectedFarm} onNotice={setToast} />
+        ) : page === "settings" ? (
+          <SettingsPage
+            farms={farms}
+            selectedFarm={selectedFarm}
+            onNotice={setToast}
+          />
         ) : selectedLot ? (
           <LotDetail
             lot={selectedLot}
