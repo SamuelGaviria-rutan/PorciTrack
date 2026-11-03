@@ -1,6 +1,6 @@
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react"
 
-type IconName = "home" | "sow" | "boar" | "piglet" | "growth" | "box" | "table" | "chart" | "calendar" | "settings" | "mic" | "plus" | "edit" | "pin" | "alert" | "pig" | "trend" | "chevron" | "logout" | "menu" | "x" | "check" | "trash" | "arrow" | "dots" | "list" | "grid" | "weight" | "clock" | "info" | "syringe" | "bell" | "download" | "search" | "heart" | "baby" | "droplet"
+type IconName = "home" | "sow" | "boar" | "piglet" | "growth" | "box" | "table" | "chart" | "calendar" | "settings" | "mic" | "plus" | "edit" | "pin" | "alert" | "pig" | "trend" | "chevron" | "logout" | "menu" | "x" | "check" | "trash" | "arrow" | "dots" | "list" | "grid" | "weight" | "clock" | "info" | "syringe" | "bell" | "download" | "search" | "heart" | "baby" | "droplet" | "filter" | "sort"
 
 function Icon({
   name,
@@ -202,6 +202,13 @@ function Icon({
       </>
     ),
     droplet: <path d="M12 2S5 10 5 15a7 7 0 0 0 14 0c0-5-7-13-7-13Z" />,
+    filter: <path d="M3 5h18l-7 8v6l-4 2v-8Z" />,
+    sort: (
+      <>
+        <path d="M8 6h12M8 12h9M8 18h6" />
+        <path d="m3 8 2-2 2 2M5 6v12" />
+      </>
+    ),
   }
   return (
     <svg
@@ -283,6 +290,7 @@ type ProductionCycle = "Precebo" | "Levante"
 type LotStatus = "Activo" | "Finalizado"
 type Lot = {
   id: number
+  farmId: number
   cycle: ProductionCycle
   code: string
   status: LotStatus
@@ -300,6 +308,7 @@ type Lot = {
 const initialLots: Lot[] = [
   {
     id: 101,
+    farmId: 1,
     cycle: "Precebo",
     code: "PR-2026-11",
     status: "Activo",
@@ -315,6 +324,7 @@ const initialLots: Lot[] = [
   },
   {
     id: 102,
+    farmId: 1,
     cycle: "Precebo",
     code: "PC-2025-017",
     status: "Activo",
@@ -330,6 +340,7 @@ const initialLots: Lot[] = [
   },
   {
     id: 103,
+    farmId: 1,
     cycle: "Precebo",
     code: "PC-2025-015",
     status: "Finalizado",
@@ -345,6 +356,7 @@ const initialLots: Lot[] = [
   },
   {
     id: 201,
+    farmId: 1,
     cycle: "Levante",
     code: "LV-2026-08",
     status: "Activo",
@@ -360,6 +372,7 @@ const initialLots: Lot[] = [
   },
   {
     id: 202,
+    farmId: 1,
     cycle: "Levante",
     code: "LV-2025-009",
     status: "Activo",
@@ -375,6 +388,7 @@ const initialLots: Lot[] = [
   },
   {
     id: 203,
+    farmId: 1,
     cycle: "Levante",
     code: "LV-2025-004",
     status: "Finalizado",
@@ -387,6 +401,38 @@ const initialLots: Lot[] = [
     mortality: 1.9,
     mortalityGoal: 2,
     gpd: 801,
+  },
+  {
+    id: 301,
+    farmId: 2,
+    cycle: "Precebo",
+    code: "PV-PC-06",
+    status: "Activo",
+    day: 19,
+    females: 42,
+    males: 44,
+    initialAnimals: 86,
+    currentAnimals: 85,
+    averageWeight: 16.2,
+    mortality: 1.2,
+    mortalityGoal: 2.5,
+    gpd: 452,
+  },
+  {
+    id: 401,
+    farmId: 3,
+    cycle: "Levante",
+    code: "SJ-LV-12",
+    status: "Activo",
+    day: 47,
+    females: 51,
+    males: 49,
+    initialAnimals: 100,
+    currentAnimals: 97,
+    averageWeight: 69.5,
+    mortality: 3,
+    mortalityGoal: 2,
+    gpd: 731,
   },
 ]
 
@@ -449,72 +495,181 @@ function Logo({ compact = false }: { compact?: boolean }) {
 }
 
 function Sidebar({
+  farms,
+  selectedFarm,
+  isHome,
   accountOpen,
   setAccountOpen,
   active,
   onNavigate,
+  onSelectFarm,
   onLogout,
 }: {
+  farms: Farm[]
+  selectedFarm: Farm
+  isHome: boolean
   accountOpen: boolean
   setAccountOpen: (value: boolean) => void
   active: string
   onNavigate: (label: string) => void
+  onSelectFarm: (farm: Farm) => void
   onLogout: () => void
 }) {
+  const [farmMenuOpen, setFarmMenuOpen] = useState(false)
+  const cycles = cycleOrder
+    .filter((cycle) => selectedFarm.cycles.includes(cycle))
+    .map(
+      (cycle) =>
+        navigation.find((item) => item.label === cycle) as NavigationItem,
+    )
   return (
     <aside className="sidebar">
       <Logo />
-      <nav aria-label="Navegación principal">
-        {navigation.map((item) => (
-          <button
-            className={`nav-item ${item.label === active ? "active" : ""}`}
-            key={item.label}
-            onClick={() => onNavigate(item.label)}
-          >
-            <Icon name={item.icon} size={19} />
-            <span>{item.label}</span>
-          </button>
-        ))}
-      </nav>
-      <div className="account-wrap">
-        {accountOpen && (
-          <div className="account-menu">
-            <div className="account-menu-heading">Cuenta</div>
-            <button onClick={onLogout}>
-              <Icon name="logout" size={18} /> Cerrar sesión
-            </button>
+      <button
+        className={`all-farms-link ${isHome ? "active" : ""}`}
+        onClick={() => onNavigate("Inicio")}
+      >
+        <Icon name="home" size={18} />
+        Todas las granjas
+      </button>
+      <div className="farm-selector-wrap">
+        <span className="sidebar-group-label">Granja</span>
+        <button
+          className={`farm-selector ${isHome ? "choose" : ""}`}
+          onClick={() => farms.length > 1 && setFarmMenuOpen(!farmMenuOpen)}
+          aria-expanded={farmMenuOpen}
+        >
+          <span className="farm-selector-icon">
+            <Icon name="pin" size={17} />
+          </span>
+          <span>
+            <strong>{isHome ? "Elige una granja" : selectedFarm.name}</strong>
+            {!isHome && <small>{selectedFarm.municipality}</small>}
+          </span>
+          {farms.length > 1 && <Icon name="chevron" size={16} />}
+        </button>
+        {farmMenuOpen && (
+          <div className="farm-switcher-menu">
+            {farms.map((farm) => (
+              <button
+                className={farm.id === selectedFarm.id ? "selected" : ""}
+                key={farm.id}
+                onClick={() => {
+                  onSelectFarm(farm)
+                  setFarmMenuOpen(false)
+                }}
+              >
+                <span>
+                  <strong>{farm.name}</strong>
+                  <small>{farm.municipality}</small>
+                </span>
+                {farm.id === selectedFarm.id && <Icon name="check" size={16} />}
+              </button>
+            ))}
           </div>
         )}
+      </div>
+      {!isHome && (
+        <nav className="context-navigation" aria-label="Navegación principal">
+          <div className="sidebar-nav-group">
+            <span className="sidebar-group-label">Ciclos</span>
+            {cycles.map((item) => (
+              <button
+                className={`nav-item ${item.label === active ? "active" : ""}`}
+                key={item.label}
+                onClick={() => onNavigate(item.label)}
+              >
+                <Icon name={item.icon} size={19} />
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+          <div className="sidebar-nav-group">
+            <span className="sidebar-group-label">Herramientas</span>
+            {toolItems.map((item) => (
+              <button
+                className={`nav-item ${item.label === active ? "active" : ""}`}
+                key={item.label}
+                onClick={() => onNavigate(item.label)}
+              >
+                <Icon name={item.icon} size={19} />
+                <span>{item.label}</span>
+                {item.label === "Inventario" && selectedFarm.alerts > 0 && (
+                  <b className="nav-alert-count">{selectedFarm.alerts}</b>
+                )}
+              </button>
+            ))}
+          </div>
+        </nav>
+      )}
+      <div className="sidebar-footer">
         <button
-          className="account"
-          onClick={() => setAccountOpen(!accountOpen)}
-          aria-expanded={accountOpen}
+          className={`nav-item settings-link ${
+            active === "Ajustes" ? "active" : ""
+          }`}
+          onClick={() => onNavigate("Ajustes")}
         >
-          <span className="avatar">AM</span>
-          <span className="account-copy">
-            <strong>Andrés Mejía</strong>
-            <small>Operario de granja</small>
-          </span>
-          <Icon name="chevron" size={17} />
+          <Icon name="settings" size={19} />
+          <span>Ajustes</span>
         </button>
+        <div className="account-wrap">
+          {accountOpen && (
+            <div className="account-menu">
+              <div className="account-menu-heading">Cuenta</div>
+              <button onClick={onLogout}>
+                <Icon name="logout" size={18} /> Cerrar sesión
+              </button>
+            </div>
+          )}
+          <button
+            className="account"
+            onClick={() => setAccountOpen(!accountOpen)}
+            aria-expanded={accountOpen}
+          >
+            <span className="avatar">AM</span>
+            <span className="account-copy">
+              <strong>Andrés Mejía</strong>
+              <small>Operario de granja</small>
+            </span>
+            <Icon name="chevron" size={17} />
+          </button>
+        </div>
       </div>
     </aside>
   )
 }
 
 function MobileNavigation({
+  farms,
+  selectedFarm,
+  isHome,
   open,
   setOpen,
   active,
   onNavigate,
+  onSelectFarm,
   onLogout,
 }: {
+  farms: Farm[]
+  selectedFarm: Farm
+  isHome: boolean
   open: boolean
   setOpen: (value: boolean) => void
   active: string
   onNavigate: (label: string) => void
+  onSelectFarm: (farm: Farm) => void
   onLogout: () => void
 }) {
+  const [farmMenuOpen, setFarmMenuOpen] = useState(false)
+  const cycles = cycleOrder
+    .filter((cycle) => selectedFarm.cycles.includes(cycle))
+    .map(
+      (cycle) =>
+        navigation.find((item) => item.label === cycle) as NavigationItem,
+    )
+  const mobileItems = (
+    isHome ? [navigation[0]] : [navigation[0], ...cycles, ...toolItems]
+  ).slice(0, 4)
   return (
     <>
       <div className="mobile-top">
@@ -530,6 +685,92 @@ function MobileNavigation({
       </div>
       {open && (
         <div className="mobile-drawer">
+          <button
+            className="mobile-all-farms"
+            onClick={() => {
+              onNavigate("Inicio")
+              setOpen(false)
+            }}
+          >
+            <Icon name="home" size={18} />
+            Todas las granjas
+          </button>
+          <div className="mobile-farm-block">
+            <span className="sidebar-group-label">Granja</span>
+            <button
+              className={`farm-selector ${isHome ? "choose" : ""}`}
+              onClick={() => farms.length > 1 && setFarmMenuOpen(!farmMenuOpen)}
+              aria-expanded={farmMenuOpen}
+            >
+              <span className="farm-selector-icon">
+                <Icon name="pin" size={17} />
+              </span>
+              <span>
+                <strong>
+                  {isHome ? "Elige una granja" : selectedFarm.name}
+                </strong>
+                {!isHome && <small>{selectedFarm.municipality}</small>}
+              </span>
+              {farms.length > 1 && <Icon name="chevron" size={16} />}
+            </button>
+            {farmMenuOpen && (
+              <div className="mobile-farm-list">
+                {farms.map((farm) => (
+                  <button
+                    key={farm.id}
+                    onClick={() => {
+                      onSelectFarm(farm)
+                      setFarmMenuOpen(false)
+                      setOpen(false)
+                    }}
+                  >
+                    <span>
+                      <strong>{farm.name}</strong>
+                      <small>{farm.municipality}</small>
+                    </span>
+                    {farm.id === selectedFarm.id && (
+                      <Icon name="check" size={16} />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {!isHome && (
+            <nav aria-label="Menú móvil">
+              <span className="sidebar-group-label">Ciclos</span>
+              {cycles.map((item) => (
+                <button
+                  className={item.label === active ? "active" : ""}
+                  key={item.label}
+                  onClick={() => {
+                    onNavigate(item.label)
+                    setOpen(false)
+                  }}
+                >
+                  <Icon name={item.icon} size={19} />
+                  {item.label}
+                </button>
+              ))}
+              <span className="sidebar-group-label">Herramientas</span>
+              {toolItems.map((item) => (
+                <button
+                  className={item.label === active ? "active" : ""}
+                  key={item.label}
+                  onClick={() => {
+                    onNavigate(item.label)
+                    setOpen(false)
+                  }}
+                >
+                  <Icon name={item.icon} size={19} />
+                  {item.label}
+                  {item.label === "Inventario" && selectedFarm.alerts > 0 && (
+                    <b className="nav-alert-count">{selectedFarm.alerts}</b>
+                  )}
+                </button>
+              ))}
+            </nav>
+          )}
           <div className="mobile-user">
             <span className="avatar">AM</span>
             <span>
@@ -537,21 +778,13 @@ function MobileNavigation({
               <small>Operario de granja</small>
             </span>
           </div>
-          <nav aria-label="Menú móvil">
-            {navigation.map((item) => (
-              <button
-                className={item.label === active ? "active" : ""}
-                key={item.label}
-                onClick={() => {
-                  onNavigate(item.label)
-                  setOpen(false)
-                }}
-              >
-                <Icon name={item.icon} size={19} />
-                {item.label}
-              </button>
-            ))}
-          </nav>
+          <button
+            className="mobile-settings"
+            onClick={() => onNavigate("Ajustes")}
+          >
+            <Icon name="settings" size={18} />
+            Ajustes
+          </button>
           <button className="mobile-logout" onClick={onLogout}>
             <Icon name="logout" size={18} />
             Cerrar sesión
@@ -559,16 +792,14 @@ function MobileNavigation({
         </div>
       )}
       <nav className="bottom-nav" aria-label="Navegación móvil">
-        {navigation.slice(0, 4).map((item) => (
+        {mobileItems.map((item) => (
           <button
             className={item.label === active ? "active" : ""}
             key={item.label}
             onClick={() => onNavigate(item.label)}
           >
             <Icon name={item.icon} size={20} />
-            <span>
-              {item.label === "Plantel reproductivo" ? "Plantel" : item.label}
-            </span>
+            <span>{item.label}</span>
           </button>
         ))}
         <button onClick={() => setOpen(true)}>
@@ -611,7 +842,7 @@ function Header({
             </>
           )}
         </div>
-        <h1>{page === "home" ? "Inicio" : cycle}</h1>
+        <h1>{page === "home" ? "Inicio" : `${cycle} · ${farmName}`}</h1>
         {page === "home" && <p>Resumen de tus granjas y operaciones</p>}
       </div>
       {page === "home" && (
@@ -830,7 +1061,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
             strokeWidth="2"
             strokeLinecap="round"
           />
-          <circle cx="133" cy="29" r="9" fill="#F4B5B3" />
+          <circle cx="133" cy="29" r="9" fill="#DCE8D9" />
         </svg>
       </div>
       <h2>Aún no tienes granjas</h2>
@@ -929,6 +1160,34 @@ function DialogShell({
   )
 }
 
+function DiscardChangesDialog({
+  onDiscard,
+  onKeepEditing,
+}: {
+  onDiscard: () => void
+  onKeepEditing: () => void
+}) {
+  return (
+    <DialogShell
+      title="¿Salir sin guardar?"
+      onClose={onKeepEditing}
+      size="small"
+    >
+      <div className="confirm-content">
+        <p>Perderás lo que escribiste.</p>
+      </div>
+      <div className="modal-actions">
+        <button className="button secondary" onClick={onDiscard}>
+          Salir sin guardar
+        </button>
+        <button className="button primary" onClick={onKeepEditing}>
+          Seguir editando
+        </button>
+      </div>
+    </DialogShell>
+  )
+}
+
 function FarmModal({
   farm,
   onClose,
@@ -963,103 +1222,87 @@ function FarmModal({
       municipality: draft.municipality.trim(),
     })
   }
+  if (confirmExit) {
+    return (
+      <DiscardChangesDialog
+        onDiscard={onClose}
+        onKeepEditing={() => setConfirmExit(false)}
+      />
+    )
+  }
   return (
-    <>
-      <DialogShell
-        title={farm ? "Editar granja" : "Agregar granja"}
-        onClose={attemptClose}
-      >
-        <form onSubmit={submit}>
-          <div className="form-content">
-            <label
-              className={`field ${
-                submitted && !draft.name.trim() ? "has-error" : ""
-              }`}
-            >
-              <span>
-                Nombre de la granja <em>* obligatorio</em>
-              </span>
-              <input
-                value={draft.name}
-                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-                placeholder="Ej. Granja La Primavera"
-                aria-invalid={submitted && !draft.name.trim()}
-              />
-              {submitted && !draft.name.trim() && (
-                <small>
-                  <Icon name="alert" size={14} />
-                  Escribe el nombre de la granja
-                </small>
-              )}
-            </label>
-            <label className="field">
-              <span>Municipio</span>
-              <input
-                value={draft.municipality}
-                onChange={(e) =>
-                  setDraft({ ...draft, municipality: e.target.value })
-                }
-                placeholder="Ej. Santa Rosa de Osos"
-              />
-            </label>
-            <CycleSelector
-              selected={draft.cycles}
-              onChange={(cycles) => setDraft({ ...draft, cycles })}
+    <DialogShell
+      title={farm ? "Editar granja" : "Agregar granja"}
+      onClose={attemptClose}
+    >
+      <form onSubmit={submit}>
+        <div className="form-content">
+          <label
+            className={`field ${
+              submitted && !draft.name.trim() ? "has-error" : ""
+            }`}
+          >
+            <span>
+              Nombre de la granja <em>* obligatorio</em>
+            </span>
+            <input
+              value={draft.name}
+              onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+              placeholder="Ej. Granja La Primavera"
+              aria-invalid={submitted && !draft.name.trim()}
             />
-            {farm && (
-              <div className="danger-zone">
-                <div>
-                  <h3>Zona de peligro</h3>
-                  <p>Esta acción elimina la granja y todos sus registros.</p>
-                </div>
-                <button
-                  type="button"
-                  className="button danger-outline"
-                  onClick={() => onDelete(farm)}
-                >
-                  <Icon name="trash" size={18} />
-                  Eliminar granja
-                </button>
-              </div>
+            {submitted && !draft.name.trim() && (
+              <small>
+                <Icon name="alert" size={14} />
+                Escribe el nombre de la granja
+              </small>
             )}
-          </div>
-          <div className="modal-actions">
-            <button
-              type="button"
-              className="button secondary"
-              onClick={attemptClose}
-            >
-              Cancelar
-            </button>
-            <button className="button primary" type="submit">
-              {farm ? "Guardar cambios" : "Guardar granja"}
-            </button>
-          </div>
-        </form>
-      </DialogShell>
-      {confirmExit && (
-        <DialogShell
-          title="¿Salir sin guardar?"
-          onClose={() => setConfirmExit(false)}
-          size="small"
-        >
-          <div className="confirm-content">
-            <p>Perderás lo que escribiste.</p>
-          </div>
-          <div className="modal-actions">
-            <button className="button secondary" onClick={onClose}>
-              Salir sin guardar
-            </button>
-            <button
-              className="button primary"
-              onClick={() => setConfirmExit(false)}
-            >
-              Seguir editando
-            </button>
-          </div>
-        </DialogShell>
-      )}
-    </>
+          </label>
+          <label className="field">
+            <span>Municipio</span>
+            <input
+              value={draft.municipality}
+              onChange={(e) =>
+                setDraft({ ...draft, municipality: e.target.value })
+              }
+              placeholder="Ej. Santa Rosa de Osos"
+            />
+          </label>
+          <CycleSelector
+            selected={draft.cycles}
+            onChange={(cycles) => setDraft({ ...draft, cycles })}
+          />
+          {farm && (
+            <div className="danger-zone">
+              <div>
+                <h3>Zona de peligro</h3>
+                <p>Esta acción elimina la granja y todos sus registros.</p>
+              </div>
+              <button
+                type="button"
+                className="button danger-outline"
+                onClick={() => onDelete(farm)}
+              >
+                <Icon name="trash" size={18} />
+                Eliminar granja
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="modal-actions">
+          <button
+            type="button"
+            className="button secondary"
+            onClick={attemptClose}
+          >
+            Cancelar
+          </button>
+          <button className="button primary" type="submit">
+            {farm ? "Guardar cambios" : "Guardar granja"}
+          </button>
+        </div>
+      </form>
+    </DialogShell>
   )
 }
 
@@ -1115,6 +1358,13 @@ const formatDecimal = (value: number, decimals = 1) =>
   value.toLocaleString("es-CO", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
+  })
+
+const formatDate = (date: Date) =>
+  date.toLocaleDateString("es-CO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   })
 
 const getLotMetrics = (lot: Lot) => {
@@ -1283,7 +1533,7 @@ function LotsTable({ lots }: { lots: Lot[] }) {
             <th>Machos</th>
             <th>Animales actuales</th>
             <th>Peso promedio (kg)</th>
-            <th>GPD (g/día)</th>
+            <th>Ganancia promedio diaria</th>
             <th>Mortalidad</th>
           </tr>
         </thead>
@@ -1304,14 +1554,14 @@ function LotsTable({ lots }: { lots: Lot[] }) {
                     {lot.status}
                   </span>
                 </td>
-                <td>{metrics.day}</td>
-                <td>{lot.females}</td>
-                <td>{lot.males}</td>
+                <td>{metrics.day} días</td>
+                <td>{lot.females} hembras</td>
+                <td>{lot.males} machos</td>
                 <td>
-                  {metrics.currentAnimals} / {metrics.initialAnimals}
+                  {metrics.currentAnimals} de {metrics.initialAnimals} animales
                 </td>
-                <td>{formatDecimal(lot.averageWeight)}</td>
-                <td>{lot.gpd.toLocaleString("es-CO")}</td>
+                <td>{formatDecimal(lot.averageWeight)} kg</td>
+                <td>{lot.gpd.toLocaleString("es-CO")} g/día</td>
                 <td
                   className={
                     metrics.mortalityTone === "high"
@@ -1542,353 +1792,332 @@ function CreateLotModal({
     if (!draft.code.trim() || !draft.entryDate) return
     setConfirming(true)
   }
+  if (confirmExit) {
+    return (
+      <DiscardChangesDialog
+        onDiscard={onClose}
+        onKeepEditing={() => setConfirmExit(false)}
+      />
+    )
+  }
   return (
-    <>
-      <DialogShell
-        title={
-          confirming ? "Confirma los datos del lote" : `Crear lote de ${cycle}`
-        }
-        onClose={attemptClose}
-        size="wide"
-      >
-        <form onSubmit={submit}>
-          <div className="lot-form">
-            {confirming ? (
-              <div className="lot-confirmation">
-                <div className="confirmation-intro">
-                  <span className="confirmation-icon">
-                    <Icon name="check" size={22} />
+    <DialogShell
+      title={
+        confirming ? "Confirma los datos del lote" : `Crear lote de ${cycle}`
+      }
+      onClose={attemptClose}
+      size="wide"
+    >
+      <form onSubmit={submit}>
+        <div className="lot-form">
+          {confirming ? (
+            <div className="lot-confirmation">
+              <div className="confirmation-intro">
+                <span className="confirmation-icon">
+                  <Icon name="check" size={22} />
+                </span>
+                <div>
+                  <h3>Revisa antes de crear el lote</h3>
+                  <p>Confirma que la información esté correcta.</p>
+                </div>
+              </div>
+              <div className="confirmation-grid">
+                <div>
+                  <span>Código del lote</span>
+                  <strong>{draft.code}</strong>
+                </div>
+                <div>
+                  <span>Fecha de ingreso</span>
+                  <strong>
+                    {formatDate(new Date(`${draft.entryDate}T12:00:00`))}
+                  </strong>
+                </div>
+                <div>
+                  <span>Animales iniciales</span>
+                  <strong>{animals} animales</strong>
+                  <small>
+                    {females} hembras + {males} machos
+                  </small>
+                </div>
+                <div>
+                  <span>Peso inicial total</span>
+                  <strong>
+                    {weight ? `${formatDecimal(weight)} kg` : "Sin registrar"}
+                  </strong>
+                  <small>
+                    {average
+                      ? `${formatDecimal(average)} kg por animal`
+                      : "Sin promedio calculado"}
+                  </small>
+                </div>
+                <div>
+                  <span>Peso objetivo final</span>
+                  <strong>
+                    {draft.targetWeight
+                      ? `${draft.targetWeight} kg`
+                      : "Sin registrar"}
+                  </strong>
+                  {farmGoal && <small>Meta de la granja: {farmGoal}</small>}
+                </div>
+                <div>
+                  <span>Ciclo</span>
+                  <strong>{cycle}</strong>
+                </div>
+              </div>
+              {unusual && (
+                <div className="weight-warning">
+                  <Icon name="alert" size={18} />
+                  <span>
+                    El peso promedio es inusual para {cycle.toLowerCase()}.
+                    Puedes crear el lote, pero te recomendamos revisarlo.
                   </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <section className="form-section">
+                <div className="form-section-heading">
+                  <span>1</span>
                   <div>
-                    <h3>Revisa antes de crear el lote</h3>
-                    <p>Confirma que la información esté correcta.</p>
+                    <h3>Datos del lote</h3>
+                    <p>Identificación y fecha de inicio</p>
                   </div>
                 </div>
-                <div className="confirmation-grid">
+                <div className="form-grid">
+                  <label
+                    className={`field ${
+                      submitted && !draft.code.trim() ? "has-error" : ""
+                    }`}
+                  >
+                    <span>
+                      Código del lote <em>* obligatorio</em>
+                    </span>
+                    <input
+                      value={draft.code}
+                      onChange={(e) =>
+                        setDraft({ ...draft, code: e.target.value })
+                      }
+                      placeholder={
+                        cycle === "Precebo"
+                          ? "Ej. PC-2025-019"
+                          : "Ej. LV-2025-012"
+                      }
+                      aria-invalid={submitted && !draft.code.trim()}
+                    />
+                    {submitted && !draft.code.trim() && (
+                      <small>
+                        <Icon name="alert" size={14} />
+                        Escribe el código del lote
+                      </small>
+                    )}
+                  </label>
+                  <label
+                    className={`field ${
+                      submitted && !draft.entryDate ? "has-error" : ""
+                    }`}
+                  >
+                    <span>
+                      Fecha de ingreso <em>* obligatorio</em>
+                    </span>
+                    <input
+                      type="date"
+                      lang="es-CO"
+                      value={draft.entryDate}
+                      onChange={(e) =>
+                        setDraft({ ...draft, entryDate: e.target.value })
+                      }
+                      aria-invalid={submitted && !draft.entryDate}
+                    />
+                    {submitted && !draft.entryDate && (
+                      <small>
+                        <Icon name="alert" size={14} />
+                        Selecciona la fecha de ingreso
+                      </small>
+                    )}
+                  </label>
+                </div>
+              </section>
+              <section className="form-section">
+                <div className="form-section-heading">
+                  <span>2</span>
                   <div>
-                    <span>Código del lote</span>
-                    <strong>{draft.code}</strong>
+                    <h3>Animales</h3>
+                    <p>Distribución al ingreso</p>
                   </div>
-                  <div>
-                    <span>Fecha de ingreso</span>
-                    <strong>
-                      {new Date(
-                        `${draft.entryDate}T12:00:00`,
-                      ).toLocaleDateString("es-CO")}
-                    </strong>
-                  </div>
+                </div>
+                <div className="form-grid numeric-grid">
+                  <label className="field">
+                    <span>Hembras iniciales</span>
+                    <input
+                      inputMode="numeric"
+                      value={draft.females}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          females: e.target.value.replace(/\D/g, ""),
+                        })
+                      }
+                      placeholder="Ej. 62"
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Machos iniciales</span>
+                    <input
+                      inputMode="numeric"
+                      value={draft.males}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          males: e.target.value.replace(/\D/g, ""),
+                        })
+                      }
+                      placeholder="Ej. 58"
+                    />
+                  </label>
+                </div>
+                <div className="calculated-value">
                   <div>
                     <span>Animales iniciales</span>
-                    <strong>{animals} animales</strong>
+                    <small>Se calcula automáticamente</small>
+                  </div>
+                  <strong>
+                    {females || males ? (
+                      <>
+                        {females} hembras + {males} machos ={" "}
+                        <b>{animals} animales</b>
+                      </>
+                    ) : (
+                      "—"
+                    )}
+                  </strong>
+                </div>
+              </section>
+              <section className="form-section">
+                <div className="form-section-heading">
+                  <span>3</span>
+                  <div>
+                    <h3>Pesos</h3>
+                    <p>Peso inicial y meta del ciclo</p>
+                  </div>
+                </div>
+                <div className="form-grid numeric-grid">
+                  <label className="field">
+                    <span>Peso inicial total (kg)</span>
+                    <input
+                      inputMode="decimal"
+                      value={draft.totalWeight}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          totalWeight: e.target.value.replace(/[^\d,.]/g, ""),
+                        })
+                      }
+                      placeholder="Ej. 780,5"
+                    />
+                  </label>
+                  <label className="field suggested-field">
+                    <span>Peso objetivo final (kg)</span>
+                    <input
+                      inputMode="decimal"
+                      value={draft.targetWeight}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          targetWeight: e.target.value.replace(/[^\d,.]/g, ""),
+                        })
+                      }
+                      placeholder="Déjalo vacío o escribe la meta"
+                    />
                     <small>
-                      {females} hembras + {males} machos
+                      <Icon name="info" size={13} />
+                      {farmGoal
+                        ? `Meta de la granja: ${farmGoal}`
+                        : "La granja no tiene una meta configurada"}
                     </small>
-                  </div>
-                  <div>
-                    <span>Peso inicial total</span>
-                    <strong>
-                      {weight ? `${formatDecimal(weight)} kg` : "Sin registrar"}
-                    </strong>
-                    <small>
-                      {average
-                        ? `${formatDecimal(average)} kg por animal`
-                        : "Sin promedio calculado"}
-                    </small>
-                  </div>
-                  <div>
-                    <span>Peso objetivo final</span>
-                    <strong>
-                      {draft.targetWeight
-                        ? `${draft.targetWeight} kg`
-                        : "Sin registrar"}
-                    </strong>
-                    {farmGoal && <small>Meta de la granja: {farmGoal}</small>}
-                  </div>
-                  <div>
-                    <span>Ciclo</span>
-                    <strong>{cycle}</strong>
-                  </div>
+                  </label>
+                </div>
+                <div className="average-value">
+                  <span>Peso promedio por animal</span>
+                  <strong>
+                    {average ? `${formatDecimal(average)} kg` : "—"}
+                  </strong>
                 </div>
                 {unusual && (
                   <div className="weight-warning">
                     <Icon name="alert" size={18} />
                     <span>
-                      El peso promedio es inusual para {cycle.toLowerCase()}.
-                      Puedes crear el lote, pero te recomendamos revisarlo.
+                      Revisa el peso:{" "}
+                      {formatDecimal(average, average % 1 === 0 ? 0 : 1)} kg por
+                      animal es inusual en {cycle.toLowerCase()}.
                     </span>
                   </div>
                 )}
-              </div>
-            ) : (
-              <>
-                <section className="form-section">
-                  <div className="form-section-heading">
-                    <span>1</span>
-                    <div>
-                      <h3>Datos del lote</h3>
-                      <p>Identificación y fecha de inicio</p>
-                    </div>
+              </section>
+              <details className="optional-section">
+                <summary>
+                  <div>
+                    <strong>Trazabilidad (opcional)</strong>
+                    <span>Concentrado, origen y observaciones</span>
                   </div>
+                  <Icon name="chevron" size={18} />
+                </summary>
+                <div className="optional-fields">
                   <div className="form-grid">
-                    <label
-                      className={`field ${
-                        submitted && !draft.code.trim() ? "has-error" : ""
-                      }`}
-                    >
-                      <span>
-                        Código del lote <em>* obligatorio</em>
-                      </span>
-                      <input
-                        value={draft.code}
-                        onChange={(e) =>
-                          setDraft({ ...draft, code: e.target.value })
-                        }
-                        placeholder={
-                          cycle === "Precebo"
-                            ? "Ej. PC-2025-019"
-                            : "Ej. LV-2025-012"
-                        }
-                        aria-invalid={submitted && !draft.code.trim()}
-                      />
-                      {submitted && !draft.code.trim() && (
-                        <small>
-                          <Icon name="alert" size={14} />
-                          Escribe el código del lote
-                        </small>
-                      )}
-                    </label>
-                    <label
-                      className={`field ${
-                        submitted && !draft.entryDate ? "has-error" : ""
-                      }`}
-                    >
-                      <span>
-                        Fecha de ingreso <em>* obligatorio</em>
-                      </span>
-                      <input
-                        type="date"
-                        lang="es-CO"
-                        value={draft.entryDate}
-                        onChange={(e) =>
-                          setDraft({ ...draft, entryDate: e.target.value })
-                        }
-                        aria-invalid={submitted && !draft.entryDate}
-                      />
-                      {submitted && !draft.entryDate && (
-                        <small>
-                          <Icon name="alert" size={14} />
-                          Selecciona la fecha de ingreso
-                        </small>
-                      )}
-                    </label>
-                  </div>
-                </section>
-                <section className="form-section">
-                  <div className="form-section-heading">
-                    <span>2</span>
-                    <div>
-                      <h3>Animales</h3>
-                      <p>Distribución al ingreso</p>
-                    </div>
-                  </div>
-                  <div className="form-grid numeric-grid">
                     <label className="field">
-                      <span>Hembras iniciales</span>
+                      <span>Marca de concentrado</span>
                       <input
-                        inputMode="numeric"
-                        value={draft.females}
+                        value={draft.feedBrand}
                         onChange={(e) =>
-                          setDraft({
-                            ...draft,
-                            females: e.target.value.replace(/\D/g, ""),
-                          })
+                          setDraft({ ...draft, feedBrand: e.target.value })
                         }
-                        placeholder="Ej. 62"
+                        placeholder="Ej. NutriCerdo"
                       />
                     </label>
                     <label className="field">
-                      <span>Machos iniciales</span>
+                      <span>Origen</span>
                       <input
-                        inputMode="numeric"
-                        value={draft.males}
+                        value={draft.origin}
                         onChange={(e) =>
-                          setDraft({
-                            ...draft,
-                            males: e.target.value.replace(/\D/g, ""),
-                          })
+                          setDraft({ ...draft, origin: e.target.value })
                         }
-                        placeholder="Ej. 58"
+                        placeholder="Ej. Plantel reproductivo"
                       />
                     </label>
                   </div>
-                  <div className="calculated-value">
-                    <div>
-                      <span>Animales iniciales</span>
-                      <small>Se calcula automáticamente</small>
-                    </div>
-                    <strong>
-                      {females || males ? (
-                        <>
-                          {females} hembras + {males} machos ={" "}
-                          <b>{animals} animales</b>
-                        </>
-                      ) : (
-                        "—"
-                      )}
-                    </strong>
-                  </div>
-                </section>
-                <section className="form-section">
-                  <div className="form-section-heading">
-                    <span>3</span>
-                    <div>
-                      <h3>Pesos</h3>
-                      <p>Peso inicial y meta del ciclo</p>
-                    </div>
-                  </div>
-                  <div className="form-grid numeric-grid">
-                    <label className="field">
-                      <span>Peso inicial total (kg)</span>
-                      <input
-                        inputMode="decimal"
-                        value={draft.totalWeight}
-                        onChange={(e) =>
-                          setDraft({
-                            ...draft,
-                            totalWeight: e.target.value.replace(/[^\d,.]/g, ""),
-                          })
-                        }
-                        placeholder="Ej. 780,5"
-                      />
-                    </label>
-                    <label className="field suggested-field">
-                      <span>Peso objetivo final (kg)</span>
-                      <input
-                        inputMode="decimal"
-                        value={draft.targetWeight}
-                        onChange={(e) =>
-                          setDraft({
-                            ...draft,
-                            targetWeight: e.target.value.replace(
-                              /[^\d,.]/g,
-                              "",
-                            ),
-                          })
-                        }
-                        placeholder="Déjalo vacío o escribe la meta"
-                      />
-                      <small>
-                        <Icon name="info" size={13} />
-                        {farmGoal
-                          ? `Meta de la granja: ${farmGoal}`
-                          : "La granja no tiene una meta configurada"}
-                      </small>
-                    </label>
-                  </div>
-                  <div className="average-value">
-                    <span>Peso promedio por animal</span>
-                    <strong>
-                      {average ? `${formatDecimal(average)} kg` : "—"}
-                    </strong>
-                  </div>
-                  {unusual && (
-                    <div className="weight-warning">
-                      <Icon name="alert" size={18} />
-                      <span>
-                        Revisa el peso:{" "}
-                        {formatDecimal(average, average % 1 === 0 ? 0 : 1)} kg
-                        por animal es inusual en {cycle.toLowerCase()}.
-                      </span>
-                    </div>
-                  )}
-                </section>
-                <details className="optional-section">
-                  <summary>
-                    <div>
-                      <strong>Trazabilidad (opcional)</strong>
-                      <span>Concentrado, origen y observaciones</span>
-                    </div>
-                    <Icon name="chevron" size={18} />
-                  </summary>
-                  <div className="optional-fields">
-                    <div className="form-grid">
-                      <label className="field">
-                        <span>Marca de concentrado</span>
-                        <input
-                          value={draft.feedBrand}
-                          onChange={(e) =>
-                            setDraft({ ...draft, feedBrand: e.target.value })
-                          }
-                          placeholder="Ej. NutriCerdo"
-                        />
-                      </label>
-                      <label className="field">
-                        <span>Origen</span>
-                        <input
-                          value={draft.origin}
-                          onChange={(e) =>
-                            setDraft({ ...draft, origin: e.target.value })
-                          }
-                          placeholder="Ej. Plantel reproductivo"
-                        />
-                      </label>
-                    </div>
-                    <label className="field">
-                      <span>Observaciones</span>
-                      <textarea
-                        value={draft.notes}
-                        onChange={(e) =>
-                          setDraft({ ...draft, notes: e.target.value })
-                        }
-                        placeholder="Escribe información relevante del lote"
-                      />
-                    </label>
-                  </div>
-                </details>
-              </>
-            )}
-          </div>
-          <div className="modal-actions large-actions">
-            <button
-              type="button"
-              className="button secondary"
-              onClick={confirming ? () => setConfirming(false) : attemptClose}
-            >
-              {confirming ? "Volver a editar" : "Cancelar"}
-            </button>
-            <button
-              className="button primary"
-              type={confirming ? "button" : "submit"}
-              onClick={confirming ? () => onSave(draft) : undefined}
-            >
-              {confirming ? "Confirmar y crear" : "Crear lote"}
-            </button>
-          </div>
-        </form>
-      </DialogShell>
-      {confirmExit && (
-        <DialogShell
-          title="¿Salir sin guardar?"
-          onClose={() => setConfirmExit(false)}
-          size="small"
-        >
-          <div className="confirm-content">
-            <p>Perderás lo que escribiste.</p>
-          </div>
-          <div className="modal-actions">
-            <button className="button secondary" onClick={onClose}>
-              Salir sin guardar
-            </button>
-            <button
-              className="button primary"
-              onClick={() => setConfirmExit(false)}
-            >
-              Seguir editando
-            </button>
-          </div>
-        </DialogShell>
-      )}
-    </>
+                  <label className="field">
+                    <span>Observaciones</span>
+                    <textarea
+                      value={draft.notes}
+                      onChange={(e) =>
+                        setDraft({ ...draft, notes: e.target.value })
+                      }
+                      placeholder="Escribe información relevante del lote"
+                    />
+                  </label>
+                </div>
+              </details>
+            </>
+          )}
+        </div>
+        <div className="modal-actions large-actions">
+          <button
+            type="button"
+            className="button secondary"
+            onClick={confirming ? () => setConfirming(false) : attemptClose}
+          >
+            {confirming ? "Volver a editar" : "Cancelar"}
+          </button>
+          <button
+            className="button primary"
+            type={confirming ? "button" : "submit"}
+            onClick={confirming ? () => onSave(draft) : undefined}
+          >
+            {confirming ? "Confirmar y crear" : "Crear lote"}
+          </button>
+        </div>
+      </form>
+    </DialogShell>
   )
 }
 
@@ -1919,7 +2148,7 @@ const lotTabs: LotTab[] = [
 const mortalityRecords: MortalityRecord[] = [
   {
     id: 1,
-    date: "12 mar 2026",
+    date: "12/03/2026",
     quantity: 1,
     sex: "Macho",
     cause: "Aplastamiento",
@@ -1927,7 +2156,7 @@ const mortalityRecords: MortalityRecord[] = [
   },
   {
     id: 2,
-    date: "08 mar 2026",
+    date: "08/03/2026",
     quantity: 1,
     sex: "Hembra",
     cause: "Bajo consumo",
@@ -1944,6 +2173,9 @@ function LotDetailHeader({
   onEdit,
   onFinish,
   onDelete,
+  primaryAction,
+  actionDisabled,
+  disabledReason,
 }: {
   lot: Lot
   farmName: string
@@ -1953,6 +2185,9 @@ function LotDetailHeader({
   onEdit: () => void
   onFinish: () => void
   onDelete: () => void
+  primaryAction?: TabAction
+  actionDisabled: boolean
+  disabledReason: string
 }) {
   const metrics = getLotMetrics(lot)
   return (
@@ -1998,42 +2233,57 @@ function LotDetailHeader({
             </span>
           </p>
         </div>
-        <div className="detail-menu-wrap">
-          <button
-            className="detail-menu-button"
-            onClick={onMenu}
-            aria-label="Opciones del lote"
-            aria-expanded={menuOpen}
-          >
-            <Icon name="dots" size={23} />
-          </button>
-          {menuOpen && (
-            <div className="lot-menu detail-menu" role="menu">
-              <button role="menuitem" onClick={onMenu}>
-                <Icon name="arrow" size={16} />
-                Ver
-              </button>
-              <button role="menuitem" onClick={onEdit}>
-                <Icon name="edit" size={16} />
-                Editar
-              </button>
-              {lot.status === "Activo" && (
-                <button role="menuitem" onClick={onFinish}>
-                  <Icon name="check" size={16} />
-                  Finalizar lote
-                </button>
-              )}
-              <div className="menu-divider" />
+        <div className="lot-detail-actions">
+          {primaryAction && (
+            <div className="tab-action">
+              {actionDisabled && <span>{disabledReason}</span>}
               <button
-                className="delete-item"
-                role="menuitem"
-                onClick={onDelete}
+                className="button primary"
+                onClick={primaryAction.run}
+                disabled={actionDisabled}
               >
-                <Icon name="trash" size={16} />
-                Eliminar lote
+                <Icon name="plus" size={18} />
+                {primaryAction.label}
               </button>
             </div>
           )}
+          <div className="detail-menu-wrap">
+            <button
+              className="detail-menu-button"
+              onClick={onMenu}
+              aria-label="Opciones del lote"
+              aria-expanded={menuOpen}
+            >
+              <Icon name="dots" size={23} />
+            </button>
+            {menuOpen && (
+              <div className="lot-menu detail-menu" role="menu">
+                <button role="menuitem" onClick={onMenu}>
+                  <Icon name="arrow" size={16} />
+                  Ver
+                </button>
+                <button role="menuitem" onClick={onEdit}>
+                  <Icon name="edit" size={16} />
+                  Editar
+                </button>
+                {lot.status === "Activo" && (
+                  <button role="menuitem" onClick={onFinish}>
+                    <Icon name="check" size={16} />
+                    Finalizar lote
+                  </button>
+                )}
+                <div className="menu-divider" />
+                <button
+                  className="delete-item"
+                  role="menuitem"
+                  onClick={onDelete}
+                >
+                  <Icon name="trash" size={16} />
+                  Eliminar lote
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
@@ -2255,6 +2505,9 @@ function MortalityModal({
     notes: "",
   })
   const [submitted, setSubmitted] = useState(false)
+  const [confirmExit, setConfirmExit] = useState(false)
+  const dirty = Object.values(form).some(Boolean)
+  const attemptClose = () => (dirty ? setConfirmExit(true) : onClose())
   const quantityTooHigh = Number(form.quantity) > available
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -2270,25 +2523,29 @@ function MortalityModal({
       return
     onSave({
       id: Date.now(),
-      date: new Date(`${form.date}T12:00:00`).toLocaleDateString("es-CO", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }),
+      date: formatDate(new Date(`${form.date}T12:00:00`)),
       quantity: Number(form.quantity),
       sex: form.sex as "Hembra" | "Macho",
       cause: form.cause,
       responsible: form.responsible,
     })
   }
+  if (confirmExit) {
+    return (
+      <DiscardChangesDialog
+        onDiscard={onClose}
+        onKeepEditing={() => setConfirmExit(false)}
+      />
+    )
+  }
   return (
-    <DialogShell title="Registrar mortalidad" onClose={onClose}>
+    <DialogShell title="Registrar mortalidad" onClose={attemptClose}>
       <form onSubmit={submit}>
         <div className="form-content mortality-form">
           <div className="available-banner">
             <Icon name="pig" size={20} />
             <span>Disponibles en el lote</span>
-            <strong>{available}</strong>
+            <strong>{available} animales</strong>
           </div>
           <div className="form-grid">
             <label
@@ -2421,7 +2678,11 @@ function MortalityModal({
           </label>
         </div>
         <div className="modal-actions large-actions">
-          <button type="button" className="button secondary" onClick={onClose}>
+          <button
+            type="button"
+            className="button secondary"
+            onClick={attemptClose}
+          >
             Cancelar
           </button>
           <button className="button primary" type="submit">
@@ -2545,7 +2806,7 @@ function HealthTab({
                     Omitir
                   </button>
                   <button
-                    className="button primary"
+                    className="button secondary"
                     onClick={() => apply([item.id])}
                   >
                     Aplicar
@@ -2569,8 +2830,33 @@ function TreatmentModal({
   onClose: () => void
   onSave: () => void
 }) {
+  const [form, setForm] = useState({
+    treatment: "",
+    date: "",
+    product: "",
+    method: "Intramuscular",
+    dose: "",
+    responsible: "",
+  })
+  const [confirmExit, setConfirmExit] = useState(false)
+  const dirty = Object.values(form).some(
+    (value) => value && value !== "Intramuscular",
+  )
+  const attemptClose = () => (dirty ? setConfirmExit(true) : onClose())
+  if (confirmExit) {
+    return (
+      <DiscardChangesDialog
+        onDiscard={onClose}
+        onKeepEditing={() => setConfirmExit(false)}
+      />
+    )
+  }
   return (
-    <DialogShell title="Registrar tratamiento" onClose={onClose} size="wide">
+    <DialogShell
+      title="Registrar tratamiento"
+      onClose={attemptClose}
+      size="wide"
+    >
       <form
         onSubmit={(event) => {
           event.preventDefault()
@@ -2587,21 +2873,45 @@ function TreatmentModal({
               <span>
                 Tratamiento <em>* obligatorio</em>
               </span>
-              <input placeholder="Ej. Vacuna Circovirus" />
+              <input
+                value={form.treatment}
+                onChange={(event) =>
+                  setForm({ ...form, treatment: event.target.value })
+                }
+                placeholder="Ej. Vacuna Circovirus"
+              />
             </label>
             <label className="field">
               <span>
                 Fecha <em>* obligatorio</em>
               </span>
-              <input type="date" lang="es-CO" />
+              <input
+                type="date"
+                lang="es-CO"
+                value={form.date}
+                onChange={(event) =>
+                  setForm({ ...form, date: event.target.value })
+                }
+              />
             </label>
             <label className="field">
               <span>Producto</span>
-              <input placeholder="Nombre comercial" />
+              <input
+                value={form.product}
+                onChange={(event) =>
+                  setForm({ ...form, product: event.target.value })
+                }
+                placeholder="Nombre comercial"
+              />
             </label>
             <label className="field">
               <span>Vía de aplicación</span>
-              <select>
+              <select
+                value={form.method}
+                onChange={(event) =>
+                  setForm({ ...form, method: event.target.value })
+                }
+              >
                 <option>Intramuscular</option>
                 <option>Oral</option>
                 <option>Subcutánea</option>
@@ -2609,16 +2919,36 @@ function TreatmentModal({
             </label>
             <label className="field">
               <span>Dosis por animal</span>
-              <input inputMode="decimal" placeholder="Ej. 2,0 ml" />
+              <input
+                inputMode="decimal"
+                value={form.dose}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    dose: event.target.value.replace(/[^\d,.]/g, ""),
+                  })
+                }
+                placeholder="Ej. 2,0 ml"
+              />
             </label>
             <label className="field">
               <span>Responsable</span>
-              <input placeholder="Nombre del responsable" />
+              <input
+                value={form.responsible}
+                onChange={(event) =>
+                  setForm({ ...form, responsible: event.target.value })
+                }
+                placeholder="Nombre del responsable"
+              />
             </label>
           </div>
         </div>
         <div className="modal-actions large-actions">
-          <button type="button" className="button secondary" onClick={onClose}>
+          <button
+            type="button"
+            className="button secondary"
+            onClick={attemptClose}
+          >
             Cancelar
           </button>
           <button className="button primary" type="submit">
@@ -2670,14 +3000,14 @@ function PurchasesTab() {
             </thead>
             <tbody>
               <tr>
-                <td>08 mar 2026</td>
+                <td>08/03/2026</td>
                 <td>Concentrado iniciador</td>
                 <td>NutriCampo</td>
                 <td>420,0 kg</td>
                 <td>$ 1.365.000</td>
               </tr>
               <tr>
-                <td>25 feb 2026</td>
+                <td>25/02/2026</td>
                 <td>Concentrado iniciador</td>
                 <td>AgroNorte</td>
                 <td>420,0 kg</td>
@@ -2697,7 +3027,7 @@ function SalesTab() {
       <div className="neutral-summary-cards">
         <div>
           <span>Animales vendidos</span>
-          <strong>64</strong>
+          <strong>64 animales</strong>
           <p>animales vendidos</p>
         </div>
         <div>
@@ -2732,19 +3062,19 @@ function SalesTab() {
             </thead>
             <tbody>
               <tr>
-                <td>12 mar 2026</td>
+                <td>12/03/2026</td>
                 <td>Comercializadora del Norte</td>
-                <td>32</td>
-                <td>1.049,6</td>
-                <td>$ 8.850</td>
+                <td>32 animales</td>
+                <td>1.049,6 kg</td>
+                <td>$ 8.850/kg</td>
                 <td>$ 9.288.960</td>
               </tr>
               <tr>
-                <td>03 mar 2026</td>
+                <td>03/03/2026</td>
                 <td>Porcícola Antioquia</td>
-                <td>32</td>
-                <td>1.036,8</td>
-                <td>$ 8.805</td>
+                <td>32 animales</td>
+                <td>1.036,8 kg</td>
+                <td>$ 8.805/kg</td>
                 <td>$ 9.127.584</td>
               </tr>
             </tbody>
@@ -2841,7 +3171,7 @@ function LotDetail({
     {
       id: 1,
       name: "Vacuna Mycoplasma",
-      date: "10 MAR",
+      date: "10/03/2026",
       method: "Intramuscular",
       overdue: true,
       applied: false,
@@ -2849,7 +3179,7 @@ function LotDetail({
     {
       id: 2,
       name: "Refuerzo vacuna Circovirus",
-      date: "18 MAR",
+      date: "18/03/2026",
       method: "Intramuscular",
       overdue: false,
       applied: false,
@@ -2857,7 +3187,7 @@ function LotDetail({
     {
       id: 3,
       name: "Desparasitación interna",
-      date: "25 MAR",
+      date: "25/03/2026",
       method: "Oral",
       overdue: false,
       applied: false,
@@ -2913,6 +3243,9 @@ function LotDetail({
           setMenuOpen(false)
           setDeleteOpen(true)
         }}
+        primaryAction={currentAction}
+        actionDisabled={actionDisabled}
+        disabledReason={disabledReason}
       />
       <div className="lot-tabs-wrap">
         <nav className="lot-tabs" aria-label="Secciones del lote">
@@ -2936,19 +3269,6 @@ function LotDetail({
             </>
           )}
         </div>
-        {currentAction && (
-          <div className="tab-action">
-            {actionDisabled && <span>{disabledReason}</span>}
-            <button
-              className="button primary"
-              onClick={currentAction.run}
-              disabled={actionDisabled}
-            >
-              <Icon name="plus" size={18} />
-              {currentAction.label}
-            </button>
-          </div>
-        )}
       </div>
       {tab === "Resumen" && <SummaryTab lot={lot} />}
       {tab === "Mortalidad" && <MortalityTab lot={lot} records={records} />}
@@ -3195,15 +3515,25 @@ function BreedingHeader({
           <Icon name="chevron" size={14} />
           <strong>Plantel reproductivo</strong>
         </div>
-        <h1>Plantel reproductivo</h1>
-        <p>{sowCount} cerdas activas · Bandas 37 a 40</p>
+        <h1>Plantel reproductivo · {farmName}</h1>
+        <p>
+          {sowCount} cerdas activas ·{" "}
+          {farmName === "Granja El Porvenir"
+            ? "Bandas 41 a 43"
+            : farmName === "Granja San José"
+              ? "Bandas 45 a 47"
+              : "Bandas 37 a 40"}
+        </p>
       </div>
       <div className="header-actions breeding-actions">
         <div className="bell-wrap">
           <button
             className="icon-button alert-bell"
             aria-label="Alertas del plantel"
-            onClick={() => setBellOpen(!bellOpen)}
+            onClick={() => {
+              setRegisterOpen(false)
+              setBellOpen(!bellOpen)
+            }}
           >
             <Icon name="bell" size={20} />
             {alerts.length > 0 && <span>{alerts.length}</span>}
@@ -3243,7 +3573,10 @@ function BreedingHeader({
         <div className="register-wrap">
           <button
             className="button primary"
-            onClick={() => setRegisterOpen(!registerOpen)}
+            onClick={() => {
+              setBellOpen(false)
+              setRegisterOpen(!registerOpen)
+            }}
           >
             <Icon name="plus" size={18} />
             Registrar
@@ -3289,9 +3622,7 @@ function AttendToday({
                 <span>{alert.detail}</span>
               </div>
               <button
-                className={
-                  alert.urgency === 1 ? "button primary" : "button secondary"
-                }
+                className="button secondary"
                 onClick={() => onAction(alert)}
               >
                 {alert.type === "parto"
@@ -3333,6 +3664,7 @@ function SowMenu({
         <Icon name="logout" size={16} />
         Registrar baja
       </button>
+      <div className="menu-divider" />
       <button className="delete-item" onClick={onDelete}>
         <Icon name="trash" size={16} />
         Eliminar cerda
@@ -3500,193 +3832,173 @@ function BirthModal({
     if (!form.date || !form.alive || !form.bodyCondition) return
     onSave()
   }
+  if (confirmExit) {
+    return (
+      <DiscardChangesDialog
+        onDiscard={onClose}
+        onKeepEditing={() => setConfirmExit(false)}
+      />
+    )
+  }
   return (
-    <>
-      <DialogShell
-        title={`Registrar parto · ${sow.number}`}
-        onClose={attemptClose}
-        size="wide"
-      >
-        <form onSubmit={submit}>
-          <div className="form-content birth-form">
-            <div className="form-grid">
-              <label
-                className={`field ${
-                  submitted && !form.date ? "has-error" : ""
-                }`}
-              >
-                <span>
-                  Fecha del parto <em>* obligatorio</em>
-                </span>
-                <input
-                  type="date"
-                  lang="es-CO"
-                  value={form.date}
-                  onChange={(e) => setForm({ ...form, date: e.target.value })}
-                />
-                {submitted && !form.date && (
-                  <small>
-                    <Icon name="alert" size={14} />
-                    Selecciona la fecha del parto
-                  </small>
-                )}
-              </label>
-              <label className="field">
-                <span>Responsable</span>
-                <input
-                  value={form.responsible}
-                  onChange={(e) =>
-                    setForm({ ...form, responsible: e.target.value })
-                  }
-                  placeholder="Nombre del responsable"
-                />
-              </label>
-            </div>
-            <div className="birth-counts">
-              <label
-                className={`field ${
-                  submitted && !form.alive ? "has-error" : ""
-                }`}
-              >
-                <span>
-                  <abbr title="Nacidos vivos">NV</abbr> (nacidos vivos){" "}
-                  <em>* obligatorio</em>
-                </span>
-                <input
-                  inputMode="numeric"
-                  value={form.alive}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      alive: e.target.value.replace(/\D/g, ""),
-                    })
-                  }
-                  placeholder="Ej. 12"
-                />
-                {submitted && !form.alive && (
-                  <small>
-                    <Icon name="alert" size={14} />
-                    Escribe los nacidos vivos
-                  </small>
-                )}
-              </label>
-              <label className="field">
-                <span>
-                  <abbr title="Nacidos muertos">NAT</abbr> (nacidos muertos)
-                </span>
-                <input
-                  inputMode="numeric"
-                  value={form.dead}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      dead: e.target.value.replace(/\D/g, ""),
-                    })
-                  }
-                  placeholder="Ej. 1"
-                />
-              </label>
-              <label className="field">
-                <span>
-                  <abbr title="Momificados">MOM</abbr> (momificados)
-                </span>
-                <input
-                  inputMode="numeric"
-                  value={form.mummified}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      mummified: e.target.value.replace(/\D/g, ""),
-                    })
-                  }
-                  placeholder="Ej. 0"
-                />
-              </label>
-            </div>
-            <div className="calculated-value birth-total">
-              <div>
-                <span>Total de nacidos</span>
-                <small>Suma automática</small>
-              </div>
-              <strong>
-                {alive} vivos + {dead} muertos + {mummified} momificados ={" "}
-                <b>{total}</b>
-              </strong>
-            </div>
-            <div className="form-grid">
-              <label
-                className={`field ${
-                  submitted && !form.bodyCondition ? "has-error" : ""
-                }`}
-              >
-                <span>
-                  Condición corporal <em>* obligatorio</em>
-                </span>
-                <select
-                  value={form.bodyCondition}
-                  onChange={(e) =>
-                    setForm({ ...form, bodyCondition: e.target.value })
-                  }
-                >
-                  <option value="">Selecciona de 1 a 5</option>
-                  {[1, 2, 3, 4, 5].map((value) => (
-                    <option key={value}>{value}</option>
-                  ))}
-                </select>
-                {submitted && !form.bodyCondition && (
-                  <small>
-                    <Icon name="alert" size={14} />
-                    Selecciona la condición corporal
-                  </small>
-                )}
-              </label>
-              <label className="field">
-                <span>Observaciones</span>
-                <input
-                  value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  placeholder="Información adicional"
-                />
-              </label>
-            </div>
-          </div>
-          <div className="modal-actions large-actions">
-            <button
-              type="button"
-              className="button secondary"
-              onClick={attemptClose}
+    <DialogShell
+      title={`Registrar parto · ${sow.number}`}
+      onClose={attemptClose}
+      size="wide"
+    >
+      <form onSubmit={submit}>
+        <div className="form-content birth-form">
+          <div className="form-grid">
+            <label
+              className={`field ${submitted && !form.date ? "has-error" : ""}`}
             >
-              Cancelar
-            </button>
-            <button className="button primary" type="submit">
-              Registrar parto
-            </button>
+              <span>
+                Fecha del parto <em>* obligatorio</em>
+              </span>
+              <input
+                type="date"
+                lang="es-CO"
+                value={form.date}
+                onChange={(e) => setForm({ ...form, date: e.target.value })}
+              />
+              {submitted && !form.date && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Selecciona la fecha del parto
+                </small>
+              )}
+            </label>
+            <label className="field">
+              <span>Responsable</span>
+              <input
+                value={form.responsible}
+                onChange={(e) =>
+                  setForm({ ...form, responsible: e.target.value })
+                }
+                placeholder="Nombre del responsable"
+              />
+            </label>
           </div>
-        </form>
-      </DialogShell>
-      {confirmExit && (
-        <DialogShell
-          title="¿Salir sin guardar?"
-          onClose={() => setConfirmExit(false)}
-          size="small"
-        >
-          <div className="confirm-content">
-            <p>Perderás lo que escribiste.</p>
-          </div>
-          <div className="modal-actions">
-            <button className="button secondary" onClick={onClose}>
-              Salir sin guardar
-            </button>
-            <button
-              className="button primary"
-              onClick={() => setConfirmExit(false)}
+          <div className="birth-counts">
+            <label
+              className={`field ${submitted && !form.alive ? "has-error" : ""}`}
             >
-              Seguir editando
-            </button>
+              <span>
+                <abbr title="Nacidos vivos">NV</abbr> (nacidos vivos){" "}
+                <em>* obligatorio</em>
+              </span>
+              <input
+                inputMode="numeric"
+                value={form.alive}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    alive: e.target.value.replace(/\D/g, ""),
+                  })
+                }
+                placeholder="Ej. 12"
+              />
+              {submitted && !form.alive && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Escribe los nacidos vivos
+                </small>
+              )}
+            </label>
+            <label className="field">
+              <span>
+                <abbr title="Nacidos muertos">NAT</abbr> (nacidos muertos)
+              </span>
+              <input
+                inputMode="numeric"
+                value={form.dead}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    dead: e.target.value.replace(/\D/g, ""),
+                  })
+                }
+                placeholder="Ej. 1"
+              />
+            </label>
+            <label className="field">
+              <span>
+                <abbr title="Momificados">MOM</abbr> (momificados)
+              </span>
+              <input
+                inputMode="numeric"
+                value={form.mummified}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    mummified: e.target.value.replace(/\D/g, ""),
+                  })
+                }
+                placeholder="Ej. 0"
+              />
+            </label>
           </div>
-        </DialogShell>
-      )}
-    </>
+          <div className="calculated-value birth-total">
+            <div>
+              <span>Total de nacidos</span>
+              <small>Suma automática</small>
+            </div>
+            <strong>
+              {alive} vivos + {dead} muertos + {mummified} momificados ={" "}
+              <b>{total}</b>
+            </strong>
+          </div>
+          <div className="form-grid">
+            <label
+              className={`field ${
+                submitted && !form.bodyCondition ? "has-error" : ""
+              }`}
+            >
+              <span>
+                Condición corporal <em>* obligatorio</em>
+              </span>
+              <select
+                value={form.bodyCondition}
+                onChange={(e) =>
+                  setForm({ ...form, bodyCondition: e.target.value })
+                }
+              >
+                <option value="">Selecciona de 1 a 5</option>
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <option key={value}>{value}</option>
+                ))}
+              </select>
+              {submitted && !form.bodyCondition && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Selecciona la condición corporal
+                </small>
+              )}
+            </label>
+            <label className="field">
+              <span>Observaciones</span>
+              <input
+                value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                placeholder="Información adicional"
+              />
+            </label>
+          </div>
+        </div>
+        <div className="modal-actions large-actions">
+          <button
+            type="button"
+            className="button secondary"
+            onClick={attemptClose}
+          >
+            Cancelar
+          </button>
+          <button className="button primary" type="submit">
+            Registrar parto
+          </button>
+        </div>
+      </form>
+    </DialogShell>
   )
 }
 
@@ -3780,7 +4092,7 @@ function SowHealthModal({
                   Omitir
                 </button>
                 <button
-                  className="button primary"
+                  className="button secondary"
                   onClick={() => apply([vaccine.id])}
                 >
                   Aplicar
@@ -3860,9 +4172,13 @@ function SowPanel({
                     Parto: {12 - index}/11/2025 · Destete: {4 - index}/12/2025
                   </p>
                   <div className="cycle-results">
-                    <span title="Nacidos vivos">NV: {12 - index}</span>
-                    <span title="Nacidos muertos">NAT: {index}</span>
-                    <span title="Momificados">MOM: 0</span>
+                    <span title="Nacidos vivos">
+                      Nacidos vivos: {12 - index}
+                    </span>
+                    <span title="Nacidos muertos">
+                      Nacidos muertos: {index}
+                    </span>
+                    <span title="Momificados">Momificados: 0</span>
                   </div>
                 </article>
               ))}
@@ -3937,7 +4253,20 @@ function BreedingPage({
   farmName: string
   onNotice: (text: string) => void
 }) {
-  const [sows, setSows] = useState(initialSows)
+  const [sows, setSows] = useState(() =>
+    farmName === "Granja La Esperanza"
+      ? initialSows
+      : initialSows
+          .slice(0, farmName === "Granja El Porvenir" ? 12 : 18)
+          .map((sow, index) => ({
+            ...sow,
+            id: sow.id + (farmName === "Granja El Porvenir" ? 200 : 400),
+            number: `#${
+              farmName === "Granja El Porvenir" ? 1501 + index : 1701 + index
+            }`,
+            band: (farmName === "Granja El Porvenir" ? 41 : 45) + (index % 3),
+          })),
+  )
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState<SowStatus>("Gestación")
   const [band, setBand] = useState("Todas")
@@ -3947,7 +4276,12 @@ function BreedingPage({
   const [registerOpen, setRegisterOpen] = useState(false)
   const [registerSow, setRegisterSow] = useState<Sow | null>(null)
   const [bellOpen, setBellOpen] = useState(false)
-  const [alerts, setAlerts] = useState(initialBreedingAlerts)
+  const [alerts, setAlerts] = useState(() =>
+    initialBreedingAlerts.map((alert, index) => ({
+      ...alert,
+      sowNumber: sows[index]?.number ?? alert.sowNumber,
+    })),
+  )
   const [panelSow, setPanelSow] = useState<Sow | null>(null)
   const [birthSow, setBirthSow] = useState<Sow | null>(null)
   const [healthSow, setHealthSow] = useState<Sow | null>(null)
@@ -4055,9 +4389,11 @@ function BreedingPage({
               <span>Banda</span>
               <select value={band} onChange={(e) => setBand(e.target.value)}>
                 <option>Todas</option>
-                {[37, 38, 39, 40].map((value) => (
-                  <option key={value}>{value}</option>
-                ))}
+                {[...new Set(sows.map((sow) => sow.band))]
+                  .sort((a, b) => a - b)
+                  .map((value) => (
+                    <option key={value}>{value}</option>
+                  ))}
               </select>
             </label>
             <div className="terms-help">
@@ -4224,7 +4560,7 @@ function ReproducerHeader({
           <Icon name="chevron" size={14} />
           <strong>Reproductor</strong>
         </div>
-        <h1>Reproductor</h1>
+        <h1>Reproductor · {farmName}</h1>
         <p>Gestiona machos reproductores y semen disponible</p>
       </div>
       <div className="header-actions">
@@ -4259,7 +4595,13 @@ function ReproducerHeader({
             </div>
           )}
         </div>
-        <button className="button primary" onClick={onAdd}>
+        <button
+          className="button primary"
+          onClick={() => {
+            setMoreOpen(false)
+            onAdd()
+          }}
+        >
           <Icon name="plus" size={18} />
           Agregar reproductor
         </button>
@@ -4358,99 +4700,83 @@ function AddReproducerModal({
       breed: form.breed || "Sin especificar",
     })
   }
+  if (confirmExit) {
+    return (
+      <DiscardChangesDialog
+        onDiscard={onClose}
+        onKeepEditing={() => setConfirmExit(false)}
+      />
+    )
+  }
   return (
-    <>
-      <DialogShell
-        title={reproducer ? "Editar reproductor" : "Agregar reproductor"}
-        onClose={attemptClose}
-      >
-        <form onSubmit={submit}>
-          <div className="form-content">
-            <label
-              className={`field ${submitted && !form.name ? "has-error" : ""}`}
+    <DialogShell
+      title={reproducer ? "Editar reproductor" : "Agregar reproductor"}
+      onClose={attemptClose}
+    >
+      <form onSubmit={submit}>
+        <div className="form-content">
+          <label
+            className={`field ${submitted && !form.name ? "has-error" : ""}`}
+          >
+            <span>
+              Nombre <em>* obligatorio</em>
+            </span>
+            <input
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder="Ej. Macho Duroc 02"
+            />
+            {submitted && !form.name && (
+              <small>
+                <Icon name="alert" size={14} />
+                Escribe el nombre
+              </small>
+            )}
+          </label>
+          <label
+            className={`field ${submitted && !form.kind ? "has-error" : ""}`}
+          >
+            <span>
+              Tipo <em>* obligatorio</em>
+            </span>
+            <select
+              value={form.kind}
+              onChange={(e) => setForm({ ...form, kind: e.target.value })}
             >
-              <span>
-                Nombre <em>* obligatorio</em>
-              </span>
-              <input
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Ej. Macho Duroc 02"
-              />
-              {submitted && !form.name && (
-                <small>
-                  <Icon name="alert" size={14} />
-                  Escribe el nombre
-                </small>
-              )}
-            </label>
-            <label
-              className={`field ${submitted && !form.kind ? "has-error" : ""}`}
-            >
-              <span>
-                Tipo <em>* obligatorio</em>
-              </span>
-              <select
-                value={form.kind}
-                onChange={(e) => setForm({ ...form, kind: e.target.value })}
-              >
-                <option value="">Selecciona</option>
-                <option>Macho</option>
-                <option>Semen</option>
-              </select>
-              {submitted && !form.kind && (
-                <small>
-                  <Icon name="alert" size={14} />
-                  Selecciona el tipo
-                </small>
-              )}
-            </label>
-            <label className="field">
-              <span>Raza o línea genética</span>
-              <input
-                value={form.breed}
-                onChange={(e) => setForm({ ...form, breed: e.target.value })}
-                placeholder="Ej. Duroc"
-              />
-            </label>
-          </div>
-          <div className="modal-actions">
-            <button
-              type="button"
-              className="button secondary"
-              onClick={attemptClose}
-            >
-              Cancelar
-            </button>
-            <button className="button primary" type="submit">
-              {reproducer ? "Guardar cambios" : "Agregar reproductor"}
-            </button>
-          </div>
-        </form>
-      </DialogShell>
-      {confirmExit && (
-        <DialogShell
-          title="¿Salir sin guardar?"
-          onClose={() => setConfirmExit(false)}
-          size="small"
-        >
-          <div className="confirm-content">
-            <p>Perderás lo que escribiste.</p>
-          </div>
-          <div className="modal-actions">
-            <button className="button secondary" onClick={onClose}>
-              Salir sin guardar
-            </button>
-            <button
-              className="button primary"
-              onClick={() => setConfirmExit(false)}
-            >
-              Seguir editando
-            </button>
-          </div>
-        </DialogShell>
-      )}
-    </>
+              <option value="">Selecciona</option>
+              <option>Macho</option>
+              <option>Semen</option>
+            </select>
+            {submitted && !form.kind && (
+              <small>
+                <Icon name="alert" size={14} />
+                Selecciona el tipo
+              </small>
+            )}
+          </label>
+          <label className="field">
+            <span>Raza o línea genética</span>
+            <input
+              value={form.breed}
+              onChange={(e) => setForm({ ...form, breed: e.target.value })}
+              placeholder="Ej. Duroc"
+            />
+          </label>
+        </div>
+        <div className="modal-actions">
+          <button
+            type="button"
+            className="button secondary"
+            onClick={attemptClose}
+          >
+            Cancelar
+          </button>
+          <button className="button primary" type="submit">
+            {reproducer ? "Guardar cambios" : "Agregar reproductor"}
+          </button>
+        </div>
+      </form>
+    </DialogShell>
   )
 }
 
@@ -4465,15 +4791,27 @@ function RegisterServiceModal({
 }) {
   const [date, setDate] = useState("")
   const [sow, setSow] = useState("")
+  const [notes, setNotes] = useState("")
   const [submitted, setSubmitted] = useState(false)
+  const [confirmExit, setConfirmExit] = useState(false)
+  const dirty = Boolean(date || sow || notes)
+  const attemptClose = () => (dirty ? setConfirmExit(true) : onClose())
   const submit = (event: FormEvent) => {
     event.preventDefault()
     setSubmitted(true)
     if (!date || !sow) return
     onSave()
   }
+  if (confirmExit) {
+    return (
+      <DiscardChangesDialog
+        onDiscard={onClose}
+        onKeepEditing={() => setConfirmExit(false)}
+      />
+    )
+  }
   return (
-    <DialogShell title="Registrar servicio" onClose={onClose}>
+    <DialogShell title="Registrar servicio" onClose={attemptClose}>
       <form onSubmit={submit}>
         <div className="form-content">
           <div className="service-reproducer">
@@ -4511,11 +4849,19 @@ function RegisterServiceModal({
           </div>
           <label className="field">
             <span>Observaciones</span>
-            <textarea placeholder="Información adicional del servicio" />
+            <textarea
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              placeholder="Información adicional del servicio"
+            />
           </label>
         </div>
         <div className="modal-actions">
-          <button type="button" className="button secondary" onClick={onClose}>
+          <button
+            type="button"
+            className="button secondary"
+            onClick={attemptClose}
+          >
             Cancelar
           </button>
           <button className="button primary" type="submit">
@@ -4627,7 +4973,7 @@ function ReproducerDetail({
               Editar
             </button>
             <button
-              className="button primary"
+              className="button secondary"
               onClick={() => setServiceOpen(true)}
               disabled={reproducer.status !== "Activo"}
             >
@@ -4890,7 +5236,7 @@ function ReproducerDetail({
             onUpdate({
               ...reproducer,
               servicesThisMonth: reproducer.servicesThisMonth + 1,
-              lastService: new Date().toLocaleDateString("es-CO"),
+              lastService: formatDate(new Date()),
             })
             setServiceOpen(false)
             onNotice("Servicio registrado")
@@ -4926,7 +5272,36 @@ function ReproducerPage({
   farmName: string
   onNotice: (text: string) => void
 }) {
-  const [reproducers, setReproducers] = useState(initialReproducers)
+  const [reproducers, setReproducers] = useState(() =>
+    farmName === "Granja La Esperanza"
+      ? initialReproducers
+      : farmName === "Granja El Porvenir"
+        ? [
+            {
+              ...initialReproducers[0],
+              id: 21,
+              name: "Macho Landrace 02",
+              breed: "Landrace",
+              servicesThisMonth: 12,
+            },
+            {
+              ...initialReproducers[1],
+              id: 22,
+              name: "Semen Duroc Norte",
+              breed: "Duroc",
+              servicesThisMonth: 19,
+            },
+          ]
+        : [
+            {
+              ...initialReproducers[0],
+              id: 31,
+              name: "Macho Pietrain 03",
+              breed: "Pietrain",
+              servicesThisMonth: 9,
+            },
+          ],
+  )
   const [kind, setKind] = useState<"Todos" | ReproducerKind>("Todos")
   const [status, setStatus] = useState<"Todos" | ReproducerStatus>("Todos")
   const [moreOpen, setMoreOpen] = useState(false)
@@ -5096,7 +5471,7 @@ const initialMedicineItems: MedicineItem[] = [
   },
   {
     id: 2,
-    name: "Oxitocina 10 UI",
+    name: "Oxitocina 10 unidades internacionales",
     stock: 2,
     minimum: 4,
     sealed: 2,
@@ -5141,7 +5516,7 @@ const initialInventoryAttention: InventoryAttention[] = [
   {
     id: 2,
     category: "Medicamentos",
-    product: "Oxitocina 10 UI",
+    product: "Oxitocina 10 unidades internacionales",
     title: "Stock bajo",
     detail: "2 ítems disponibles · mínimo 4",
     action: "Registrar compra",
@@ -5175,7 +5550,7 @@ function InventoryHeader({
           <Icon name="chevron" size={14} />
           <strong>Inventario</strong>
         </div>
-        <h1>Inventario</h1>
+        <h1>Inventario · {farmName}</h1>
         <p>Alimentos, medicamentos y movimientos de la granja</p>
       </div>
       <div className="header-actions">
@@ -5237,6 +5612,42 @@ function InventoryAttentionSection({
         ))}
       </div>
     </section>
+  )
+}
+
+function RemoveInventoryDialog({
+  product,
+  onClose,
+  onConfirm,
+}: {
+  product: string
+  onClose: () => void
+  onConfirm: () => void
+}) {
+  return (
+    <DialogShell
+      title="Dar de baja del inventario"
+      onClose={onClose}
+      size="small"
+    >
+      <div className="delete-content">
+        <div className="danger-icon">
+          <Icon name="trash" size={22} />
+        </div>
+        <p>
+          Se retirará <strong>{product}</strong> del inventario. Confirma para
+          continuar.
+        </p>
+      </div>
+      <div className="modal-actions">
+        <button className="button secondary" onClick={onClose}>
+          Cancelar
+        </button>
+        <button className="button danger" onClick={onConfirm}>
+          Confirmar baja
+        </button>
+      </div>
+    </DialogShell>
   )
 }
 
@@ -5607,9 +6018,13 @@ function PhysicalCount({
                 <strong>
                   {difference === null
                     ? "—"
-                    : `${
-                        difference > 0 ? "+" : ""
-                      }${formatDecimal(difference)} ${item.unit}`}
+                    : difference < 0
+                      ? `Faltan ${formatDecimal(Math.abs(difference))} ${
+                          item.unit
+                        }`
+                      : difference > 0
+                        ? `Sobran ${formatDecimal(difference)} ${item.unit}`
+                        : `Sin diferencia · ${formatDecimal(0)} ${item.unit}`}
                 </strong>
               </div>
             </div>
@@ -5646,6 +6061,12 @@ function PurchaseModal({
   })
   const [invoice, setInvoice] = useState("")
   const [submitted, setSubmitted] = useState(false)
+  const [confirmExit, setConfirmExit] = useState(false)
+  const dirty =
+    form.category !== category ||
+    form.product !== (product ?? "") ||
+    Boolean(form.quantity || form.date || form.supplier || invoice)
+  const attemptClose = () => (dirty ? setConfirmExit(true) : onClose())
   const submit = (event: FormEvent) => {
     event.preventDefault()
     setSubmitted(true)
@@ -5656,8 +6077,16 @@ function PurchaseModal({
       quantity: Number(form.quantity.replace(",", ".")),
     })
   }
+  if (confirmExit) {
+    return (
+      <DiscardChangesDialog
+        onDiscard={onClose}
+        onKeepEditing={() => setConfirmExit(false)}
+      />
+    )
+  }
   return (
-    <DialogShell title="Registrar compra" onClose={onClose} size="wide">
+    <DialogShell title="Registrar compra" onClose={attemptClose} size="wide">
       <form onSubmit={submit}>
         <div className="form-content purchase-form">
           <div className="form-grid">
@@ -5767,7 +6196,11 @@ function PurchaseModal({
           </div>
         </div>
         <div className="modal-actions large-actions">
-          <button type="button" className="button secondary" onClick={onClose}>
+          <button
+            type="button"
+            className="button secondary"
+            onClick={attemptClose}
+          >
             Cancelar
           </button>
           <button className="button primary" type="submit">
@@ -5792,14 +6225,43 @@ function InventoryPage({
 }) {
   const [category, setCategory] = useState<InventoryCategory>("Alimentos")
   const [view, setView] = useState<InventoryView>("Inventario")
-  const [foods, setFoods] = useState(initialFoodItems)
-  const [medicines, setMedicines] = useState(initialMedicineItems)
+  const [foods, setFoods] = useState(() =>
+    farmName === "Granja La Esperanza"
+      ? initialFoodItems
+      : initialFoodItems.map((item, index) => ({
+          ...item,
+          id: item.id + (farmName === "Granja El Porvenir" ? 20 : 40),
+          stock:
+            farmName === "Granja El Porvenir"
+              ? item.stock * 0.65
+              : item.stock * 0.82,
+          lot: `${
+            farmName === "Granja El Porvenir" ? "PV" : "SJ"
+          }-${250 + index}`,
+        })),
+  )
+  const [medicines, setMedicines] = useState(() =>
+    farmName === "Granja La Esperanza"
+      ? initialMedicineItems
+      : initialMedicineItems.map((item) => ({
+          ...item,
+          id: item.id + (farmName === "Granja El Porvenir" ? 20 : 40),
+          stock:
+            farmName === "Granja El Porvenir"
+              ? Math.max(1, item.stock - 1)
+              : item.stock + 2,
+        })),
+  )
   const [query, setQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("Todos")
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
   const [purchase, setPurchase] = useState<{
     category: InventoryCategory
     product?: string
+  } | null>(null)
+  const [pendingRemoval, setPendingRemoval] = useState<{
+    category: InventoryCategory
+    product: string
   } | null>(null)
 
   const filteredFoods = foods.filter(
@@ -5837,22 +6299,10 @@ function InventoryPage({
                 product: item.product,
               })
             } else {
-              setMedicines(
-                medicines.map((medicine) =>
-                  medicine.name === item.product
-                    ? {
-                        ...medicine,
-                        stock: 0,
-                        sealed: 0,
-                        open: 0,
-                        openLevel: 0,
-                        empty: medicine.empty + medicine.sealed + medicine.open,
-                      }
-                    : medicine,
-                ),
-              )
-              setAttention(attention.filter((alert) => alert.id !== item.id))
-              onNotice(`${item.product} dado de baja`)
+              setPendingRemoval({
+                category: item.category,
+                product: item.product,
+              })
             }
           }}
         />
@@ -5937,8 +6387,10 @@ function InventoryPage({
                   onView={setView}
                   onNotice={onNotice}
                   onRemove={(item) => {
-                    setFoods(foods.filter((food) => food.id !== item.id))
-                    onNotice(`${item.name} dado de baja`)
+                    setPendingRemoval({
+                      category: "Alimentos",
+                      product: item.name,
+                    })
                   }}
                 />
               ) : (
@@ -5949,10 +6401,10 @@ function InventoryPage({
                   onView={setView}
                   onNotice={onNotice}
                   onRemove={(item) => {
-                    setMedicines(
-                      medicines.filter((medicine) => medicine.id !== item.id),
-                    )
-                    onNotice(`${item.name} dado de baja`)
+                    setPendingRemoval({
+                      category: "Medicamentos",
+                      product: item.name,
+                    })
                   }}
                 />
               ))}
@@ -5996,7 +6448,7 @@ function InventoryPage({
                         minimum: 0,
                         unit: "kg",
                         lot: "Sin lote",
-                        lastPurchase: new Date().toLocaleDateString("es-CO"),
+                        lastPurchase: formatDate(new Date()),
                       },
                     ],
               )
@@ -6039,168 +6491,1180 @@ function InventoryPage({
           }}
         />
       )}
+      {pendingRemoval && (
+        <RemoveInventoryDialog
+          product={pendingRemoval.product}
+          onClose={() => setPendingRemoval(null)}
+          onConfirm={() => {
+            if (pendingRemoval.category === "Alimentos") {
+              setFoods(
+                foods.filter((item) => item.name !== pendingRemoval.product),
+              )
+            } else {
+              setMedicines(
+                medicines.filter(
+                  (item) => item.name !== pendingRemoval.product,
+                ),
+              )
+            }
+            setAttention(
+              attention.filter(
+                (item) => item.product !== pendingRemoval.product,
+              ),
+            )
+            onNotice(`${pendingRemoval.product} dado de baja`)
+            setPendingRemoval(null)
+          }}
+        />
+      )}
     </>
   )
 }
 
-function PorciTablePage({ farmName }: { farmName: string }) {
+type PediluvioStatus = "Hecho" | "Pendiente"
+type PediluvioRecord = {
+  id: number
+  date: string
+  area: string
+  product: string
+  productQuantity: string
+  waterQuantity: string
+  time: string
+  responsible: string
+  status: PediluvioStatus
+}
+
+const initialPediluvioRecords: PediluvioRecord[] = [
+  {
+    id: 1,
+    date: "16/03/2026",
+    area: "Precebo 1",
+    product: "Amonio cuaternario",
+    productQuantity: "120",
+    waterQuantity: "20",
+    time: "06:30",
+    responsible: "Carlos Ríos",
+    status: "Hecho",
+  },
+  {
+    id: 2,
+    date: "16/03/2026",
+    area: "Levante 2",
+    product: "Glutaraldehído",
+    productQuantity: "100",
+    waterQuantity: "20",
+    time: "06:45",
+    responsible: "Lina Gómez",
+    status: "Hecho",
+  },
+  {
+    id: 3,
+    date: "16/03/2026",
+    area: "Gestación",
+    product: "Amonio cuaternario",
+    productQuantity: "150",
+    waterQuantity: "25",
+    time: "07:00",
+    responsible: "Andrés Mejía",
+    status: "Hecho",
+  },
+  {
+    id: 4,
+    date: "16/03/2026",
+    area: "Maternidad",
+    product: "Peróxido",
+    productQuantity: "80",
+    waterQuantity: "15",
+    time: "07:15",
+    responsible: "Sara Pérez",
+    status: "Pendiente",
+  },
+  {
+    id: 5,
+    date: "15/03/2026",
+    area: "Precebo 2",
+    product: "Amonio cuaternario",
+    productQuantity: "120",
+    waterQuantity: "20",
+    time: "06:35",
+    responsible: "Carlos Ríos",
+    status: "Hecho",
+  },
+  {
+    id: 6,
+    date: "15/03/2026",
+    area: "Levante 1",
+    product: "Glutaraldehído",
+    productQuantity: "100",
+    waterQuantity: "20",
+    time: "06:50",
+    responsible: "Lina Gómez",
+    status: "Hecho",
+  },
+  {
+    id: 7,
+    date: "15/03/2026",
+    area: "Reemplazos",
+    product: "Peróxido",
+    productQuantity: "90",
+    waterQuantity: "18",
+    time: "07:05",
+    responsible: "Andrés Mejía",
+    status: "Hecho",
+  },
+  {
+    id: 8,
+    date: "15/03/2026",
+    area: "Cuarentena",
+    product: "Amonio cuaternario",
+    productQuantity: "110",
+    waterQuantity: "20",
+    time: "07:20",
+    responsible: "Sara Pérez",
+    status: "Pendiente",
+  },
+]
+
+function EditableTableCell({
+  value,
+  onSave,
+  className = "",
+  suffix = "",
+}: {
+  value: string
+  onSave: (value: string) => void
+  className?: string
+  suffix?: string
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(value)
+  const save = () => {
+    onSave(draft.trim() || value)
+    setEditing(false)
+  }
   return (
-    <div className="connected-tool-page">
-      <header className="page-header connected-page-header">
-        <div>
-          <div className="breadcrumbs">
-            <span>Inicio</span>
-            <Icon name="chevron" size={14} />
-            <span>{farmName}</span>
-            <Icon name="chevron" size={14} />
-            <strong>PorciTabla</strong>
+    <td
+      className={`editable-cell ${className}`}
+      onClick={() => setEditing(true)}
+    >
+      {editing ? (
+        <input
+          autoFocus
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={save}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") save()
+            if (event.key === "Escape") {
+              setDraft(value)
+              setEditing(false)
+            }
+          }}
+        />
+      ) : (
+        <>
+          <span>
+            {value}
+            {suffix}
+          </span>
+          <Icon name="edit" size={14} />
+        </>
+      )}
+    </td>
+  )
+}
+
+type PediluvioDraft = Omit<PediluvioRecord, "id" | "status">
+
+function NewPediluvioPanel({
+  onClose,
+  onSave,
+}: {
+  onClose: () => void
+  onSave: (record: PediluvioRecord) => void
+}) {
+  const [form, setForm] = useState<PediluvioDraft>({
+    date: "",
+    area: "",
+    product: "",
+    productQuantity: "",
+    waterQuantity: "",
+    time: "",
+    responsible: "",
+  })
+  const [submitted, setSubmitted] = useState(false)
+  const [confirmExit, setConfirmExit] = useState(false)
+  const dirty = Object.values(form).some(Boolean)
+  const attemptClose = () => (dirty ? setConfirmExit(true) : onClose())
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    setSubmitted(true)
+    if (!form.date || !form.area || !form.product || !form.responsible) return
+    onSave({
+      id: Date.now(),
+      ...form,
+      date: formatDate(new Date(`${form.date}T12:00:00`)),
+      status: "Hecho",
+    })
+  }
+  if (confirmExit) {
+    return (
+      <DiscardChangesDialog
+        onDiscard={onClose}
+        onKeepEditing={() => setConfirmExit(false)}
+      />
+    )
+  }
+  return (
+    <div
+      className="side-panel-backdrop"
+      onMouseDown={(event) =>
+        event.target === event.currentTarget && attemptClose()
+      }
+    >
+      <aside
+        className="sow-panel porci-form-panel"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="panel-heading">
+          <div>
+            <span>Control de pediluvios</span>
+            <h2>Nuevo registro</h2>
           </div>
-          <h1>PorciTabla</h1>
-          <p>Consulta consolidada de indicadores productivos</p>
+          <button
+            className="icon-button"
+            aria-label="Cerrar"
+            onClick={attemptClose}
+          >
+            <Icon name="x" size={20} />
+          </button>
         </div>
-      </header>
-      <div className="connected-toolbar">
-        <label className="search-field">
-          <Icon name="search" size={17} />
-          <input placeholder="Buscar lote o indicador" />
-        </label>
-        <div className="view-toggle">
-          <button className="active">Mes actual</button>
-          <button>Últimos 90 días</button>
-        </div>
-      </div>
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Ciclo</th>
-              <th>Lote</th>
-              <th>Animales</th>
-              <th>Peso promedio (kg)</th>
-              <th>Mortalidad</th>
-              <th>GPD (g/día)</th>
-              <th>Estado</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Precebo</td>
-              <td>
-                <strong>PR-2026-11</strong>
-              </td>
-              <td>118 / 120</td>
-              <td>18,4</td>
-              <td className="mortality-ok">1,7 % · meta 2,5 %</td>
-              <td>468</td>
-              <td>
-                <span className="status positive">Activo</span>
-              </td>
-            </tr>
-            <tr>
-              <td>Levante</td>
-              <td>
-                <strong>LV-2026-08</strong>
-              </td>
-              <td>99 / 100</td>
-              <td>54,8</td>
-              <td className="mortality-ok">1,0 % · meta 2,0 %</td>
-              <td>714</td>
-              <td>
-                <span className="status positive">Activo</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+        <form onSubmit={submit} className="panel-form">
+          <div className="panel-body">
+            <div className="form-grid">
+              <label
+                className={`field ${
+                  submitted && !form.date ? "has-error" : ""
+                }`}
+              >
+                <span>
+                  Fecha <em>* obligatorio</em>
+                </span>
+                <input
+                  type="date"
+                  lang="es-CO"
+                  value={form.date}
+                  onChange={(event) =>
+                    setForm({ ...form, date: event.target.value })
+                  }
+                />
+              </label>
+              <label
+                className={`field ${
+                  submitted && !form.time ? "has-error" : ""
+                }`}
+              >
+                <span>Hora</span>
+                <input
+                  type="time"
+                  value={form.time}
+                  onChange={(event) =>
+                    setForm({ ...form, time: event.target.value })
+                  }
+                />
+              </label>
+            </div>
+            <label
+              className={`field ${submitted && !form.area ? "has-error" : ""}`}
+            >
+              <span>
+                Área <em>* obligatorio</em>
+              </span>
+              <input
+                value={form.area}
+                onChange={(event) =>
+                  setForm({ ...form, area: event.target.value })
+                }
+                placeholder="Ej. Precebo 1"
+              />
+            </label>
+            <label
+              className={`field ${
+                submitted && !form.product ? "has-error" : ""
+              }`}
+            >
+              <span>
+                Producto <em>* obligatorio</em>
+              </span>
+              <input
+                value={form.product}
+                onChange={(event) =>
+                  setForm({ ...form, product: event.target.value })
+                }
+                placeholder="Nombre del desinfectante"
+              />
+            </label>
+            <div className="form-grid">
+              <label className="field">
+                <span>Cantidad de producto (ml)</span>
+                <input
+                  inputMode="decimal"
+                  value={form.productQuantity}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      productQuantity: event.target.value.replace(
+                        /[^\d,.]/g,
+                        "",
+                      ),
+                    })
+                  }
+                  placeholder="Ej. 120"
+                />
+              </label>
+              <label className="field">
+                <span>Cantidad de agua (L)</span>
+                <input
+                  inputMode="decimal"
+                  value={form.waterQuantity}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      waterQuantity: event.target.value.replace(/[^\d,.]/g, ""),
+                    })
+                  }
+                  placeholder="Ej. 20"
+                />
+              </label>
+            </div>
+            <label
+              className={`field ${
+                submitted && !form.responsible ? "has-error" : ""
+              }`}
+            >
+              <span>
+                Responsable <em>* obligatorio</em>
+              </span>
+              <input
+                value={form.responsible}
+                onChange={(event) =>
+                  setForm({ ...form, responsible: event.target.value })
+                }
+                placeholder="Nombre de quien realizó el control"
+              />
+            </label>
+          </div>
+          <div className="panel-actions">
+            <button
+              type="button"
+              className="button secondary"
+              onClick={attemptClose}
+            >
+              Cancelar
+            </button>
+            <button className="button primary" type="submit">
+              Guardar registro
+            </button>
+          </div>
+        </form>
+      </aside>
     </div>
   )
 }
 
-function DashboardsPage({ farmName }: { farmName: string }) {
+function PorciTablePage({ farmName }: { farmName: string }) {
+  const [selectedTable, setSelectedTable] = useState("Control de pediluvios")
+  const [records, setRecords] = useState(initialPediluvioRecords)
+  const [areaFilter, setAreaFilter] = useState("Todas")
+  const [statusFilter, setStatusFilter] = useState("Todos")
+  const [dateFilter, setDateFilter] = useState("")
+  const [filtersOpen, setFiltersOpen] = useState(true)
+  const [sortAscending, setSortAscending] = useState(false)
+  const [panelOpen, setPanelOpen] = useState(false)
+  const tableNames = [
+    "Control de pediluvios",
+    "Limpieza de corrales",
+    "Temperatura de salas",
+  ]
+  const updateRecord = (
+    id: number,
+    field: keyof PediluvioRecord,
+    value: string,
+  ) => {
+    setRecords(
+      records.map((record) =>
+        record.id === id ? { ...record, [field]: value } : record,
+      ),
+    )
+  }
+  const filtered = records.filter(
+    (record) =>
+      (areaFilter === "Todas" || record.area === areaFilter) &&
+      (statusFilter === "Todos" || record.status === statusFilter) &&
+      (!dateFilter ||
+        record.date.split("/").reverse().join("-") === dateFilter),
+  )
+  const visibleRecords = filtered.slice().sort((a, b) => {
+    const dateDifference =
+      new Date(a.date.split("/").reverse().join("-")).getTime() -
+      new Date(b.date.split("/").reverse().join("-")).getTime()
+    return sortAscending ? dateDifference : -dateDifference
+  })
   return (
-    <div className="connected-tool-page">
-      <header className="page-header connected-page-header">
+    <>
+      <div className="connected-tool-page porci-table-page">
+        <header className="page-header connected-page-header">
+          <div>
+            <div className="breadcrumbs">
+              <span>Inicio</span>
+              <Icon name="chevron" size={14} />
+              <span>{farmName}</span>
+              <Icon name="chevron" size={14} />
+              <strong>PorciTabla</strong>
+            </div>
+            <h1>PorciTabla · {farmName}</h1>
+            <p>Registros operativos de la granja</p>
+          </div>
+          <div className="header-actions">
+            <button
+              className="button primary"
+              onClick={() => setPanelOpen(true)}
+            >
+              <Icon name="plus" size={18} />
+              Nuevo registro
+            </button>
+          </div>
+        </header>
+        <div className="porci-workspace">
+          <aside className="porci-table-list">
+            <span>Tablas</span>
+            {tableNames.map((name) => (
+              <button
+                className={selectedTable === name ? "active" : ""}
+                onClick={() => setSelectedTable(name)}
+                key={name}
+              >
+                <Icon
+                  name={
+                    name === "Control de pediluvios"
+                      ? "droplet"
+                      : name === "Limpieza de corrales"
+                        ? "check"
+                        : "trend"
+                  }
+                  size={18}
+                />
+                <span>{name}</span>
+                <Icon name="chevron" size={15} />
+              </button>
+            ))}
+          </aside>
+          <section className="porci-table-content">
+            <div className="porci-table-title">
+              <div>
+                <h2>{selectedTable}</h2>
+                <p>
+                  {selectedTable === "Control de pediluvios"
+                    ? `${filtered.length} registros visibles`
+                    : "Tabla operativa"}
+                </p>
+              </div>
+              {selectedTable === "Control de pediluvios" && (
+                <div className="porci-table-tools">
+                  <button
+                    className={`icon-button ${filtersOpen ? "active" : ""}`}
+                    aria-label="Filtros"
+                    onClick={() => setFiltersOpen(!filtersOpen)}
+                  >
+                    <Icon name="filter" size={24} />
+                  </button>
+                  <button
+                    className="icon-button"
+                    aria-label={
+                      sortAscending
+                        ? "Ordenar de más reciente a más antiguo"
+                        : "Ordenar de más antiguo a más reciente"
+                    }
+                    onClick={() => setSortAscending(!sortAscending)}
+                  >
+                    <Icon name="sort" size={24} />
+                  </button>
+                </div>
+              )}
+            </div>
+            {selectedTable === "Control de pediluvios" && filtersOpen && (
+              <div className="porci-filters">
+                <span>Filtros</span>
+                <label>
+                  <b>Área</b>
+                  <select
+                    value={areaFilter}
+                    onChange={(event) => setAreaFilter(event.target.value)}
+                  >
+                    <option>Todas</option>
+                    {[...new Set(records.map((record) => record.area))].map(
+                      (area) => (
+                        <option key={area}>{area}</option>
+                      ),
+                    )}
+                  </select>
+                </label>
+                <label>
+                  <b>Estado</b>
+                  <select
+                    value={statusFilter}
+                    onChange={(event) => setStatusFilter(event.target.value)}
+                  >
+                    <option>Todos</option>
+                    <option>Hecho</option>
+                    <option>Pendiente</option>
+                  </select>
+                </label>
+                <label>
+                  <b>Fecha</b>
+                  <input
+                    type="date"
+                    lang="es-CO"
+                    value={dateFilter}
+                    onChange={(event) => setDateFilter(event.target.value)}
+                  />
+                </label>
+                <button
+                  className="text-button"
+                  onClick={() => {
+                    setAreaFilter("Todas")
+                    setStatusFilter("Todos")
+                    setDateFilter("")
+                  }}
+                >
+                  Limpiar
+                </button>
+              </div>
+            )}
+            {selectedTable === "Control de pediluvios" ? (
+              <div className="porci-scroll-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th className="sticky-date">Fecha</th>
+                      <th className="sticky-area">Área</th>
+                      <th>Producto</th>
+                      <th>Cantidad de producto (ml)</th>
+                      <th>Cantidad de agua (L)</th>
+                      <th>Hora</th>
+                      <th>Responsable</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleRecords.map((record) => (
+                      <tr key={record.id}>
+                        <EditableTableCell
+                          className="sticky-date"
+                          value={record.date}
+                          onSave={(value) =>
+                            updateRecord(record.id, "date", value)
+                          }
+                        />
+                        <EditableTableCell
+                          className="sticky-area"
+                          value={record.area}
+                          onSave={(value) =>
+                            updateRecord(record.id, "area", value)
+                          }
+                        />
+                        <EditableTableCell
+                          value={record.product}
+                          onSave={(value) =>
+                            updateRecord(record.id, "product", value)
+                          }
+                        />
+                        <EditableTableCell
+                          value={record.productQuantity}
+                          suffix=" ml"
+                          onSave={(value) =>
+                            updateRecord(record.id, "productQuantity", value)
+                          }
+                        />
+                        <EditableTableCell
+                          value={record.waterQuantity}
+                          suffix=" L"
+                          onSave={(value) =>
+                            updateRecord(record.id, "waterQuantity", value)
+                          }
+                        />
+                        <EditableTableCell
+                          value={record.time}
+                          onSave={(value) =>
+                            updateRecord(record.id, "time", value)
+                          }
+                        />
+                        <EditableTableCell
+                          value={record.responsible}
+                          onSave={(value) =>
+                            updateRecord(record.id, "responsible", value)
+                          }
+                        />
+                        <td>
+                          <button
+                            className={`status ${
+                              record.status === "Hecho" ? "positive" : "warning"
+                            }`}
+                            onClick={() =>
+                              updateRecord(
+                                record.id,
+                                "status",
+                                record.status === "Hecho"
+                                  ? "Pendiente"
+                                  : "Hecho",
+                              )
+                            }
+                          >
+                            {record.status === "Hecho" && (
+                              <Icon name="check" size={14} />
+                            )}
+                            {record.status}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="porci-empty-table">
+                <Icon name="table" size={32} />
+                <h3>{selectedTable}</h3>
+                <p>Esta tabla está lista para recibir registros.</p>
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+      {panelOpen && (
+        <NewPediluvioPanel
+          onClose={() => setPanelOpen(false)}
+          onSave={(record) => {
+            setRecords([record, ...records])
+            setPanelOpen(false)
+          }}
+        />
+      )}
+    </>
+  )
+}
+
+type ReportRole = "Gerencia" | "Veterinario" | "Producción"
+type ReportSection = "Indicadores principales" | "Mortalidad por lote" | "Partos por mes"
+
+type ChartPoint = {
+  label: string
+  value: number
+}
+
+function MortalityBarChart({ data }: { data: ChartPoint[] }) {
+  const maximum = Math.max(2.5, ...data.map((point) => point.value))
+  const axisMaximum = Math.ceil(maximum * 1.2 * 10) / 10
+  const chartTop = 24
+  const chartBottom = 210
+  const chartHeight = chartBottom - chartTop
+  const targetY = chartBottom - (2.5 / axisMaximum) * chartHeight
+  return (
+    <svg
+      className="report-chart"
+      viewBox="0 0 680 260"
+      role="img"
+      aria-label="Mortalidad por lote"
+    >
+      {[0, axisMaximum / 2, axisMaximum].map((tick) => {
+        const y = chartBottom - (tick / axisMaximum) * chartHeight
+        return (
+          <g key={tick}>
+            <line x1="52" y1={y} x2="660" y2={y} className="chart-grid-line" />
+            <text x="43" y={y + 4} textAnchor="end">
+              {formatDecimal(tick)} %
+            </text>
+          </g>
+        )
+      })}
+      <line
+        x1="52"
+        y1={targetY}
+        x2="660"
+        y2={targetY}
+        className="chart-target-line"
+      />
+      <text x="655" y={targetY - 7} textAnchor="end" className="target-label">
+        Meta 2,5 %
+      </text>
+      {data.map((point, index) => {
+        const x = 78 + index * 112
+        const height = (point.value / axisMaximum) * chartHeight
+        const y = chartBottom - height
+        const colorClass =
+          point.value > 2.5
+            ? "bar-danger"
+            : point.value >= 2.2
+              ? "bar-warning"
+              : "bar-positive"
+        return (
+          <g key={point.label}>
+            <rect
+              x={x}
+              y={y}
+              width="54"
+              height={height}
+              rx="6"
+              className={colorClass}
+            />
+            <text
+              x={x + 27}
+              y={y - 8}
+              textAnchor="middle"
+              className="bar-value"
+            >
+              {formatDecimal(point.value)} %
+            </text>
+            <text x={x + 27} y="235" textAnchor="middle">
+              {point.label}
+            </text>
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
+function BirthsLineChart({ data }: { data: ChartPoint[] }) {
+  const maximum = Math.max(...data.map((point) => point.value))
+  const axisMaximum = Math.ceil((maximum + 2) / 5) * 5
+  const chartTop = 24
+  const chartBottom = 210
+  const chartHeight = chartBottom - chartTop
+  const points = data
+    .map((point, index) => {
+      const x = 72 + index * (560 / Math.max(1, data.length - 1))
+      const y = chartBottom - (point.value / axisMaximum) * chartHeight
+      return `${x},${y}`
+    })
+    .join(" ")
+  return (
+    <svg
+      className="report-chart"
+      viewBox="0 0 680 260"
+      role="img"
+      aria-label="Partos por mes"
+    >
+      {[0, axisMaximum / 2, axisMaximum].map((tick) => {
+        const y = chartBottom - (tick / axisMaximum) * chartHeight
+        return (
+          <g key={tick}>
+            <line x1="52" y1={y} x2="660" y2={y} className="chart-grid-line" />
+            <text x="43" y={y + 4} textAnchor="end">
+              {Math.round(tick)}
+            </text>
+          </g>
+        )
+      })}
+      <polyline points={points} className="birth-line" />
+      {data.map((point, index) => {
+        const x = 72 + index * (560 / Math.max(1, data.length - 1))
+        const y = chartBottom - (point.value / axisMaximum) * chartHeight
+        return (
+          <g key={point.label}>
+            <circle cx={x} cy={y} r="5" className="birth-point" />
+            <text x={x} y={y - 11} textAnchor="middle" className="bar-value">
+              {point.value}
+            </text>
+            <text x={x} y="235" textAnchor="middle">
+              {point.label}
+            </text>
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
+function ReportTemplateCard({
+  role,
+  icon,
+  description,
+  accent,
+  onView,
+}: {
+  role: ReportRole
+  icon: IconName
+  description: string
+  accent: string
+  onView: () => void
+}) {
+  return (
+    <article className="report-template-card">
+      <div className="template-preview">
+        <div className="template-preview-top">
+          <span style={{ background: accent }}>
+            <Icon name={icon} size={20} />
+          </span>
+          <div>
+            <b />
+            <i />
+          </div>
+        </div>
+        <div className="preview-kpis">
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="preview-chart">
+          {[45, 72, 58, 84, 65].map((height, index) => (
+            <i
+              key={index}
+              style={{ height: `${height}%`, background: accent }}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="template-copy">
+        <div>
+          <span className="template-role-icon" style={{ background: accent }}>
+            <Icon name={icon} size={19} />
+          </span>
+          <div>
+            <h2>Informe de {role}</h2>
+            <p>{description}</p>
+          </div>
+        </div>
+        <button className="button secondary" onClick={onView}>
+          Ver informe
+          <Icon name="arrow" size={16} />
+        </button>
+      </div>
+    </article>
+  )
+}
+
+function DashboardsPage({
+  farmName,
+  onNotice,
+}: {
+  farmName: string
+  onNotice: (text: string) => void
+}) {
+  const today = new Date().toISOString().slice(0, 10)
+  const [role, setRole] = useState<ReportRole | null>(null)
+  const [editingReport, setEditingReport] = useState(false)
+  const [sectionsByRole, setSectionsByRole] =
+    useState<Record<ReportRole, ReportSection[]>>({
+      Gerencia: [
+        "Indicadores principales",
+        "Mortalidad por lote",
+        "Partos por mes",
+      ],
+      Veterinario: ["Indicadores principales", "Mortalidad por lote"],
+      Producción: ["Indicadores principales", "Partos por mes"],
+    })
+  const [startDate, setStartDate] = useState(`${today.slice(0, 4)}-01-01`)
+  const [endDate, setEndDate] = useState(today)
+  const reportSections: {
+    name: ReportSection
+    icon: IconName
+    description: string
+  }[] = [
+    {
+      name: "Indicadores principales",
+      icon: "trend",
+      description: "Resultados clave y avance frente a las metas.",
+    },
+    {
+      name: "Mortalidad por lote",
+      icon: "chart",
+      description: "Comparación de mortalidad por lote y meta.",
+    },
+    {
+      name: "Partos por mes",
+      icon: "calendar",
+      description: "Evolución mensual de los partos registrados.",
+    },
+  ]
+  const activeSections = role ? sectionsByRole[role] : []
+  const daysInPeriod = Math.max(
+    1,
+    Math.round(
+      (new Date(endDate).getTime() - new Date(startDate).getTime()) /
+        86_400_000,
+    ),
+  )
+  const periodAdjustment = (daysInPeriod % 7) / 10
+  const mortalityData: ChartPoint[] = [
+    { label: "PR-11", value: 1.7 + periodAdjustment / 5 },
+    { label: "PR-17", value: 2.4 + periodAdjustment / 4 },
+    { label: "LV-08", value: 1 + periodAdjustment / 6 },
+    { label: "LV-09", value: 2.8 + periodAdjustment / 3 },
+    { label: "PR-15", value: 2.1 + periodAdjustment / 5 },
+  ]
+  const birthsData: ChartPoint[] = [
+    { label: "Ene", value: 16 + Math.round(periodAdjustment) },
+    { label: "Feb", value: 19 },
+    { label: "Mar", value: 14 + Math.round(periodAdjustment * 2) },
+    { label: "Abr", value: 22 },
+    { label: "May", value: 20 },
+    { label: "Jun", value: 24 + Math.round(periodAdjustment) },
+  ]
+
+  if (!role) {
+    return (
+      <div className="connected-tool-page reports-page">
+        <header className="page-header connected-page-header">
+          <div>
+            <div className="breadcrumbs">
+              <span>Inicio</span>
+              <Icon name="chevron" size={14} />
+              <span>{farmName}</span>
+              <Icon name="chevron" size={14} />
+              <strong>Tableros</strong>
+            </div>
+            <h1>Tableros · {farmName}</h1>
+            <p>Elige una plantilla de informe según tu rol</p>
+          </div>
+        </header>
+        <div className="report-templates">
+          <ReportTemplateCard
+            role="Gerencia"
+            icon="chart"
+            description="Rentabilidad, producción y cumplimiento de metas."
+            accent="#DCE8D9"
+            onView={() => setRole("Gerencia")}
+          />
+          <ReportTemplateCard
+            role="Veterinario"
+            icon="syringe"
+            description="Mortalidad, sanidad y desempeño reproductivo."
+            accent="#DDEADB"
+            onView={() => setRole("Veterinario")}
+          />
+          <ReportTemplateCard
+            role="Producción"
+            icon="growth"
+            description="Lotes, pesos, conversión y movimientos."
+            accent="#F9E4D7"
+            onView={() => setRole("Producción")}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="connected-tool-page report-view">
+      <header className="report-view-header">
         <div>
           <div className="breadcrumbs">
-            <span>Inicio</span>
+            <button
+              onClick={() => {
+                setEditingReport(false)
+                setRole(null)
+              }}
+            >
+              Tableros
+            </button>
             <Icon name="chevron" size={14} />
-            <span>{farmName}</span>
-            <Icon name="chevron" size={14} />
-            <strong>Tableros</strong>
+            <strong>Informe de {role}</strong>
           </div>
-          <h1>Tableros</h1>
-          <p>Indicadores clave de producción y gestión</p>
+          <div className="report-title-line">
+            <div>
+              <div>
+                <h1>Informe de {role}</h1>
+                <span className="status neutral">
+                  {editingReport ? "Edición" : "Solo lectura"}
+                </span>
+              </div>
+              <p>
+                {farmName} · {formatDate(new Date(`${startDate}T12:00:00`))} al{" "}
+                {formatDate(new Date(`${endDate}T12:00:00`))}
+              </p>
+            </div>
+            <div className="header-actions">
+              <button
+                className="button secondary"
+                onClick={() => setEditingReport(!editingReport)}
+              >
+                <Icon name="edit" size={17} />
+                {editingReport ? "Terminar edición" : "Editar"}
+              </button>
+              <button
+                className="button primary"
+                onClick={() => onNotice("PDF preparado para exportar")}
+              >
+                <Icon name="download" size={17} />
+                Exportar PDF
+              </button>
+            </div>
+          </div>
         </div>
       </header>
-      <div className="dashboard-kpis">
+      <div className="report-period">
         <div>
-          <span>Animales activos</span>
-          <strong>2.762</strong>
-          <p>Todos los ciclos</p>
-        </div>
-        <div>
-          <span>Mortalidad general</span>
-          <strong>1,8 %</strong>
-          <p className="mortality-ok">Dentro de la meta</p>
-        </div>
-        <div>
-          <span>Lotes activos</span>
-          <strong>18</strong>
-          <p>Precebo y Levante</p>
-        </div>
-      </div>
-      <div className="dashboard-grid">
-        <section className="records-card">
-          <div className="records-heading">
-            <div>
-              <h2>Animales por ciclo</h2>
-              <p>Distribución actual</p>
-            </div>
+          <Icon name="calendar" size={18} />
+          <div>
+            <strong>Período del informe</strong>
+            <span>Los indicadores y gráficas se actualizan al cambiarlo.</span>
           </div>
-          <div className="simple-bars">
-            <div>
-              <span>Plantel reproductivo</span>
-              <b style={{ width: "34%" }} />
-              <strong>26</strong>
-            </div>
-            <div>
-              <span>Precebo</span>
-              <b style={{ width: "72%" }} />
-              <strong>1.248</strong>
-            </div>
-            <div>
-              <span>Levante</span>
-              <b style={{ width: "58%" }} />
-              <strong>894</strong>
-            </div>
+        </div>
+        <label>
+          <span>Desde</span>
+          <input
+            type="date"
+            lang="es-CO"
+            value={startDate}
+            max={endDate}
+            onChange={(event) => setStartDate(event.target.value)}
+          />
+        </label>
+        <label>
+          <span>Hasta</span>
+          <input
+            type="date"
+            lang="es-CO"
+            value={endDate}
+            min={startDate}
+            max={today}
+            onChange={(event) => setEndDate(event.target.value)}
+          />
+        </label>
+      </div>
+      {editingReport && (
+        <section className="report-section-editor">
+          <div>
+            <strong>Tableros del informe</strong>
+            <p>Elige las secciones que quieres incluir.</p>
+          </div>
+          <div className="report-section-options">
+            {reportSections.map((section) => {
+              const checked = activeSections.includes(section.name)
+              return (
+                <label key={section.name}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() =>
+                      setSectionsByRole({
+                        ...sectionsByRole,
+                        [role]: checked
+                          ? activeSections.filter(
+                              (name) => name !== section.name,
+                            )
+                          : [...activeSections, section.name],
+                      })
+                    }
+                  />
+                  <span>
+                    <Icon name={section.icon} size={20} />
+                  </span>
+                  <div>
+                    <strong>{section.name}</strong>
+                    <p>{section.description}</p>
+                  </div>
+                </label>
+              )
+            })}
           </div>
         </section>
-        <section className="records-card">
-          <div className="records-heading">
-            <div>
-              <h2>Alertas por área</h2>
-              <p>Requieren seguimiento</p>
-            </div>
+      )}
+      {!activeSections.length ? (
+        <section className="report-empty-sections">
+          <span>
+            <Icon name="chart" size={25} />
+          </span>
+          <div>
+            <h2>Este informe todavía no tiene tableros</h2>
+            <p>Activa al menos un tablero para ver el informe.</p>
           </div>
-          <div className="dashboard-alert-list">
-            <div>
-              <span className="alert-dot urgency-1" />
-              <span>Inventario</span>
-              <strong>3</strong>
-            </div>
-            <div>
-              <span className="alert-dot urgency-2" />
-              <span>Plantel reproductivo</span>
-              <strong>2</strong>
-            </div>
-            <div>
-              <span className="alert-dot urgency-3" />
-              <span>Precebo</span>
-              <strong>1</strong>
-            </div>
-          </div>
+          <button
+            className="button secondary"
+            onClick={() => setEditingReport(true)}
+          >
+            <Icon name="edit" size={17} />
+            Editar tableros
+          </button>
         </section>
-      </div>
+      ) : (
+        <>
+          {activeSections.includes("Indicadores principales") && (
+            <div className="report-kpis">
+              <div className="kpi-danger">
+                <span>Tasa de parición</span>
+                <strong>
+                  63,6 % <small>· meta 90 %</small>
+                </strong>
+                <p>Requiere atención</p>
+              </div>
+              <div className="kpi-positive">
+                <span>Mortalidad</span>
+                <strong>
+                  1,8 % <small>· meta 2,5 %</small>
+                </strong>
+                <p>Meta cumplida</p>
+              </div>
+              <div className="kpi-positive">
+                <span>Lechones destetados</span>
+                <strong>
+                  11,9 <small>· meta 11,5</small>
+                </strong>
+                <p>Meta superada</p>
+              </div>
+              <div className="kpi-warning">
+                <span>Conversión alimenticia</span>
+                <strong>
+                  1,64 <small>· meta 1,60</small>
+                </strong>
+                <p>Cerca de la meta</p>
+              </div>
+            </div>
+          )}
+          <div
+            className={`report-charts ${
+              activeSections.filter(
+                (section) => section !== "Indicadores principales",
+              ).length === 1
+                ? "single"
+                : ""
+            }`}
+          >
+            {activeSections.includes("Mortalidad por lote") && (
+              <section className="records-card">
+                <div className="records-heading report-chart-heading">
+                  <div>
+                    <h2>Mortalidad por lote</h2>
+                    <p>Porcentaje de mortalidad frente a la meta</p>
+                  </div>
+                  <div className="chart-legend" aria-label="Leyenda">
+                    <span className="legend-positive">Cumple</span>
+                    <span className="legend-warning">Cerca</span>
+                    <span className="legend-danger">No cumple</span>
+                  </div>
+                </div>
+                <MortalityBarChart data={mortalityData} />
+              </section>
+            )}
+            {activeSections.includes("Partos por mes") && (
+              <section className="records-card">
+                <div className="records-heading report-chart-heading">
+                  <div>
+                    <h2>Partos por mes</h2>
+                    <p>Evolución durante el período seleccionado</p>
+                  </div>
+                  <div className="chart-legend" aria-label="Leyenda">
+                    <span className="legend-births">Partos registrados</span>
+                  </div>
+                </div>
+                <BirthsLineChart data={birthsData} />
+              </section>
+            )}
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -6216,9 +7680,19 @@ export default function App() {
   const [editing, setEditing] = useState<Farm | null>(null)
   const [deleting, setDeleting] = useState<Farm | null>(null)
   const [toast, setToast] = useState("")
-  const [inventoryAttention, setInventoryAttention] = useState(
-    initialInventoryAttention,
-  )
+  const [inventoryAttentionByFarm, setInventoryAttentionByFarm] =
+    useState<Record<number, InventoryAttention[]>>({
+      1: initialInventoryAttention,
+      2: [],
+      3: [
+        {
+          ...initialInventoryAttention[1],
+          id: 31,
+          product: "Oxitocina San José",
+          detail: "1 ítem disponible · mínimo 3",
+        },
+      ],
+    })
   const [page, setPage] =
     useState<"home" | "cycle" | "lot" | "breeding" | "reproducer" | "inventory" | "porciTable" | "dashboards">(
       "home",
@@ -6331,6 +7805,34 @@ export default function App() {
     setSelectedFarm(farm)
     navigate(tool)
   }
+  const changeFarm = (farm: Farm) => {
+    const currentCycle: Cycle | null =
+      page === "breeding"
+        ? "Plantel reproductivo"
+        : page === "reproducer"
+          ? "Reproductor"
+          : page === "cycle" || page === "lot"
+            ? activeCycle
+            : null
+    if (page === "home") {
+      const firstCycle = farm.cycles[0]
+      if (firstCycle) openCycle(farm, firstCycle)
+      else setSelectedFarm(farm)
+      return
+    }
+    if (currentCycle && !farm.cycles.includes(currentCycle)) {
+      const firstCycle = farm.cycles[0]
+      if (firstCycle) openCycle(farm, firstCycle)
+      else {
+        setSelectedFarm(farm)
+        setPage("home")
+      }
+      return
+    }
+    setSelectedFarm(farm)
+    setSelectedLot(null)
+    if (page === "lot") setPage("cycle")
+  }
   const saveLot = (draft: LotDraft) => {
     const females = Number(draft.females) || 0
     const males = Number(draft.males) || 0
@@ -6339,6 +7841,7 @@ export default function App() {
     setLots([
       {
         id: Date.now(),
+        farmId: selectedFarm.id,
         cycle: activeCycle,
         code: draft.code.trim(),
         status: "Activo",
@@ -6366,10 +7869,13 @@ export default function App() {
     setToast("Granja eliminada")
   }
   const updateInventoryAttention = (items: InventoryAttention[]) => {
-    setInventoryAttention(items)
+    setInventoryAttentionByFarm((current) => ({
+      ...current,
+      [selectedFarm.id]: items,
+    }))
     setFarms((current) =>
       current.map((farm) =>
-        farm.name === "Granja La Esperanza"
+        farm.id === selectedFarm.id
           ? {
               ...farm,
               alerts: items.length,
@@ -6378,11 +7884,19 @@ export default function App() {
           : farm,
       ),
     )
+    setSelectedFarm((current) => ({
+      ...current,
+      alerts: items.length,
+      urgent: items[0]?.title ?? "Todo está al día",
+    }))
   }
 
   return (
     <div className="app-shell">
       <Sidebar
+        farms={farms}
+        selectedFarm={selectedFarm}
+        isHome={page === "home"}
         accountOpen={accountOpen}
         setAccountOpen={setAccountOpen}
         active={
@@ -6401,9 +7915,13 @@ export default function App() {
                       : activeCycle
         }
         onNavigate={navigate}
+        onSelectFarm={changeFarm}
         onLogout={() => setToast("Sesión cerrada")}
       />
       <MobileNavigation
+        farms={farms}
+        selectedFarm={selectedFarm}
+        isHome={page === "home"}
         open={mobileOpen}
         setOpen={setMobileOpen}
         active={
@@ -6422,6 +7940,7 @@ export default function App() {
                       : activeCycle
         }
         onNavigate={navigate}
+        onSelectFarm={changeFarm}
         onLogout={() => {
           setMobileOpen(false)
           setToast("Sesión cerrada")
@@ -6475,7 +7994,7 @@ export default function App() {
         ) : page === "cycle" ? (
           <LotsList
             cycle={activeCycle}
-            lots={lots}
+            lots={lots.filter((lot) => lot.farmId === selectedFarm.id)}
             loading={cycleLoading}
             onCreate={() => setLotModal(true)}
             onUpdate={(updated) =>
@@ -6495,20 +8014,29 @@ export default function App() {
             }}
           />
         ) : page === "breeding" ? (
-          <BreedingPage farmName={selectedFarm.name} onNotice={setToast} />
+          <BreedingPage
+            key={selectedFarm.id}
+            farmName={selectedFarm.name}
+            onNotice={setToast}
+          />
         ) : page === "reproducer" ? (
-          <ReproducerPage farmName={selectedFarm.name} onNotice={setToast} />
+          <ReproducerPage
+            key={selectedFarm.id}
+            farmName={selectedFarm.name}
+            onNotice={setToast}
+          />
         ) : page === "inventory" ? (
           <InventoryPage
+            key={selectedFarm.id}
             farmName={selectedFarm.name}
-            attention={inventoryAttention}
+            attention={inventoryAttentionByFarm[selectedFarm.id] ?? []}
             setAttention={updateInventoryAttention}
             onNotice={setToast}
           />
         ) : page === "porciTable" ? (
           <PorciTablePage farmName={selectedFarm.name} />
         ) : page === "dashboards" ? (
-          <DashboardsPage farmName={selectedFarm.name} />
+          <DashboardsPage farmName={selectedFarm.name} onNotice={setToast} />
         ) : selectedLot ? (
           <LotDetail
             lot={selectedLot}
@@ -6531,7 +8059,7 @@ export default function App() {
         ) : (
           <LotsList
             cycle={activeCycle}
-            lots={lots}
+            lots={lots.filter((lot) => lot.farmId === selectedFarm.id)}
             loading={false}
             onCreate={() => setLotModal(true)}
             onUpdate={() => {}}
@@ -6549,7 +8077,11 @@ export default function App() {
             setEditing(null)
           }}
           onSave={saveFarm}
-          onDelete={(farm) => setDeleting(farm)}
+          onDelete={(farm) => {
+            setModal(null)
+            setEditing(null)
+            setDeleting(farm)
+          }}
         />
       )}
       {deleting && (
