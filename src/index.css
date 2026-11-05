@@ -619,12 +619,20 @@ input::placeholder, textarea::placeholder { color: #6B7166; }
 .inventory-table { overflow: visible; box-shadow: none; }
 .inventory-table table { min-width: 900px; }
 .inventory-table td { vertical-align: middle; }
-.medicine-table table { min-width: 980px; }
+.food-table table, .medicine-table table { width: 100%; min-width: 0; table-layout: auto; }
+.food-table th:first-child, .food-table td:first-child,
+.medicine-table th:nth-child(2), .medicine-table td:nth-child(2) { width: 100%; white-space: normal; }
+.food-table th:nth-child(n+2):nth-child(-n+6), .food-table td:nth-child(n+2):nth-child(-n+6),
+.medicine-table th:nth-child(n+3):nth-child(-n+5), .medicine-table td:nth-child(n+3):nth-child(-n+5) { width: 1%; white-space: nowrap; }
+.medicine-table th:first-child, .medicine-table td:first-child { white-space: normal; overflow-wrap: anywhere; }
+.food-table th:last-child, .food-table td:last-child,
+.medicine-table th:last-child, .medicine-table td:last-child { position: sticky; right: 0; z-index: 1; width: 48px; min-width: 48px; max-width: 48px; padding-right: 7px; padding-left: 7px; background: white; }
+.food-table th:last-child, .medicine-table th:last-child { z-index: 2; background: var(--muted); }
 .row-actions-cell { position: relative; width: 48px; text-align: right !important; }
 .inventory-row-menu { top: 42px; right: 8px; text-align: left; }
-.container-summary { min-width: 280px; }
-.container-summary > span { color: var(--evergreen); font-size: 12px; font-weight: 600; white-space: nowrap; }
-.bottle-level { width: 150px; height: 6px; overflow: hidden; margin-top: 7px; border-radius: 999px; background: #e6e2dd; }
+.container-summary { min-width: 0; }
+.container-summary > span { display: block; color: var(--evergreen); font-size: 12px; font-weight: 600; line-height: 1.4; white-space: normal; }
+.bottle-level { width: min(150px, 100%); height: 6px; overflow: hidden; margin-top: 7px; border-radius: 999px; background: #e6e2dd; }
 .bottle-level > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,var(--sage),#8bb889); }
 .expiry-date { color: var(--evergreen); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .expiry-date.urgent { color: var(--danger); font-weight: 700; }

@@ -8289,7 +8289,7 @@ function FoodInventoryTable({
   onRemove: (item: FoodItem) => void
 }) {
   return (
-    <div className="table-wrap inventory-table">
+    <div className="table-wrap inventory-table food-table">
       <table>
         <thead>
           <tr>
@@ -8402,9 +8402,11 @@ function MedicineInventoryTable({
                 <td>
                   <div className="container-summary">
                     <span>
-                      {item.sealed} sellados · {item.open} abierto
+                      {item.sealed}{" "}
+                      {item.sealed === 1 ? "sellado" : "sellados"} ·{" "}
+                      {item.open} {item.open === 1 ? "abierto" : "abiertos"}
                       {item.open ? ` (${item.openLevel} % restante)` : ""} ·{" "}
-                      {item.empty} vacíos
+                      {item.empty} {item.empty === 1 ? "vacío" : "vacíos"}
                     </span>
                     {item.open > 0 && (
                       <div className="bottle-level">
