@@ -10714,7 +10714,7 @@ function DashboardsPage({
             <div className="breadcrumbs">
               <span>Inicio</span>
               <Icon name="chevron" size={14} />
-              <span>{farmName}</span>
+              <span>{isConsolidated ? "Consolidado" : scope}</span>
               <Icon name="chevron" size={14} />
               <strong>Tableros</strong>
             </div>
