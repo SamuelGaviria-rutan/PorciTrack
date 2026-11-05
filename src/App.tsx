@@ -1,4 +1,11 @@
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react"
+import {
+  FormEvent,
+  ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 
 type IconName = "home" | "sow" | "boar" | "piglet" | "growth" | "box" | "table" | "chart" | "calendar" | "settings" | "mic" | "plus" | "edit" | "pin" | "alert" | "pig" | "trend" | "chevron" | "logout" | "menu" | "x" | "check" | "trash" | "arrow" | "dots" | "list" | "grid" | "weight" | "clock" | "info" | "syringe" | "bell" | "download" | "search" | "heart" | "baby" | "droplet" | "filter" | "sort"
 
@@ -948,6 +955,7 @@ type HeaderProps = {
   cycle: ProductionCycle
   farmName: string
   onAdd: () => void
+  onConsolidated: () => void
   onCreateLot: () => void
   onVoice: () => void
 }
@@ -957,6 +965,7 @@ function Header({
   cycle,
   farmName,
   onAdd,
+  onConsolidated,
   onCreateLot,
   onVoice,
 }: HeaderProps) {
@@ -978,10 +987,14 @@ function Header({
         {page === "home" && <p>Resumen de tus granjas y operaciones</p>}
       </div>
       {page === "home" && (
-        <div className="header-actions">
+        <div className="header-actions home-header-actions">
           <button className="button secondary voice" onClick={onVoice}>
             <Icon name="mic" size={19} />
             Registro por voz
+          </button>
+          <button className="button secondary" onClick={onConsolidated}>
+            <Icon name="chart" size={19} />
+            Ver tableros consolidados
           </button>
           <button className="button primary" onClick={onAdd}>
             <Icon name="plus" size={19} />
@@ -9461,6 +9474,7 @@ function NewPediluvioPanel({
 
 function PorciTablePage({ farmName }: { farmName: string }) {
   const [selectedTable, setSelectedTable] = useState("Control de pediluvios")
+  const tableScrollRef = useRef<HTMLDivElement>(null)
   const [records, setRecords] = useState(initialPediluvioRecords)
   const [areaFilter, setAreaFilter] = useState("Todas")
   const [statusFilter, setStatusFilter] = useState("Todos")
@@ -9473,6 +9487,11 @@ function PorciTablePage({ farmName }: { farmName: string }) {
     "Limpieza de corrales",
     "Temperatura de salas",
   ]
+  useEffect(() => {
+    if (tableScrollRef.current) {
+      tableScrollRef.current.scrollLeft = 0
+    }
+  }, [selectedTable])
   const updateRecord = (
     id: number,
     field: keyof PediluvioRecord,
@@ -9628,7 +9647,7 @@ function PorciTablePage({ farmName }: { farmName: string }) {
               </div>
             )}
             {selectedTable === "Control de pediluvios" ? (
-              <div className="porci-scroll-table">
+              <div className="porci-scroll-table" ref={tableScrollRef}>
                 <table>
                   <thead>
                     <tr>
@@ -10317,6 +10336,86 @@ type ChartPoint = {
   value: number
 }
 
+const consolidatedReportScope = "Todas las granjas (consolidado)"
+
+type ReportData = {
+  farrowingRate: number
+  mortalityRate: number
+  weanedPiglets: number
+  feedConversion: number
+  mortality: ChartPoint[]
+  births: ChartPoint[]
+}
+
+const reportDataByFarm: Record<string, ReportData> = {
+  "Granja La Esperanza": {
+    farrowingRate: 63.6,
+    mortalityRate: 1.8,
+    weanedPiglets: 11.9,
+    feedConversion: 1.64,
+    mortality: [
+      { label: "ESP-11", value: 1.7 },
+      { label: "ESP-17", value: 2.4 },
+      { label: "ESP-08", value: 1 },
+      { label: "ESP-09", value: 2.8 },
+      { label: "ESP-15", value: 2.1 },
+    ],
+    births: [
+      { label: "Ene", value: 16 },
+      { label: "Feb", value: 19 },
+      { label: "Mar", value: 14 },
+      { label: "Abr", value: 22 },
+      { label: "May", value: 20 },
+      { label: "Jun", value: 24 },
+    ],
+  },
+  "Granja El Porvenir": {
+    farrowingRate: 74.2,
+    mortalityRate: 2.2,
+    weanedPiglets: 11.7,
+    feedConversion: 1.62,
+    mortality: [
+      { label: "POR-04", value: 2 },
+      { label: "POR-07", value: 2.2 },
+      { label: "POR-08", value: 1.7 },
+      { label: "POR-12", value: 2.5 },
+      { label: "POR-16", value: 1.9 },
+    ],
+    births: [
+      { label: "Ene", value: 14 },
+      { label: "Feb", value: 17 },
+      { label: "Mar", value: 16 },
+      { label: "Abr", value: 19 },
+      { label: "May", value: 21 },
+      { label: "Jun", value: 20 },
+    ],
+  },
+  "Granja San José": {
+    farrowingRate: 81,
+    mortalityRate: 1.6,
+    weanedPiglets: 12.1,
+    feedConversion: 1.63,
+    mortality: [
+      { label: "SJ-05", value: 1.5 },
+      { label: "SJ-06", value: 1.9 },
+      { label: "SJ-10", value: 1.2 },
+      { label: "SJ-13", value: 2 },
+      { label: "SJ-15", value: 1.8 },
+    ],
+    births: [
+      { label: "Ene", value: 18 },
+      { label: "Feb", value: 20 },
+      { label: "Mar", value: 19 },
+      { label: "Abr", value: 23 },
+      { label: "May", value: 22 },
+      { label: "Jun", value: 25 },
+    ],
+  },
+}
+
+const averageReportValue = (values: number[]) =>
+  values.reduce((sum, value) => sum + value, 0) / values.length
+
 function MortalityBarChart({ data }: { data: ChartPoint[] }) {
   const maximum = Math.max(2.5, ...data.map((point) => point.value))
   const axisMaximum = Math.ceil(maximum * 1.2 * 10) / 10
@@ -10500,14 +10599,15 @@ function ReportTemplateCard({
 }
 
 function DashboardsPage({
-  farmName,
+  initialScope,
   onNotice,
 }: {
-  farmName: string
+  initialScope: string
   onNotice: (text: string) => void
 }) {
   const today = new Date().toISOString().slice(0, 10)
   const [role, setRole] = useState<ReportRole | null>(null)
+  const [scope, setScope] = useState(initialScope)
   const [editingReport, setEditingReport] = useState(false)
   const [sectionsByRole, setSectionsByRole] =
     useState<Record<ReportRole, ReportSection[]>>({
@@ -10521,6 +10621,44 @@ function DashboardsPage({
     })
   const [startDate, setStartDate] = useState(`${today.slice(0, 4)}-01-01`)
   const [endDate, setEndDate] = useState(today)
+  const reportScopes = [
+    ...initialFarms.map((farm) => farm.name),
+    consolidatedReportScope,
+  ]
+  const isConsolidated = scope === consolidatedReportScope
+  const selectedReportData =
+    reportDataByFarm[scope] ?? reportDataByFarm[initialFarms[0].name]
+  const allReportData = Object.values(reportDataByFarm)
+  const reportData = isConsolidated
+    ? {
+        farrowingRate: averageReportValue(
+          allReportData.map((data) => data.farrowingRate),
+        ),
+        mortalityRate: averageReportValue(
+          allReportData.map((data) => data.mortalityRate),
+        ),
+        weanedPiglets: averageReportValue(
+          allReportData.map((data) => data.weanedPiglets),
+        ),
+        feedConversion: averageReportValue(
+          allReportData.map((data) => data.feedConversion),
+        ),
+        mortality: [
+          allReportData[0].mortality[0],
+          allReportData[0].mortality[1],
+          allReportData[1].mortality[2],
+          allReportData[2].mortality[3],
+          allReportData[2].mortality[4],
+        ],
+        births: allReportData[0].births.map((point, index) => ({
+          label: point.label,
+          value: allReportData.reduce(
+            (sum, data) => sum + data.births[index].value,
+            0,
+          ),
+        })),
+      }
+    : selectedReportData
   const reportSections: {
     name: ReportSection
     icon: IconName
@@ -10551,21 +10689,22 @@ function DashboardsPage({
     ),
   )
   const periodAdjustment = (daysInPeriod % 7) / 10
-  const mortalityData: ChartPoint[] = [
-    { label: "PR-11", value: 1.7 + periodAdjustment / 5 },
-    { label: "PR-17", value: 2.4 + periodAdjustment / 4 },
-    { label: "LV-08", value: 1 + periodAdjustment / 6 },
-    { label: "LV-09", value: 2.8 + periodAdjustment / 3 },
-    { label: "PR-15", value: 2.1 + periodAdjustment / 5 },
-  ]
-  const birthsData: ChartPoint[] = [
-    { label: "Ene", value: 16 + Math.round(periodAdjustment) },
-    { label: "Feb", value: 19 },
-    { label: "Mar", value: 14 + Math.round(periodAdjustment * 2) },
-    { label: "Abr", value: 22 },
-    { label: "May", value: 20 },
-    { label: "Jun", value: 24 + Math.round(periodAdjustment) },
-  ]
+  const mortalityData = reportData.mortality.map((point, index) => ({
+    ...point,
+    value: point.value + periodAdjustment / (index + 3),
+  }))
+  const birthsData = reportData.births.map((point, index) => ({
+    ...point,
+    value:
+      point.value +
+      (index % 3 === 0 ? Math.round(periodAdjustment * (index + 1)) : 0),
+  }))
+  const formattedPeriod = `${formatDate(
+    new Date(`${startDate}T12:00:00`),
+  )} al ${formatDate(new Date(`${endDate}T12:00:00`))}`
+  const reportSubtitle = isConsolidated
+    ? `Consolidado · ${initialFarms.length} granjas · ${formattedPeriod}`
+    : `${scope} · ${formattedPeriod}`
 
   if (!role) {
     return (
@@ -10579,7 +10718,7 @@ function DashboardsPage({
               <Icon name="chevron" size={14} />
               <strong>Tableros</strong>
             </div>
-            <h1>Tableros · {farmName}</h1>
+            <h1>Tableros · {isConsolidated ? "Consolidado" : scope}</h1>
             <p>Elige una plantilla de informe según tu rol</p>
           </div>
         </header>
@@ -10634,10 +10773,7 @@ function DashboardsPage({
                   {editingReport ? "Edición" : "Solo lectura"}
                 </span>
               </div>
-              <p>
-                {farmName} · {formatDate(new Date(`${startDate}T12:00:00`))} al{" "}
-                {formatDate(new Date(`${endDate}T12:00:00`))}
-              </p>
+              <p>{reportSubtitle}</p>
             </div>
             <div className="header-actions">
               <button
@@ -10658,6 +10794,26 @@ function DashboardsPage({
           </div>
         </div>
       </header>
+      <div className="report-scope">
+        <div>
+          <span>
+            <Icon name="home" size={18} />
+          </span>
+          <div>
+            <strong>Alcance del informe</strong>
+            <p>Consulta una granja o el consolidado general.</p>
+          </div>
+        </div>
+        <select
+          value={scope}
+          onChange={(event) => setScope(event.target.value)}
+          aria-label="Alcance del informe"
+        >
+          {reportScopes.map((reportScope) => (
+            <option key={reportScope}>{reportScope}</option>
+          ))}
+        </select>
+      </div>
       <div className="report-period">
         <div>
           <Icon name="calendar" size={18} />
@@ -10718,6 +10874,15 @@ function DashboardsPage({
                     <strong>{section.name}</strong>
                     <p>{section.description}</p>
                   </div>
+                  <div
+                    className={`report-section-toggle ${checked ? "included" : ""}`}
+                    aria-hidden="true"
+                  >
+                    <strong>{checked ? "Incluido" : "No incluido"}</strong>
+                    <span>
+                      <i />
+                    </span>
+                  </div>
                 </label>
               )
             })}
@@ -10748,28 +10913,32 @@ function DashboardsPage({
               <div className="kpi-danger">
                 <span>Tasa de parición</span>
                 <strong>
-                  63,6 % <small>· meta 90 %</small>
+                  {formatDecimal(reportData.farrowingRate)} %{" "}
+                  <small>· meta 90 %</small>
                 </strong>
                 <p>Requiere atención</p>
               </div>
               <div className="kpi-positive">
                 <span>Mortalidad</span>
                 <strong>
-                  1,8 % <small>· meta 2,5 %</small>
+                  {formatDecimal(reportData.mortalityRate)} %{" "}
+                  <small>· meta 2,5 %</small>
                 </strong>
                 <p>Meta cumplida</p>
               </div>
               <div className="kpi-positive">
                 <span>Lechones destetados</span>
                 <strong>
-                  11,9 <small>· meta 11,5</small>
+                  {formatDecimal(reportData.weanedPiglets)}{" "}
+                  <small>· meta 11,5</small>
                 </strong>
                 <p>Meta superada</p>
               </div>
               <div className="kpi-warning">
                 <span>Conversión alimenticia</span>
                 <strong>
-                  1,64 <small>· meta 1,60</small>
+                  {formatDecimal(reportData.feedConversion, 2)}{" "}
+                  <small>· meta 1,60</small>
                 </strong>
                 <p>Cerca de la meta</p>
               </div>
@@ -10850,6 +11019,7 @@ export default function App() {
       "home",
     )
   const [selectedFarm, setSelectedFarm] = useState<Farm>(initialFarms[0])
+  const [dashboardScope, setDashboardScope] = useState(initialFarms[0].name)
   const [activeCycle, setActiveCycle] = useState<ProductionCycle>("Precebo")
   const [selectedLot, setSelectedLot] = useState<Lot | null>(null)
   const [accountOpen, setAccountOpen] = useState(false)
@@ -10956,6 +11126,7 @@ export default function App() {
       setPage("porciTable")
       setSelectedLot(null)
     } else if (label === "Tableros") {
+      setDashboardScope(selectedFarm.name)
       setPage("dashboards")
       setSelectedLot(null)
     } else if (label === "Calendario") {
@@ -10975,6 +11146,12 @@ export default function App() {
   }
   const openTool = (farm: Farm, tool: string) => {
     setSelectedFarm(farm)
+    if (tool === "Tableros") {
+      setDashboardScope(farm.name)
+      setPage("dashboards")
+      setSelectedLot(null)
+      return
+    }
     navigate(tool)
   }
   const changeFarm = (farm: Farm) => {
@@ -11108,6 +11285,11 @@ export default function App() {
               setEditing(null)
               setModal("add")
             }}
+            onConsolidated={() => {
+              setDashboardScope(consolidatedReportScope)
+              setPage("dashboards")
+              window.scrollTo({ top: 0, behavior: "smooth" })
+            }}
             onCreateLot={() => setLotModal(true)}
             onVoice={() => setVoiceOpen(true)}
           />
@@ -11197,7 +11379,10 @@ export default function App() {
         ) : page === "porciTable" ? (
           <PorciTablePage farmName={selectedFarm.name} />
         ) : page === "dashboards" ? (
-          <DashboardsPage farmName={selectedFarm.name} onNotice={setToast} />
+          <DashboardsPage
+            initialScope={dashboardScope}
+            onNotice={setToast}
+          />
         ) : page === "calendar" ? (
           <CalendarPage farm={selectedFarm} onNotice={setToast} />
         ) : page === "settings" ? (
