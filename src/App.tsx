@@ -5126,6 +5126,41 @@ type Sow = {
   attention?: "overdue" | "vaccine"
 }
 
+type BreedingEventType = "Servicio y celo" | "Gestación" | "Parto y lactancia" | "Destete" | "Peso y condición corporal"
+
+type SowEvent = {
+  id: number
+  sowId: number
+  type: BreedingEventType
+  date: string
+  responsible: string
+  detail: string
+}
+
+type SowVaccine = {
+  id: number
+  name: string
+  date: string
+  overdue: boolean
+}
+
+type SowHealthChange = {
+  id: number
+  sowId: number
+  vaccineId: number
+  vaccineName: string
+  action: "Omitida" | "Aplazada"
+  previousDate: string
+  date: string
+  reason?: string
+}
+
+const initialSowVaccines: SowVaccine[] = [
+  { id: 1, name: "Parvovirus", date: "16/03/2026", overdue: true },
+  { id: 2, name: "Leptospira", date: "19/03/2026", overdue: false },
+  { id: 3, name: "Erisipela", date: "22/03/2026", overdue: false },
+]
+
 const sowStatuses: SowStatus[] = [
   "Gestación",
   "Lactancia",
@@ -5225,23 +5260,43 @@ type RegisterOption = {
 function RegisterMenu({
   sow,
   onClose,
-  onBirth,
+  onEvent,
   onHealth,
   onNotice,
 }: {
   sow: Sow | null
   onClose: () => void
-  onBirth: () => void
+  onEvent: (event: BreedingEventType) => void
   onHealth: () => void
   onNotice: (text: string) => void
 }) {
   const options: RegisterOption[] = [
-    { label: "Servicio y celo", icon: "heart" },
-    { label: "Gestación", icon: "calendar" },
-    { label: "Parto y lactancia", icon: "baby", action: onBirth },
-    { label: "Destete", icon: "piglet" },
+    {
+      label: "Servicio y celo",
+      icon: "heart",
+      action: () => onEvent("Servicio y celo"),
+    },
+    {
+      label: "Gestación",
+      icon: "calendar",
+      action: () => onEvent("Gestación"),
+    },
+    {
+      label: "Parto y lactancia",
+      icon: "baby",
+      action: () => onEvent("Parto y lactancia"),
+    },
+    {
+      label: "Destete",
+      icon: "piglet",
+      action: () => onEvent("Destete"),
+    },
     { label: "Sanidad", icon: "syringe", action: onHealth },
-    { label: "Peso y condición corporal", icon: "weight" },
+    {
+      label: "Peso y condición corporal",
+      icon: "weight",
+      action: () => onEvent("Peso y condición corporal"),
+    },
   ]
   return (
     <div className="register-menu">
@@ -5607,27 +5662,100 @@ function SowTable({
   )
 }
 
+const findSowByNumber = (sows: Sow[], value: string) => {
+  const normalized = value.trim()
+  const number =
+    normalized && !normalized.startsWith("#") ? `#${normalized}` : normalized
+  return sows.find((sow) => sow.number.toLowerCase() === number.toLowerCase())
+}
+
+function SowSearchField({
+  sows,
+  value,
+  onChange,
+  submitted,
+  listId,
+}: {
+  sows: Sow[]
+  value: string
+  onChange: (value: string) => void
+  submitted: boolean
+  listId: string
+}) {
+  const validSow = findSowByNumber(sows, value)
+  return (
+    <label
+      className={`field sow-search-field ${
+        submitted && !validSow ? "has-error" : ""
+      }`}
+    >
+      <span>
+        Cerda <em>* obligatorio</em>
+      </span>
+      <div className="sow-search-input">
+        <Icon name="search" size={18} />
+        <input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder="Buscar por número, ej. #1305"
+          list={listId}
+          autoFocus
+          autoComplete="off"
+          aria-invalid={submitted && !validSow}
+        />
+        <datalist id={listId}>
+          {sows.map((sow) => (
+            <option key={sow.id} value={sow.number}>
+              {sow.status} · Banda {sow.band}
+            </option>
+          ))}
+        </datalist>
+      </div>
+      {submitted && !validSow && (
+        <small>
+          <Icon name="alert" size={14} />
+          Busca y selecciona una cerda
+        </small>
+      )}
+    </label>
+  )
+}
+
 function BirthModal({
   sow,
+  sows,
   onClose,
   onSave,
 }: {
-  sow: Sow
+  sow: Sow | null
+  sows: Sow[]
   onClose: () => void
-  onSave: () => void
+  onSave: (event: SowEvent) => void
 }) {
+  const [sowNumber, setSowNumber] = useState(sow?.number ?? "")
   const [form, setForm] = useState({
-    date: "",
+    date: TODAY_ISO,
     alive: "",
     dead: "",
     mummified: "",
     bodyCondition: "",
-    responsible: "",
+    responsible: CONNECTED_USER,
     notes: "",
   })
   const [submitted, setSubmitted] = useState(false)
   const [confirmExit, setConfirmExit] = useState(false)
-  const dirty = Object.values(form).some(Boolean)
+  const selectedSow = sow ?? findSowByNumber(sows, sowNumber)
+  const dirty =
+    (!sow && Boolean(sowNumber)) ||
+    form.date !== TODAY_ISO ||
+    form.responsible !== CONNECTED_USER ||
+    [
+      form.alive,
+      form.dead,
+      form.mummified,
+      form.bodyCondition,
+      form.notes,
+    ].some(Boolean)
   const alive = Number(form.alive) || 0
   const dead = Number(form.dead) || 0
   const mummified = Number(form.mummified) || 0
@@ -5636,8 +5764,22 @@ function BirthModal({
   const submit = (event: FormEvent) => {
     event.preventDefault()
     setSubmitted(true)
-    if (!form.date || !form.alive || !form.bodyCondition) return
-    onSave()
+    if (
+      !selectedSow ||
+      !form.date ||
+      !form.alive ||
+      !form.bodyCondition ||
+      !form.responsible.trim()
+    )
+      return
+    onSave({
+      id: Date.now(),
+      sowId: selectedSow.id,
+      type: "Parto y lactancia",
+      date: form.date,
+      responsible: form.responsible.trim(),
+      detail: `${total} nacidos · ${alive} vivos · CC ${form.bodyCondition}`,
+    })
   }
   if (confirmExit) {
     return (
@@ -5649,12 +5791,21 @@ function BirthModal({
   }
   return (
     <DialogShell
-      title={`Registrar parto · ${sow.number}`}
+      title={`Registrar parto${selectedSow ? ` · ${selectedSow.number}` : ""}`}
       onClose={attemptClose}
       size="wide"
     >
       <form onSubmit={submit}>
         <div className="form-content birth-form">
+          {!sow && (
+            <SowSearchField
+              sows={sows}
+              value={sowNumber}
+              onChange={setSowNumber}
+              submitted={submitted}
+              listId="birth-sow-options"
+            />
+          )}
           <div className="form-grid">
             <label
               className={`field ${submitted && !form.date ? "has-error" : ""}`}
@@ -5674,8 +5825,14 @@ function BirthModal({
                 </small>
               )}
             </label>
-            <label className="field">
-              <span>Responsable</span>
+            <label
+              className={`field ${
+                submitted && !form.responsible.trim() ? "has-error" : ""
+              }`}
+            >
+              <span>
+                Responsable <em>* obligatorio</em>
+              </span>
               <input
                 value={form.responsible}
                 onChange={(e) =>
@@ -5683,6 +5840,12 @@ function BirthModal({
                 }
                 placeholder="Nombre del responsable"
               />
+              {submitted && !form.responsible.trim() && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Escribe el responsable
+                </small>
+              )}
             </label>
           </div>
           <div className="birth-counts">
@@ -5808,117 +5971,625 @@ function BirthModal({
   )
 }
 
+function BreedingEventModal({
+  sow,
+  sows,
+  eventType,
+  onClose,
+  onSave,
+}: {
+  sow: Sow | null
+  sows: Sow[]
+  eventType: Exclude<BreedingEventType, "Parto y lactancia">
+  onClose: () => void
+  onSave: (event: SowEvent) => void
+}) {
+  const [sowNumber, setSowNumber] = useState(sow?.number ?? "")
+  const [form, setForm] = useState({
+    date: TODAY_ISO,
+    serviceType: "",
+    method: "",
+    reproducer: "",
+    result: "",
+    weanedPiglets: "",
+    litterWeight: "",
+    weight: "",
+    bodyCondition: "",
+    responsible: CONNECTED_USER,
+    notes: "",
+  })
+  const [submitted, setSubmitted] = useState(false)
+  const [confirmExit, setConfirmExit] = useState(false)
+  const selectedSow = sow ?? findSowByNumber(sows, sowNumber)
+  const activeReproducers = initialReproducers.filter(
+    (reproducer) =>
+      reproducer.status === "Activo" &&
+      (!form.method || reproducer.method === form.method),
+  )
+  const dirty =
+    (!sow && Boolean(sowNumber)) ||
+    form.date !== TODAY_ISO ||
+    form.responsible !== CONNECTED_USER ||
+    Object.entries(form).some(
+      ([key, value]) =>
+        key !== "date" && key !== "responsible" && Boolean(value),
+    )
+  const attemptClose = () => (dirty ? setConfirmExit(true) : onClose())
+  const requiredMissing =
+    !selectedSow ||
+    !form.date ||
+    !form.responsible.trim() ||
+    (eventType === "Servicio y celo" &&
+      (!form.serviceType || !form.method || !form.reproducer)) ||
+    (eventType === "Gestación" && !form.result) ||
+    (eventType === "Destete" && (!form.weanedPiglets || !form.litterWeight)) ||
+    (eventType === "Peso y condición corporal" &&
+      (!form.weight || !form.bodyCondition))
+
+  const submit = (submitEvent: FormEvent<HTMLFormElement>) => {
+    submitEvent.preventDefault()
+    setSubmitted(true)
+    if (requiredMissing) {
+      focusFirstError(submitEvent.currentTarget)
+      return
+    }
+    const detail =
+      eventType === "Servicio y celo"
+        ? `${form.serviceType} · ${form.method} · ${form.reproducer}`
+        : eventType === "Gestación"
+          ? `Diagnóstico: ${form.result}`
+          : eventType === "Destete"
+            ? `${form.weanedPiglets} lechones · ${form.litterWeight} kg`
+            : `${form.weight} kg · Condición corporal ${form.bodyCondition}`
+    onSave({
+      id: Date.now(),
+      sowId: selectedSow.id,
+      type: eventType,
+      date: form.date,
+      responsible: form.responsible.trim(),
+      detail,
+    })
+  }
+
+  if (confirmExit) {
+    return (
+      <DiscardChangesDialog
+        onDiscard={onClose}
+        onKeepEditing={() => setConfirmExit(false)}
+      />
+    )
+  }
+
+  const error = (missing: boolean) => (submitted && missing ? "has-error" : "")
+
+  return (
+    <DialogShell
+      title={`Registrar ${eventType.toLowerCase()}${
+        selectedSow ? ` · ${selectedSow.number}` : ""
+      }`}
+      onClose={attemptClose}
+      size="wide"
+    >
+      <form onSubmit={submit}>
+        <div className="form-content birth-form breeding-event-form">
+          {!sow && (
+            <SowSearchField
+              sows={sows}
+              value={sowNumber}
+              onChange={setSowNumber}
+              submitted={submitted}
+              listId={`event-sow-options-${eventType.replace(/\s/g, "-")}`}
+            />
+          )}
+          <div className="form-grid">
+            <label className={`field ${error(!form.date)}`}>
+              <span>
+                {eventType === "Gestación" ? "Fecha del diagnóstico" : "Fecha"}{" "}
+                <em>* obligatorio</em>
+              </span>
+              <DatePicker
+                value={form.date}
+                onChange={(date) => setForm({ ...form, date })}
+                label={`Seleccionar fecha de ${eventType.toLowerCase()}`}
+              />
+              {submitted && !form.date && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Selecciona la fecha
+                </small>
+              )}
+            </label>
+            <label className={`field ${error(!form.responsible.trim())}`}>
+              <span>
+                Responsable <em>* obligatorio</em>
+              </span>
+              <input
+                value={form.responsible}
+                onChange={(event) =>
+                  setForm({ ...form, responsible: event.target.value })
+                }
+                placeholder="Nombre del responsable"
+              />
+              {submitted && !form.responsible.trim() && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Escribe el responsable
+                </small>
+              )}
+            </label>
+          </div>
+
+          {eventType === "Servicio y celo" && (
+            <div className="form-grid">
+              <label className={`field ${error(!form.serviceType)}`}>
+                <span>
+                  Tipo <em>* obligatorio</em>
+                </span>
+                <select
+                  value={form.serviceType}
+                  onChange={(event) =>
+                    setForm({ ...form, serviceType: event.target.value })
+                  }
+                >
+                  <option value="">Selecciona</option>
+                  <option>Celo detectado</option>
+                  <option>Servicio</option>
+                </select>
+              </label>
+              <label className={`field ${error(!form.method)}`}>
+                <span>
+                  Método <em>* obligatorio</em>
+                </span>
+                <select
+                  value={form.method}
+                  onChange={(event) =>
+                    setForm({
+                      ...form,
+                      method: event.target.value,
+                      reproducer: "",
+                    })
+                  }
+                >
+                  <option value="">Selecciona</option>
+                  <option>Monta natural</option>
+                  <option>Inseminación</option>
+                </select>
+              </label>
+              <label className={`field ${error(!form.reproducer)}`}>
+                <span>
+                  Reproductor <em>* obligatorio</em>
+                </span>
+                <select
+                  value={form.reproducer}
+                  onChange={(event) =>
+                    setForm({ ...form, reproducer: event.target.value })
+                  }
+                >
+                  <option value="">Selecciona un reproductor activo</option>
+                  {activeReproducers.map((reproducer) => (
+                    <option key={reproducer.id} value={reproducer.name}>
+                      {reproducer.name} · {reproducer.method}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+
+          {eventType === "Gestación" && (
+            <div className="form-grid">
+              <label className={`field ${error(!form.result)}`}>
+                <span>
+                  Resultado <em>* obligatorio</em>
+                </span>
+                <select
+                  value={form.result}
+                  onChange={(event) =>
+                    setForm({ ...form, result: event.target.value })
+                  }
+                >
+                  <option value="">Selecciona</option>
+                  <option>Preñada</option>
+                  <option>Vacía</option>
+                </select>
+              </label>
+            </div>
+          )}
+
+          {eventType === "Destete" && (
+            <div className="form-grid">
+              <label className={`field ${error(!form.weanedPiglets)}`}>
+                <span>
+                  Lechones destetados <em>* obligatorio</em>
+                </span>
+                <ColombianNumberInput
+                  integer
+                  value={form.weanedPiglets}
+                  onChange={(weanedPiglets) =>
+                    setForm({ ...form, weanedPiglets })
+                  }
+                  placeholder="Ej. 11"
+                  ariaInvalid={submitted && !form.weanedPiglets}
+                />
+              </label>
+              <label className={`field ${error(!form.litterWeight)}`}>
+                <span>
+                  Peso total de la camada (kg) <em>* obligatorio</em>
+                </span>
+                <ColombianNumberInput
+                  value={form.litterWeight}
+                  onChange={(litterWeight) =>
+                    setForm({ ...form, litterWeight })
+                  }
+                  placeholder="Ej. 72,5"
+                  ariaInvalid={submitted && !form.litterWeight}
+                />
+              </label>
+            </div>
+          )}
+
+          {eventType === "Peso y condición corporal" && (
+            <div className="form-grid">
+              <label className={`field ${error(!form.weight)}`}>
+                <span>
+                  Peso (kg) <em>* obligatorio</em>
+                </span>
+                <ColombianNumberInput
+                  value={form.weight}
+                  onChange={(weight) => setForm({ ...form, weight })}
+                  placeholder="Ej. 185,5"
+                  ariaInvalid={submitted && !form.weight}
+                />
+              </label>
+              <label className={`field ${error(!form.bodyCondition)}`}>
+                <span>
+                  Condición corporal (1 a 5) <em>* obligatorio</em>
+                </span>
+                <select
+                  value={form.bodyCondition}
+                  onChange={(event) =>
+                    setForm({ ...form, bodyCondition: event.target.value })
+                  }
+                >
+                  <option value="">Selecciona de 1 a 5</option>
+                  {[1, 2, 3, 4, 5].map((value) => (
+                    <option key={value}>{value}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+
+          <label className="field">
+            <span>Observaciones</span>
+            <textarea
+              value={form.notes}
+              onChange={(event) =>
+                setForm({ ...form, notes: event.target.value })
+              }
+              placeholder="Información adicional"
+            />
+          </label>
+        </div>
+        <div className="modal-actions large-actions">
+          <button
+            type="button"
+            className="button secondary"
+            onClick={attemptClose}
+          >
+            Cancelar
+          </button>
+          <button className="button primary" type="submit">
+            Registrar {eventType.toLowerCase()}
+          </button>
+        </div>
+      </form>
+    </DialogShell>
+  )
+}
+
 function SowHealthModal({
   sow,
+  sows,
+  changes,
+  onAddChange,
+  onUndoChange,
   onClose,
   onNotice,
 }: {
-  sow: Sow
+  sow: Sow | null
+  sows: Sow[]
+  changes: SowHealthChange[]
+  onAddChange: (change: SowHealthChange) => void
+  onUndoChange: (id: number) => void
   onClose: () => void
   onNotice: (text: string) => void
 }) {
+  const [sowNumber, setSowNumber] = useState(sow?.number ?? "")
+  const [submitted, setSubmitted] = useState(false)
   const [selected, setSelected] = useState<number[]>([])
-  const [vaccines, setVaccines] = useState([
-    { id: 1, name: "Parvovirus", date: "16/03/2026", overdue: true },
-    { id: 2, name: "Leptospira", date: "19/03/2026", overdue: false },
-    { id: 3, name: "Erisipela", date: "22/03/2026", overdue: false },
-  ])
+  const [applied, setApplied] = useState<number[]>([])
+  const [omitting, setOmitting] = useState<SowVaccine | null>(null)
+  const [postponing, setPostponing] = useState<SowVaccine | null>(null)
+  const [undoNotice, setUndoNotice] = useState<{
+    changeId: number
+    text: string
+  } | null>(null)
+  const selectedSow = sow ?? findSowByNumber(sows, sowNumber)
+  const sowChanges = selectedSow
+    ? changes.filter((change) => change.sowId === selectedSow.id)
+    : []
+  const vaccines = initialSowVaccines
+    .filter(
+      (vaccine) =>
+        !applied.includes(vaccine.id) &&
+        !sowChanges.some(
+          (change) =>
+            change.vaccineId === vaccine.id && change.action === "Omitida",
+        ),
+    )
+    .map((vaccine) => {
+      const postponements = sowChanges.filter(
+        (change) =>
+          change.vaccineId === vaccine.id && change.action === "Aplazada",
+      )
+      const latest = postponements[postponements.length - 1]
+      return latest
+        ? { ...vaccine, date: latest.date, overdue: false }
+        : vaccine
+    })
   const apply = (ids: number[]) => {
-    setVaccines(vaccines.filter((vaccine) => !ids.includes(vaccine.id)))
+    setSubmitted(true)
+    if (!selectedSow) return
+    setApplied([...applied, ...ids])
     setSelected([])
     onNotice(ids.length > 1 ? "Vacunas aplicadas" : "Vacuna aplicada")
   }
+  const requireSow = (action: () => void) => {
+    setSubmitted(true)
+    if (selectedSow) action()
+  }
+  const addChange = (
+    vaccine: SowVaccine,
+    action: SowHealthChange["action"],
+    date: string,
+    reason?: string,
+  ) => {
+    if (!selectedSow) return
+    const change: SowHealthChange = {
+      id: Date.now(),
+      sowId: selectedSow.id,
+      vaccineId: vaccine.id,
+      vaccineName: vaccine.name,
+      action,
+      previousDate: vaccine.date,
+      date,
+      reason,
+    }
+    onAddChange(change)
+    setSelected((current) => current.filter((id) => id !== vaccine.id))
+    setUndoNotice({
+      changeId: change.id,
+      text: action === "Omitida" ? "Vacuna omitida" : "Vacuna aplazada",
+    })
+  }
   return (
-    <DialogShell
-      title={
-        <span className="modal-title-icon">
-          <Icon name="syringe" size={21} />
-          Sanidad · {sow.number}
-        </span>
-      }
-      onClose={onClose}
-      size="wide"
-    >
-      <div className="sow-health-content">
-        <div className="health-intro">
-          <div>
-            <h3>Calendario sanitario</h3>
-            <p>Selecciona una o varias vacunas para aplicarlas.</p>
+    <>
+      <DialogShell
+        title={
+          <span className="modal-title-icon">
+            <Icon name="syringe" size={21} />
+            Sanidad{selectedSow ? ` · ${selectedSow.number}` : ""}
+          </span>
+        }
+        onClose={onClose}
+        size="wide"
+      >
+        <div className="sow-health-content">
+          {!sow && (
+            <SowSearchField
+              sows={sows}
+              value={sowNumber}
+              onChange={setSowNumber}
+              submitted={submitted}
+              listId="health-sow-options"
+            />
+          )}
+          <div className="health-intro">
+            <div>
+              <h3>Calendario sanitario</h3>
+              <p>Selecciona una o varias vacunas para aplicarlas.</p>
+            </div>
+            <button
+              className="button secondary"
+              disabled={!selected.length}
+              onClick={() => apply(selected)}
+            >
+              Aplicar seleccionadas ({selected.length})
+            </button>
           </div>
+          <div className="treatments-list">
+            {vaccines.map((vaccine) => (
+              <article className="treatment-row" key={vaccine.id}>
+                <label className="treatment-check">
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(vaccine.id)}
+                    onChange={() =>
+                      setSelected(
+                        selected.includes(vaccine.id)
+                          ? selected.filter((id) => id !== vaccine.id)
+                          : [...selected, vaccine.id],
+                      )
+                    }
+                  />
+                  <span className="custom-checkbox">
+                    {selected.includes(vaccine.id) && (
+                      <Icon name="check" size={15} />
+                    )}
+                  </span>
+                </label>
+                <span className="activity-icon">
+                  <Icon name="syringe" size={18} />
+                </span>
+                <div className="treatment-copy">
+                  <div>
+                    <h3>{vaccine.name}</h3>
+                    {vaccine.overdue && (
+                      <span className="status critical">Vencida</span>
+                    )}
+                  </div>
+                  <p>Programada para {vaccine.date}</p>
+                </div>
+                <div className="treatment-actions">
+                  <button
+                    className="text-button"
+                    onClick={() => requireSow(() => setOmitting(vaccine))}
+                  >
+                    Omitir
+                  </button>
+                  <button
+                    className="text-button"
+                    onClick={() => requireSow(() => setPostponing(vaccine))}
+                  >
+                    Aplazar
+                  </button>
+                  <button
+                    className="button secondary"
+                    onClick={() => apply([vaccine.id])}
+                  >
+                    Aplicar
+                  </button>
+                </div>
+              </article>
+            ))}
+            {!vaccines.length && (
+              <div className="inline-empty">
+                No hay vacunas sanitarias pendientes.
+              </div>
+            )}
+          </div>
+        </div>
+      </DialogShell>
+      {omitting && (
+        <OmitTreatmentDialog
+          treatment={{
+            ...omitting,
+            method: "Vacuna",
+            status: "Programado",
+          }}
+          onClose={() => setOmitting(null)}
+          onConfirm={(reason) => {
+            addChange(omitting, "Omitida", omitting.date, reason)
+            setOmitting(null)
+          }}
+        />
+      )}
+      {postponing && (
+        <PostponeSowVaccineDialog
+          vaccine={postponing}
+          onClose={() => setPostponing(null)}
+          onConfirm={(date) => {
+            addChange(
+              postponing,
+              "Aplazada",
+              formatDate(new Date(`${date}T12:00:00`)),
+            )
+            setPostponing(null)
+          }}
+        />
+      )}
+      {undoNotice && (
+        <div className="toast undo-toast" role="status">
+          <span>
+            <Icon name="check" size={17} />
+          </span>
+          {undoNotice.text}
           <button
-            className="button secondary"
-            disabled={!selected.length}
-            onClick={() => apply(selected)}
+            onClick={() => {
+              onUndoChange(undoNotice.changeId)
+              setUndoNotice(null)
+            }}
           >
-            Aplicar seleccionadas ({selected.length})
+            Deshacer
           </button>
         </div>
-        <div className="treatments-list">
-          {vaccines.map((vaccine) => (
-            <article className="treatment-row" key={vaccine.id}>
-              <label className="treatment-check">
-                <input
-                  type="checkbox"
-                  checked={selected.includes(vaccine.id)}
-                  onChange={() =>
-                    setSelected(
-                      selected.includes(vaccine.id)
-                        ? selected.filter((id) => id !== vaccine.id)
-                        : [...selected, vaccine.id],
-                    )
-                  }
-                />
-                <span className="custom-checkbox">
-                  {selected.includes(vaccine.id) && (
-                    <Icon name="check" size={15} />
-                  )}
-                </span>
-              </label>
-              <span className="activity-icon">
-                <Icon name="syringe" size={18} />
-              </span>
-              <div className="treatment-copy">
-                <div>
-                  <h3>{vaccine.name}</h3>
-                  {vaccine.overdue && (
-                    <span className="status critical">Vencida</span>
-                  )}
-                </div>
-                <p>Programada para {vaccine.date}</p>
-              </div>
-              <div className="treatment-actions">
-                <button
-                  className="text-button"
-                  onClick={() =>
-                    setVaccines(
-                      vaccines.filter((item) => item.id !== vaccine.id),
-                    )
-                  }
-                >
-                  Omitir
-                </button>
-                <button
-                  className="button secondary"
-                  onClick={() => apply([vaccine.id])}
-                >
-                  Aplicar
-                </button>
-              </div>
-            </article>
-          ))}
+      )}
+    </>
+  )
+}
+
+function PostponeSowVaccineDialog({
+  vaccine,
+  onClose,
+  onConfirm,
+}: {
+  vaccine: SowVaccine
+  onClose: () => void
+  onConfirm: (date: string) => void
+}) {
+  const [date, setDate] = useState("")
+  const [submitted, setSubmitted] = useState(false)
+  return (
+    <DialogShell
+      title={`Aplazar ${vaccine.name}`}
+      onClose={onClose}
+      size="small"
+    >
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          setSubmitted(true)
+          if (!date || date < TODAY_ISO) {
+            focusFirstError(event.currentTarget)
+            return
+          }
+          onConfirm(date)
+        }}
+      >
+        <div className="form-content compact-form">
+          <label
+            className={`field ${
+              submitted && (!date || date < TODAY_ISO) ? "has-error" : ""
+            }`}
+          >
+            <span>
+              Nueva fecha <em>* obligatorio</em>
+            </span>
+            <DatePicker
+              value={date}
+              min={TODAY_ISO}
+              onChange={setDate}
+              label={`Seleccionar nueva fecha para ${vaccine.name}`}
+            />
+            {submitted && !date && <small>Selecciona una nueva fecha</small>}
+            {submitted && date && date < TODAY_ISO && (
+              <small>La fecha no puede ser anterior a hoy</small>
+            )}
+          </label>
         </div>
-      </div>
+        <div className="modal-actions">
+          <button type="button" className="button secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="button primary">Aplazar vacuna</button>
+        </div>
+      </form>
     </DialogShell>
   )
 }
 
 function SowPanel({
   sow,
+  events,
+  healthChanges,
   onClose,
   onRegister,
   onHealth,
 }: {
   sow: Sow
+  events: SowEvent[]
+  healthChanges: SowHealthChange[]
   onClose: () => void
   onRegister: () => void
   onHealth: () => void
@@ -5969,6 +6640,69 @@ function SowPanel({
               <strong>25,8</strong>
             </div>
           </div>
+          {events.length > 0 && (
+            <section className="sow-event-history">
+              <div>
+                <h3>Historial de eventos</h3>
+                <span>Más reciente primero</span>
+              </div>
+              {events
+                .slice()
+                .sort((a, b) => b.id - a.id)
+                .map((event) => (
+                  <article key={event.id}>
+                    <span className="activity-icon">
+                      <Icon
+                        name={
+                          event.type === "Servicio y celo"
+                            ? "heart"
+                            : event.type === "Gestación"
+                              ? "calendar"
+                              : event.type === "Parto y lactancia"
+                                ? "baby"
+                                : event.type === "Destete"
+                                  ? "piglet"
+                                  : "weight"
+                        }
+                        size={17}
+                      />
+                    </span>
+                    <div>
+                      <strong>{event.type}</strong>
+                      <p>{event.detail}</p>
+                      <small>
+                        {formatDate(new Date(`${event.date}T12:00:00`))} ·{" "}
+                        {event.responsible}
+                      </small>
+                    </div>
+                  </article>
+                ))}
+            </section>
+          )}
+          {healthChanges.some((change) => change.action === "Omitida") && (
+            <section className="sow-event-history">
+              <div>
+                <h3>Historial sanitario</h3>
+                <span>Vacunas omitidas</span>
+              </div>
+              {healthChanges
+                .filter((change) => change.action === "Omitida")
+                .slice()
+                .sort((a, b) => b.id - a.id)
+                .map((change) => (
+                  <article key={change.id}>
+                    <span className="activity-icon">
+                      <Icon name="syringe" size={17} />
+                    </span>
+                    <div>
+                      <strong>{change.vaccineName}</strong>
+                      <p>Omitida · {change.reason}</p>
+                      <small>Programada para {change.date}</small>
+                    </div>
+                  </article>
+                ))}
+            </section>
+          )}
           <section className="cycle-history">
             <div>
               <h3>Historial de ciclos</h3>
@@ -6099,8 +6833,18 @@ function BreedingPage({
     })),
   )
   const [panelSow, setPanelSow] = useState<Sow | null>(null)
-  const [birthSow, setBirthSow] = useState<Sow | null>(null)
-  const [healthSow, setHealthSow] = useState<Sow | null>(null)
+  const [birthModal, setBirthModal] = useState<{ sow: Sow | null } | null>(null)
+  const [eventModal, setEventModal] = useState<{
+    sow: Sow | null
+    type: Exclude<BreedingEventType, "Parto y lactancia">
+  } | null>(null)
+  const [sowEvents, setSowEvents] = useState<SowEvent[]>([])
+  const [sowHealthChanges, setSowHealthChanges] = useState<SowHealthChange[]>(
+    [],
+  )
+  const [healthModal, setHealthModal] = useState<{
+    sow: Sow | null
+  } | null>(null)
   const [deletingSow, setDeletingSow] = useState<Sow | null>(null)
 
   useEffect(() => {
@@ -6122,8 +6866,8 @@ function BreedingPage({
   const resolveAlert = (alert: BreedingAlert) => {
     const sow = sows.find((item) => item.number === alert.sowNumber) ?? null
     setBellOpen(false)
-    if (alert.type === "parto" && sow) setBirthSow(sow)
-    else if (alert.type === "vacuna" && sow) setHealthSow(sow)
+    if (alert.type === "parto" && sow) setBirthModal({ sow })
+    else if (alert.type === "vacuna" && sow) setHealthModal({ sow })
     else openRegister(sow)
     setAlerts(alerts.filter((item) => item.id !== alert.id))
   }
@@ -6147,14 +6891,14 @@ function BreedingPage({
           <RegisterMenu
             sow={registerSow}
             onClose={() => setRegisterOpen(false)}
-            onBirth={() => {
-              if (registerSow) setBirthSow(registerSow)
-              else onNotice("Selecciona una cerda para registrar el parto")
+            onEvent={(type) => {
+              if (type === "Parto y lactancia") {
+                setBirthModal({ sow: registerSow })
+              } else {
+                setEventModal({ sow: registerSow, type })
+              }
             }}
-            onHealth={() => {
-              if (registerSow) setHealthSow(registerSow)
-              else onNotice("Selecciona una cerda para registrar Sanidad")
-            }}
+            onHealth={() => setHealthModal({ sow: registerSow })}
             onNotice={onNotice}
           />
         )}
@@ -6241,7 +6985,7 @@ function BreedingPage({
                   onRegister={() => openRegister(sow)}
                   onHealth={() => {
                     setMenuOpen(null)
-                    setHealthSow(sow)
+                    setHealthModal({ sow })
                   }}
                   onView={() => {
                     setMenuOpen(null)
@@ -6261,33 +7005,62 @@ function BreedingPage({
           )}
         </section>
       </div>
-      {birthSow && (
+      {birthModal && (
         <BirthModal
-          sow={birthSow}
-          onClose={() => setBirthSow(null)}
-          onSave={() => {
-            setBirthSow(null)
+          sow={birthModal.sow}
+          sows={sows}
+          onClose={() => setBirthModal(null)}
+          onSave={(event) => {
+            setSowEvents((current) => [event, ...current])
+            setBirthModal(null)
             onNotice("Parto registrado")
           }}
         />
       )}
-      {healthSow && (
+      {eventModal && (
+        <BreedingEventModal
+          sow={eventModal.sow}
+          sows={sows}
+          eventType={eventModal.type}
+          onClose={() => setEventModal(null)}
+          onSave={(event) => {
+            setSowEvents((current) => [event, ...current])
+            setEventModal(null)
+            onNotice(`${event.type} registrado`)
+          }}
+        />
+      )}
+      {healthModal && (
         <SowHealthModal
-          sow={healthSow}
-          onClose={() => setHealthSow(null)}
+          sow={healthModal.sow}
+          sows={sows}
+          changes={sowHealthChanges}
+          onAddChange={(change) =>
+            setSowHealthChanges((current) => [...current, change])
+          }
+          onUndoChange={(id) =>
+            setSowHealthChanges((current) =>
+              current.filter((change) => change.id !== id),
+            )
+          }
+          onClose={() => setHealthModal(null)}
           onNotice={onNotice}
         />
       )}
       {panelSow && (
         <SowPanel
           sow={panelSow}
+          events={sowEvents.filter((event) => event.sowId === panelSow.id)}
+          healthChanges={sowHealthChanges.filter(
+            (change) => change.sowId === panelSow.id,
+          )}
           onClose={() => setPanelSow(null)}
           onRegister={() => {
             setPanelSow(null)
             openRegister(panelSow)
           }}
           onHealth={() => {
-            setHealthSow(panelSow)
+            setHealthModal({ sow: panelSow })
             setPanelSow(null)
           }}
         />
