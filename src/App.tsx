@@ -288,6 +288,33 @@ const initialFarms: Farm[] = [
 
 type ProductionCycle = "Precebo" | "Levante"
 type LotStatus = "Activo" | "Finalizado"
+type MortalityRecord = {
+  id: number
+  date: string
+  quantity: number
+  sex: "Hembra" | "Macho"
+  cause: string
+  responsible: string
+  annulled?: boolean
+  annulReason?: string
+}
+type LotMovement = {
+  id: number
+  date: string
+  party: string
+  females: number
+  males: number
+  totalWeight: number
+  purchaseType?: "Animales" | "Alimento" | "Otro insumo"
+  concept?: string
+  quantity?: number
+  unit?: "kg" | "bultos" | "unidades"
+  value?: number
+  invoice?: string
+  responsible?: string
+  annulled?: boolean
+  annulReason?: string
+}
 type Lot = {
   id: number
   farmId: number
@@ -298,12 +325,54 @@ type Lot = {
   females: number
   males: number
   initialAnimals: number
-  currentAnimals: number
   averageWeight: number
-  mortality: number
   mortalityGoal: number
   gpd: number
+  mortalityRecords: MortalityRecord[]
+  purchaseRecords: LotMovement[]
+  saleRecords: LotMovement[]
+  closedDate?: string
+  entryDate?: string
+  initialTotalWeight?: number
+  targetWeight?: number
+  feedBrand?: string
+  origin?: string
+  notes?: string
+  responsible?: string
 }
+
+const makeMortalityRecords = (
+  lotId: number,
+  quantities: number[],
+): MortalityRecord[] =>
+  quantities.map((quantity, index) => ({
+    id: lotId * 100 + index,
+    date: index === 0 ? "12/03/2026" : "08/03/2026",
+    quantity,
+    sex: index % 2 === 0 ? "Macho" : "Hembra",
+    cause: index % 2 === 0 ? "Aplastamiento" : "Bajo consumo",
+    responsible: index % 2 === 0 ? "Carlos Ríos" : "Andrés Mejía",
+  }))
+
+const makeAnimalMovement = (
+  id: number,
+  date: string,
+  party: string,
+  females: number,
+  males: number,
+  totalWeight: number,
+  purchase = false,
+): LotMovement => ({
+  id,
+  date,
+  party,
+  females,
+  males,
+  totalWeight,
+  purchaseType: purchase ? "Animales" : undefined,
+  concept: purchase ? "Compra de animales" : undefined,
+  value: totalWeight * 8500,
+})
 
 const initialLots: Lot[] = [
   {
@@ -316,11 +385,12 @@ const initialLots: Lot[] = [
     females: 62,
     males: 58,
     initialAnimals: 120,
-    currentAnimals: 118,
     averageWeight: 18.4,
-    mortality: 1.7,
     mortalityGoal: 2.5,
     gpd: 468,
+    mortalityRecords: makeMortalityRecords(101, [1, 1]),
+    purchaseRecords: [],
+    saleRecords: [],
   },
   {
     id: 102,
@@ -332,11 +402,12 @@ const initialLots: Lot[] = [
     females: 55,
     males: 57,
     initialAnimals: 112,
-    currentAnimals: 109,
     averageWeight: 27.8,
-    mortality: 2.7,
     mortalityGoal: 2.5,
     gpd: 492,
+    mortalityRecords: makeMortalityRecords(102, [1, 2]),
+    purchaseRecords: [],
+    saleRecords: [],
   },
   {
     id: 103,
@@ -348,11 +419,21 @@ const initialLots: Lot[] = [
     females: 60,
     males: 60,
     initialAnimals: 120,
-    currentAnimals: 117,
     averageWeight: 32.6,
-    mortality: 2.5,
     mortalityGoal: 2.5,
     gpd: 505,
+    mortalityRecords: makeMortalityRecords(103, [1, 2]),
+    purchaseRecords: [],
+    saleRecords: [
+      makeAnimalMovement(
+        10301,
+        "14/03/2026",
+        "Comercializadora del Norte",
+        58,
+        59,
+        3814.2,
+      ),
+    ],
   },
   {
     id: 201,
@@ -364,11 +445,12 @@ const initialLots: Lot[] = [
     females: 48,
     males: 51,
     initialAnimals: 100,
-    currentAnimals: 99,
     averageWeight: 54.8,
-    mortality: 1,
     mortalityGoal: 2,
     gpd: 714,
+    mortalityRecords: makeMortalityRecords(201, [1]),
+    purchaseRecords: [],
+    saleRecords: [],
   },
   {
     id: 202,
@@ -380,11 +462,12 @@ const initialLots: Lot[] = [
     females: 57,
     males: 59,
     initialAnimals: 118,
-    currentAnimals: 116,
     averageWeight: 78.3,
-    mortality: 1.7,
     mortalityGoal: 2,
     gpd: 758,
+    mortalityRecords: makeMortalityRecords(202, [1, 1]),
+    purchaseRecords: [],
+    saleRecords: [],
   },
   {
     id: 203,
@@ -396,11 +479,21 @@ const initialLots: Lot[] = [
     females: 52,
     males: 54,
     initialAnimals: 108,
-    currentAnimals: 106,
     averageWeight: 112.4,
-    mortality: 1.9,
     mortalityGoal: 2,
     gpd: 801,
+    mortalityRecords: makeMortalityRecords(203, [1, 1]),
+    purchaseRecords: [],
+    saleRecords: [
+      makeAnimalMovement(
+        20301,
+        "15/03/2026",
+        "Porcícola Antioquia",
+        51,
+        55,
+        11914.4,
+      ),
+    ],
   },
   {
     id: 301,
@@ -412,11 +505,12 @@ const initialLots: Lot[] = [
     females: 42,
     males: 44,
     initialAnimals: 86,
-    currentAnimals: 85,
     averageWeight: 16.2,
-    mortality: 1.2,
     mortalityGoal: 2.5,
     gpd: 452,
+    mortalityRecords: makeMortalityRecords(301, [1]),
+    purchaseRecords: [],
+    saleRecords: [],
   },
   {
     id: 401,
@@ -428,11 +522,12 @@ const initialLots: Lot[] = [
     females: 51,
     males: 49,
     initialAnimals: 100,
-    currentAnimals: 97,
     averageWeight: 69.5,
-    mortality: 3,
     mortalityGoal: 2,
     gpd: 731,
+    mortalityRecords: makeMortalityRecords(401, [1, 2]),
+    purchaseRecords: [],
+    saleRecords: [],
   },
 ]
 
@@ -1403,12 +1498,169 @@ const formatDecimal = (value: number, decimals = 1) =>
     maximumFractionDigits: decimals,
   })
 
+const TODAY_ISO = "2026-03-16"
+const CONNECTED_USER = "Andrés Mejía"
+
+const focusFirstError = (form: HTMLFormElement) => {
+  window.setTimeout(() => {
+    const field = form.querySelector<HTMLElement>(
+      ".has-error input, .has-error select, .has-error textarea, .has-error button",
+    )
+    field?.scrollIntoView({ behavior: "smooth", block: "center" })
+    field?.focus()
+  })
+}
+
+const parseColombianNumber = (value: string) => {
+  const clean = value
+    .trim()
+    .replace(/\s/g, "")
+    .replace(/[^\d,.]/g, "")
+  const hasComma = clean.includes(",")
+  const dots = clean.match(/\./g)?.length ?? 0
+  const decimalDigits =
+    dots === 1 ? (clean.split(".")[1]?.replace(/\D/g, "").length ?? 0) : 0
+  const normalized = hasComma
+    ? clean.replace(/\./g, "").replace(",", ".")
+    : dots === 1 && decimalDigits >= 1 && decimalDigits <= 2
+      ? clean
+      : clean.replace(/\./g, "")
+  const parsed = Number(normalized)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
+const sanitizeColombianNumber = (value: string, integer = false) => {
+  if (integer) return value.replace(/\D/g, "")
+  const clean = value.replace(/[^\d,.]/g, "")
+  const decimalSeparator = clean.lastIndexOf(",")
+  if (decimalSeparator >= 0) {
+    const whole = clean.slice(0, decimalSeparator).replace(/,/g, "")
+    const decimal = clean.slice(decimalSeparator + 1).replace(/\D/g, "")
+    return `${whole},${decimal.slice(0, 2)}`
+  }
+  return clean
+}
+
+function ColombianNumberInput({
+  value,
+  onChange,
+  integer = false,
+  placeholder,
+  ariaInvalid,
+}: {
+  value: string
+  onChange: (value: string) => void
+  integer?: boolean
+  placeholder?: string
+  ariaInvalid?: boolean
+}) {
+  return (
+    <input
+      inputMode={integer ? "numeric" : "decimal"}
+      value={value}
+      onChange={(event) =>
+        onChange(sanitizeColombianNumber(event.target.value, integer))
+      }
+      onBlur={() => {
+        if (!value) return
+        const parsed = parseColombianNumber(value)
+        onChange(
+          integer
+            ? Math.max(0, Math.trunc(parsed)).toLocaleString("es-CO", {
+                maximumFractionDigits: 0,
+              })
+            : parsed.toLocaleString("es-CO", {
+                maximumFractionDigits: 2,
+              }),
+        )
+      }}
+      placeholder={placeholder}
+      aria-invalid={ariaInvalid}
+    />
+  )
+}
+
 const formatDate = (date: Date) =>
   date.toLocaleDateString("es-CO", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   })
+
+const toIsoDate = (value: string) => {
+  const [day, month, year] = value.split("/")
+  return year && month && day ? `${year}-${month}-${day}` : value
+}
+
+function RecordActionsMenu({
+  onEdit,
+  onAnnul,
+}: {
+  onEdit: () => void
+  onAnnul: () => void
+}) {
+  return (
+    <div className="lot-menu record-menu">
+      <button onClick={onEdit}>
+        <Icon name="edit" size={16} />
+        Editar
+      </button>
+      <button className="delete-item" onClick={onAnnul}>
+        <Icon name="x" size={16} />
+        Anular
+      </button>
+    </div>
+  )
+}
+
+function AnnulRecordDialog({
+  onClose,
+  onConfirm,
+}: {
+  onClose: () => void
+  onConfirm: (reason: string) => void
+}) {
+  const [reason, setReason] = useState("")
+  const [submitted, setSubmitted] = useState(false)
+  return (
+    <DialogShell title="Anular registro" onClose={onClose} size="small">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          setSubmitted(true)
+          if (!reason.trim()) {
+            focusFirstError(event.currentTarget)
+            return
+          }
+          onConfirm(reason.trim())
+        }}
+      >
+        <div className="form-content compact-form">
+          <label
+            className={`field ${
+              submitted && !reason.trim() ? "has-error" : ""
+            }`}
+          >
+            <span>
+              Motivo de anulación <em>* obligatorio</em>
+            </span>
+            <textarea
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder="Explica por qué se anula este registro"
+            />
+          </label>
+        </div>
+        <div className="modal-actions">
+          <button type="button" className="button secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="button danger-outline">Anular registro</button>
+        </div>
+      </form>
+    </DialogShell>
+  )
+}
 
 function DatePicker({
   value,
@@ -1506,7 +1758,9 @@ function DatePicker({
               return (
                 <button
                   type="button"
-                  className={value === iso ? "selected" : ""}
+                  className={`${value === iso ? "selected" : ""} ${
+                    iso === TODAY_ISO ? "today" : ""
+                  }`}
                   disabled={disabled}
                   onClick={() => {
                     onChange(iso)
@@ -1525,24 +1779,45 @@ function DatePicker({
   )
 }
 
-const getLotMetrics = (lot: Lot) => {
+const calculateLotFigures = (lot: Lot) => {
   const initialAnimals = Math.max(0, lot.initialAnimals)
+  const purchasedAnimals = lot.purchaseRecords
+    .filter((record) => record.purchaseType === "Animales" && !record.annulled)
+    .reduce((total, record) => total + record.females + record.males, 0)
+  const enteredAnimals = initialAnimals + purchasedAnimals
+  const soldAnimals = lot.saleRecords.reduce(
+    (total, record) =>
+      record.annulled ? total : total + record.females + record.males,
+    0,
+  )
+  const mortalityAnimals = lot.mortalityRecords.reduce(
+    (total, record) => (record.annulled ? total : total + record.quantity),
+    0,
+  )
   const currentAnimals = Math.max(
     0,
-    Math.min(initialAnimals, lot.currentAnimals),
+    enteredAnimals - mortalityAnimals - soldAnimals,
   )
   const day = Math.max(0, lot.day)
   const mortality =
-    initialAnimals > 0
-      ? ((initialAnimals - currentAnimals) / initialAnimals) * 100
-      : 0
+    enteredAnimals > 0 ? (mortalityAnimals / enteredAnimals) * 100 : 0
   const mortalityTone =
     mortality > lot.mortalityGoal
       ? "high"
       : mortality >= lot.mortalityGoal * 0.8
         ? "near"
         : "ok"
-  return { initialAnimals, currentAnimals, day, mortality, mortalityTone }
+  return {
+    initialAnimals,
+    enteredAnimals,
+    currentAnimals,
+    purchasedAnimals,
+    soldAnimals,
+    mortalityAnimals,
+    day,
+    mortality,
+    mortalityTone,
+  }
 }
 
 function LotMenu({
@@ -1597,9 +1872,20 @@ function LotCard({
   onMenu: () => void
   onAction: (action: "view" | "edit" | "finish" | "delete", lot: Lot) => void
 }) {
-  const metrics = getLotMetrics(lot)
+  const metrics = calculateLotFigures(lot)
   return (
-    <article className="lot-card">
+    <article
+      className="lot-card interactive"
+      role="link"
+      tabIndex={0}
+      onClick={(event) => {
+        if ((event.target as HTMLElement).closest("button")) return
+        onAction("view", lot)
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") onAction("view", lot)
+      }}
+    >
       <div className="lot-card-top">
         <div>
           <span className="lot-label">Código del lote</span>
@@ -1638,10 +1924,10 @@ function LotCard({
         <div>
           <span>Animales</span>
           <strong>
-            {metrics.currentAnimals} / {metrics.initialAnimals}{" "}
+            {metrics.currentAnimals} / {metrics.enteredAnimals}{" "}
             <em>animales</em>
           </strong>
-          <small>actuales / iniciales</small>
+          <small>actuales / ingresados</small>
         </div>
         <div>
           <span>Peso promedio</span>
@@ -1678,29 +1964,42 @@ function LotSkeletons() {
   )
 }
 
-function LotsTable({ lots }: { lots: Lot[] }) {
+function LotsTable({
+  lots,
+  onOpenLot,
+}: {
+  lots: Lot[]
+  onOpenLot: (lot: Lot) => void
+}) {
   return (
-    <div className="table-wrap">
+    <div className="table-wrap lots-table-wrap">
       <table>
         <thead>
           <tr>
             <th>Código</th>
             <th>Estado</th>
-            <th>Día del ciclo</th>
-            <th>Hembras</th>
-            <th>Machos</th>
-            <th>Animales actuales</th>
-            <th>Peso promedio (kg)</th>
-            <th>Ganancia promedio diaria</th>
+            <th>Día</th>
+            <th>H / M</th>
+            <th>Animales</th>
+            <th>Peso prom. (kg)</th>
+            <th>Ganancia (g/día)</th>
             <th>Mortalidad</th>
           </tr>
         </thead>
         <tbody>
           {lots.map((lot) => {
-            const metrics = getLotMetrics(lot)
+            const metrics = calculateLotFigures(lot)
             return (
-              <tr key={lot.id}>
-                <td>
+              <tr
+                className="interactive-row"
+                key={lot.id}
+                tabIndex={0}
+                onClick={() => onOpenLot(lot)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") onOpenLot(lot)
+                }}
+              >
+                <td className="sticky-lot-code">
                   <strong>{lot.code}</strong>
                 </td>
                 <td>
@@ -1713,13 +2012,14 @@ function LotsTable({ lots }: { lots: Lot[] }) {
                   </span>
                 </td>
                 <td>{metrics.day} días</td>
-                <td>{lot.females} hembras</td>
-                <td>{lot.males} machos</td>
                 <td>
-                  {metrics.currentAnimals} de {metrics.initialAnimals} animales
+                  {lot.females} / {lot.males}
+                </td>
+                <td>
+                  {metrics.currentAnimals} / {metrics.enteredAnimals} animales
                 </td>
                 <td>{formatDecimal(lot.averageWeight)} kg</td>
-                <td>{lot.gpd.toLocaleString("es-CO")} g/día</td>
+                <td>{lot.gpd.toLocaleString("es-CO")}</td>
                 <td
                   className={
                     metrics.mortalityTone === "high"
@@ -1788,14 +2088,20 @@ function LotsList({
   const [view, setView] = useState<"cards" | "table">("cards")
   const [menuOpen, setMenuOpen] = useState<number | null>(null)
   const [deletingLot, setDeletingLot] = useState<Lot | null>(null)
+  const [finishingLot, setFinishingLot] = useState<Lot | null>(null)
+  const [undoFinishedLot, setUndoFinishedLot] = useState<Lot | null>(null)
+  useEffect(() => {
+    if (!undoFinishedLot) return
+    const timer = window.setTimeout(() => setUndoFinishedLot(null), 5000)
+    return () => window.clearTimeout(timer)
+  }, [undoFinishedLot])
   const cycleLots = lots.filter((lot) => lot.cycle === cycle)
   const activeLots = cycleLots.filter((lot) => lot.status === "Activo")
   const finishedLots = cycleLots.filter((lot) => lot.status === "Finalizado")
   const action = (kind: "view" | "edit" | "finish" | "delete", lot: Lot) => {
     setMenuOpen(null)
     if (kind === "finish") {
-      onUpdate({ ...lot, status: "Finalizado" })
-      onNotice("Lote finalizado")
+      setFinishingLot(lot)
     } else if (kind === "delete") {
       setDeletingLot(lot)
     } else if (kind === "edit") {
@@ -1831,7 +2137,7 @@ function LotsList({
           </div>
         </div>
         {view === "table" ? (
-          <LotsTable lots={cycleLots} />
+          <LotsTable lots={cycleLots} onOpenLot={onOpenLot} />
         ) : (
           <>
             <section className="lot-section">
@@ -1892,6 +2198,37 @@ function LotsList({
           }}
         />
       )}
+      {finishingLot && (
+        <FinishLotDialog
+          lot={finishingLot}
+          onClose={() => setFinishingLot(null)}
+          onConfirm={(closedDate) => {
+            setUndoFinishedLot(finishingLot)
+            onUpdate({
+              ...finishingLot,
+              status: "Finalizado",
+              closedDate,
+            })
+            setFinishingLot(null)
+          }}
+        />
+      )}
+      {undoFinishedLot && (
+        <div className="toast undo-toast" role="status">
+          <span>
+            <Icon name="check" size={17} />
+          </span>
+          Lote finalizado
+          <button
+            onClick={() => {
+              onUpdate(undoFinishedLot)
+              setUndoFinishedLot(null)
+            }}
+          >
+            Deshacer
+          </button>
+        </div>
+      )}
     </>
   )
 }
@@ -1906,49 +2243,78 @@ type LotDraft = {
   feedBrand: string
   origin: string
   notes: string
+  responsible: string
 }
 
 function CreateLotModal({
   cycle,
+  lot,
+  existingCodes,
   onClose,
   onSave,
 }: {
   cycle: ProductionCycle
+  lot?: Lot
+  existingCodes: string[]
   onClose: () => void
   onSave: (draft: LotDraft) => void
 }) {
-  const [draft, setDraft] = useState<LotDraft>({
-    code: "",
-    entryDate: "",
-    females: "",
-    males: "",
-    totalWeight: "",
-    targetWeight: "",
-    feedBrand: "",
-    origin: "",
-    notes: "",
-  })
+  const initialDraft: LotDraft = {
+    code: lot?.code ?? "",
+    entryDate: lot?.entryDate ?? TODAY_ISO,
+    females: lot ? String(lot.females) : "",
+    males: lot ? String(lot.males) : "",
+    totalWeight: lot
+      ? formatDecimal(
+          lot.initialTotalWeight ?? lot.averageWeight * lot.initialAnimals,
+        )
+      : "",
+    targetWeight: lot?.targetWeight ? formatDecimal(lot.targetWeight) : "",
+    feedBrand: lot?.feedBrand ?? "",
+    origin: lot?.origin ?? "",
+    notes: lot?.notes ?? "",
+    responsible: lot?.responsible ?? CONNECTED_USER,
+  }
+  const [draft, setDraft] = useState<LotDraft>(initialDraft)
   const [submitted, setSubmitted] = useState(false)
   const [confirmExit, setConfirmExit] = useState(false)
   const [confirming, setConfirming] = useState(false)
-  const females = Number(draft.females) || 0
-  const males = Number(draft.males) || 0
+  const females = parseColombianNumber(draft.females)
+  const males = parseColombianNumber(draft.males)
   const animals = females + males
-  const weight = Number(draft.totalWeight.replace(",", ".")) || 0
+  const weight = parseColombianNumber(draft.totalWeight)
   const average = animals > 0 && weight > 0 ? weight / animals : 0
   const unusual =
     average > 0 &&
     (cycle === "Precebo"
       ? average > 40 || average < 3
       : average > 160 || average < 20)
-  const dirty = Object.values(draft).some(Boolean)
+  const dirty = Object.keys(draft).some(
+    (key) =>
+      draft[(key as keyof LotDraft)] !== initialDraft[(key as keyof LotDraft)],
+  )
+  const codeExists = existingCodes.some(
+    (code) =>
+      code.toLocaleLowerCase() === draft.code.trim().toLocaleLowerCase() &&
+      code.toLocaleLowerCase() !== lot?.code.toLocaleLowerCase(),
+  )
   const farmGoal = cycle === "Precebo" ? "29 kg" : null
   const attemptClose = () => (dirty ? setConfirmExit(true) : onClose())
   const submit = (event: FormEvent) => {
     event.preventDefault()
     setSubmitted(true)
-    if (!draft.code.trim() || !draft.entryDate) return
-    setConfirming(true)
+    if (
+      !draft.code.trim() ||
+      codeExists ||
+      !draft.entryDate ||
+      !draft.responsible.trim() ||
+      animals === 0
+    ) {
+      focusFirstError(event.currentTarget as HTMLFormElement)
+      return
+    }
+    if (lot) onSave(draft)
+    else setConfirming(true)
   }
   if (confirmExit) {
     return (
@@ -1961,7 +2327,11 @@ function CreateLotModal({
   return (
     <DialogShell
       title={
-        confirming ? "Confirma los datos del lote" : `Crear lote de ${cycle}`
+        confirming
+          ? "Confirma los datos del lote"
+          : lot
+            ? "Editar lote"
+            : `Crear lote de ${cycle}`
       }
       onClose={attemptClose}
       size="wide"
@@ -2045,7 +2415,9 @@ function CreateLotModal({
                 <div className="form-grid">
                   <label
                     className={`field ${
-                      submitted && !draft.code.trim() ? "has-error" : ""
+                      submitted && (!draft.code.trim() || codeExists)
+                        ? "has-error"
+                        : ""
                     }`}
                   >
                     <span>
@@ -2061,12 +2433,20 @@ function CreateLotModal({
                           ? "Ej. PC-2025-019"
                           : "Ej. LV-2025-012"
                       }
-                      aria-invalid={submitted && !draft.code.trim()}
+                      aria-invalid={
+                        submitted && (!draft.code.trim() || codeExists)
+                      }
                     />
                     {submitted && !draft.code.trim() && (
                       <small>
                         <Icon name="alert" size={14} />
                         Escribe el código del lote
+                      </small>
+                    )}
+                    {submitted && draft.code.trim() && codeExists && (
+                      <small>
+                        <Icon name="alert" size={14} />
+                        Ya existe un lote con este código
                       </small>
                     )}
                   </label>
@@ -2083,12 +2463,34 @@ function CreateLotModal({
                       onChange={(value) =>
                         setDraft({ ...draft, entryDate: value })
                       }
+                      max={TODAY_ISO}
                       label="Seleccionar fecha de ingreso"
                     />
                     {submitted && !draft.entryDate && (
                       <small>
                         <Icon name="alert" size={14} />
                         Selecciona la fecha de ingreso
+                      </small>
+                    )}
+                  </label>
+                  <label
+                    className={`field ${
+                      submitted && !draft.responsible.trim() ? "has-error" : ""
+                    }`}
+                  >
+                    <span>
+                      Responsable <em>* obligatorio</em>
+                    </span>
+                    <input
+                      value={draft.responsible}
+                      onChange={(event) =>
+                        setDraft({ ...draft, responsible: event.target.value })
+                      }
+                    />
+                    {submitted && !draft.responsible.trim() && (
+                      <small>
+                        <Icon name="alert" size={14} />
+                        Escribe el responsable
                       </small>
                     )}
                   </label>
@@ -2103,35 +2505,43 @@ function CreateLotModal({
                   </div>
                 </div>
                 <div className="form-grid numeric-grid">
-                  <label className="field">
+                  <label
+                    className={`field ${
+                      submitted && animals === 0 ? "has-error" : ""
+                    }`}
+                  >
                     <span>Hembras iniciales</span>
-                    <input
-                      inputMode="numeric"
+                    <ColombianNumberInput
+                      integer
                       value={draft.females}
-                      onChange={(e) =>
-                        setDraft({
-                          ...draft,
-                          females: e.target.value.replace(/\D/g, ""),
-                        })
+                      onChange={(value) =>
+                        setDraft({ ...draft, females: value })
                       }
                       placeholder="Ej. 62"
+                      ariaInvalid={submitted && animals === 0}
                     />
                   </label>
-                  <label className="field">
+                  <label
+                    className={`field ${
+                      submitted && animals === 0 ? "has-error" : ""
+                    }`}
+                  >
                     <span>Machos iniciales</span>
-                    <input
-                      inputMode="numeric"
+                    <ColombianNumberInput
+                      integer
                       value={draft.males}
-                      onChange={(e) =>
-                        setDraft({
-                          ...draft,
-                          males: e.target.value.replace(/\D/g, ""),
-                        })
-                      }
+                      onChange={(value) => setDraft({ ...draft, males: value })}
                       placeholder="Ej. 58"
+                      ariaInvalid={submitted && animals === 0}
                     />
                   </label>
                 </div>
+                {submitted && animals === 0 && (
+                  <div className="form-inline-error">
+                    <Icon name="alert" size={17} />
+                    Registra al menos una hembra o un macho.
+                  </div>
+                )}
                 <div className="calculated-value">
                   <div>
                     <span>Animales iniciales</span>
@@ -2160,32 +2570,24 @@ function CreateLotModal({
                 <div className="form-grid numeric-grid">
                   <label className="field">
                     <span>Peso inicial total (kg)</span>
-                    <input
-                      inputMode="decimal"
+                    <ColombianNumberInput
                       value={draft.totalWeight}
-                      onChange={(e) =>
-                        setDraft({
-                          ...draft,
-                          totalWeight: e.target.value.replace(/[^\d,.]/g, ""),
-                        })
+                      onChange={(value) =>
+                        setDraft({ ...draft, totalWeight: value })
                       }
                       placeholder="Ej. 780,5"
                     />
                   </label>
                   <label className="field suggested-field">
                     <span>Peso objetivo final (kg)</span>
-                    <input
-                      inputMode="decimal"
+                    <ColombianNumberInput
                       value={draft.targetWeight}
-                      onChange={(e) =>
-                        setDraft({
-                          ...draft,
-                          targetWeight: e.target.value.replace(/[^\d,.]/g, ""),
-                        })
+                      onChange={(value) =>
+                        setDraft({ ...draft, targetWeight: value })
                       }
                       placeholder="Déjalo vacío o escribe la meta"
                     />
-                    <small>
+                    <small className="field-help">
                       <Icon name="info" size={13} />
                       {farmGoal
                         ? `Meta de la granja: ${farmGoal}`
@@ -2269,7 +2671,11 @@ function CreateLotModal({
             type={confirming ? "button" : "submit"}
             onClick={confirming ? () => onSave(draft) : undefined}
           >
-            {confirming ? "Confirmar y crear" : "Crear lote"}
+            {confirming
+              ? "Confirmar y crear"
+              : lot
+                ? "Guardar cambios"
+                : "Crear lote"}
           </button>
         </div>
       </form>
@@ -2277,18 +2683,10 @@ function CreateLotModal({
   )
 }
 
-type LotTab = "Resumen" | "Mortalidad" | "Sanidad" | "Compras" | "Ventas" | "Liquidación" | "Identificación"
+type LotTab = "Resumen" | "Mortalidad" | "Sanidad" | "Compras" | "Ventas"
 type TabAction = {
   label: string
   run: () => void
-}
-type MortalityRecord = {
-  id: number
-  date: string
-  quantity: number
-  sex: "Hembra" | "Macho"
-  cause: string
-  responsible: string
 }
 
 const lotTabs: LotTab[] = [
@@ -2297,27 +2695,6 @@ const lotTabs: LotTab[] = [
   "Sanidad",
   "Compras",
   "Ventas",
-  "Liquidación",
-  "Identificación",
-]
-
-const mortalityRecords: MortalityRecord[] = [
-  {
-    id: 1,
-    date: "12/03/2026",
-    quantity: 1,
-    sex: "Macho",
-    cause: "Aplastamiento",
-    responsible: "Carlos Ríos",
-  },
-  {
-    id: 2,
-    date: "08/03/2026",
-    quantity: 1,
-    sex: "Hembra",
-    cause: "Bajo consumo",
-    responsible: "Andrés Mejía",
-  },
 ]
 
 function LotDetailHeader({
@@ -2345,7 +2722,7 @@ function LotDetailHeader({
   actionDisabled: boolean
   disabledReason: string
 }) {
-  const metrics = getLotMetrics(lot)
+  const metrics = calculateLotFigures(lot)
   return (
     <header className="lot-detail-header">
       <div className="breadcrumbs">
@@ -2381,8 +2758,8 @@ function LotDetailHeader({
             </span>
           </div>
           <p>
-            {metrics.currentAnimals} / {metrics.initialAnimals} animales · Día{" "}
-            {metrics.day} de {lot.cycle} ·{" "}
+            {metrics.currentAnimals} / {metrics.enteredAnimals} animales
+            actuales / ingresados · Día {metrics.day} de {lot.cycle} ·{" "}
             <span className={`mortality-${metrics.mortalityTone}`}>
               Mortalidad {formatDecimal(metrics.mortality)} % · meta{" "}
               {formatDecimal(lot.mortalityGoal)} %
@@ -2414,10 +2791,6 @@ function LotDetailHeader({
             </button>
             {menuOpen && (
               <div className="lot-menu detail-menu" role="menu">
-                <button role="menuitem" onClick={onMenu}>
-                  <Icon name="arrow" size={16} />
-                  Ver
-                </button>
                 <button role="menuitem" onClick={onEdit}>
                   <Icon name="edit" size={16} />
                   Editar
@@ -2446,8 +2819,13 @@ function LotDetailHeader({
   )
 }
 
-function SummaryTab({ lot }: { lot: Lot }) {
-  const metrics = getLotMetrics(lot)
+type SummaryTabProps = {
+  lot: Lot
+  onEdit: () => void
+}
+
+function SummaryTab({ lot, onEdit }: SummaryTabProps) {
+  const metrics = calculateLotFigures(lot)
   const mortalityTone =
     metrics.mortalityTone === "high"
       ? "metric-danger"
@@ -2461,9 +2839,9 @@ function SummaryTab({ lot }: { lot: Lot }) {
         <div>
           <span>Animales</span>
           <strong>
-            {metrics.currentAnimals} <small>/ {metrics.initialAnimals}</small>
+            {metrics.currentAnimals} <small>/ {metrics.enteredAnimals}</small>
           </strong>
-          <p>actuales / iniciales</p>
+          <p>actuales / ingresados</p>
         </div>
         <div>
           <span>Día del ciclo</span>
@@ -2571,6 +2949,62 @@ function SummaryTab({ lot }: { lot: Lot }) {
           </div>
         </section>
       </div>
+      <section className="detail-section-card lot-data-card">
+        <div className="card-section-title">
+          <div>
+            <h2>Datos del lote</h2>
+            <p>Identificación, ingreso y trazabilidad</p>
+          </div>
+          <button className="button secondary" onClick={onEdit}>
+            <Icon name="edit" size={17} />
+            Editar datos
+          </button>
+        </div>
+        <div className="lot-data-grid">
+          <div>
+            <span>Código</span>
+            <strong>{lot.code}</strong>
+          </div>
+          <div>
+            <span>Fecha de ingreso</span>
+            <strong>
+              {lot.entryDate
+                ? formatDate(new Date(`${lot.entryDate}T12:00:00`))
+                : "Sin registrar"}
+            </strong>
+          </div>
+          <div>
+            <span>Animales iniciales</span>
+            <strong>{lot.initialAnimals}</strong>
+          </div>
+          <div>
+            <span>Peso inicial</span>
+            <strong>
+              {formatDecimal(
+                lot.initialTotalWeight ??
+                  lot.averageWeight * lot.initialAnimals,
+              )}{" "}
+              kg
+            </strong>
+          </div>
+          <div>
+            <span>Peso objetivo</span>
+            <strong>
+              {lot.targetWeight
+                ? `${formatDecimal(lot.targetWeight)} kg`
+                : "Sin registrar"}
+            </strong>
+          </div>
+          <div>
+            <span>Trazabilidad</span>
+            <strong>
+              {[lot.feedBrand, lot.origin, lot.notes]
+                .filter(Boolean)
+                .join(" · ") || "Sin registrar"}
+            </strong>
+          </div>
+        </div>
+      </section>
     </div>
   )
 }
@@ -2578,12 +3012,17 @@ function SummaryTab({ lot }: { lot: Lot }) {
 function MortalityTab({
   lot,
   records,
+  onChange,
 }: {
   lot: Lot
   records: MortalityRecord[]
+  onChange: (records: MortalityRecord[]) => void
 }) {
-  const metrics = getLotMetrics(lot)
-  const deaths = Math.max(0, metrics.initialAnimals - metrics.currentAnimals)
+  const metrics = calculateLotFigures(lot)
+  const deaths = metrics.mortalityAnimals
+  const [menuOpen, setMenuOpen] = useState<number | null>(null)
+  const [editing, setEditing] = useState<MortalityRecord | null>(null)
+  const [annulling, setAnnulling] = useState<MortalityRecord | null>(null)
   return (
     <div className="tab-panel">
       <div className="neutral-summary-cards">
@@ -2601,8 +3040,8 @@ function MortalityTab({
         </div>
         <div>
           <span>Último registro</span>
-          <strong>12 mar</strong>
-          <p>hace 2 días</p>
+          <strong>{records[0]?.date ?? "Sin registros"}</strong>
+          <p>{records.length ? "registro más reciente" : "sin mortalidad"}</p>
         </div>
       </div>
       <section className="records-card">
@@ -2621,69 +3060,150 @@ function MortalityTab({
                 <th>Sexo</th>
                 <th>Causa</th>
                 <th>Responsable</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {records.map((record) => (
-                <tr key={record.id}>
+                <tr
+                  className={record.annulled ? "record-annulled" : ""}
+                  key={record.id}
+                >
                   <td>{record.date}</td>
                   <td>
                     <strong>{record.quantity}</strong>
                   </td>
                   <td>{record.sex}</td>
                   <td>{record.cause}</td>
-                  <td>{record.responsible}</td>
+                  <td>
+                    {record.responsible}{" "}
+                    {record.annulled && (
+                      <span className="status neutral">Anulado</span>
+                    )}
+                  </td>
+                  <td className="record-actions-cell">
+                    <button
+                      className="dots-button"
+                      aria-label="Acciones del registro"
+                      onClick={() =>
+                        setMenuOpen(menuOpen === record.id ? null : record.id)
+                      }
+                    >
+                      <Icon name="dots" size={19} />
+                    </button>
+                    {menuOpen === record.id && (
+                      <RecordActionsMenu
+                        onEdit={() => {
+                          setEditing(record)
+                          setMenuOpen(null)
+                        }}
+                        onAnnul={() => {
+                          setAnnulling(record)
+                          setMenuOpen(null)
+                        }}
+                      />
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </section>
+      {editing && (
+        <MortalityModal
+          available={metrics.currentAnimals + editing.quantity}
+          record={editing}
+          onClose={() => setEditing(null)}
+          onSave={(updated) => {
+            onChange(
+              records.map((item) => (item.id === updated.id ? updated : item)),
+            )
+            setEditing(null)
+          }}
+        />
+      )}
+      {annulling && (
+        <AnnulRecordDialog
+          onClose={() => setAnnulling(null)}
+          onConfirm={(annulReason) => {
+            onChange(
+              records.map((item) =>
+                item.id === annulling.id
+                  ? { ...item, annulled: true, annulReason }
+                  : item,
+              ),
+            )
+            setAnnulling(null)
+          }}
+        />
+      )}
     </div>
   )
 }
 
 function MortalityModal({
   available,
+  record,
   onClose,
   onSave,
 }: {
   available: number
+  record?: MortalityRecord
   onClose: () => void
   onSave: (record: MortalityRecord) => void
 }) {
   const [form, setForm] = useState({
-    date: "",
-    quantity: "",
-    sex: "",
-    cause: "",
-    responsible: "",
+    date: record ? toIsoDate(record.date) : TODAY_ISO,
+    quantity: record ? String(record.quantity) : "",
+    sex: record?.sex ?? "",
+    cause: record?.cause ?? "",
+    responsible: record?.responsible ?? CONNECTED_USER,
     notes: "",
   })
   const [submitted, setSubmitted] = useState(false)
   const [confirmExit, setConfirmExit] = useState(false)
-  const dirty = Object.values(form).some(Boolean)
+  const dirty = record
+    ? form.date !== toIsoDate(record.date) ||
+      parseColombianNumber(form.quantity) !== record.quantity ||
+      form.sex !== record.sex ||
+      form.cause !== record.cause ||
+      form.responsible !== record.responsible ||
+      Boolean(form.notes)
+    : Object.entries(form).some(
+        ([key, value]) =>
+          value &&
+          !(
+            (key === "date" && value === TODAY_ISO) ||
+            (key === "responsible" && value === CONNECTED_USER)
+          ),
+      )
   const attemptClose = () => (dirty ? setConfirmExit(true) : onClose())
-  const quantityTooHigh = Number(form.quantity) > available
+  const quantity = parseColombianNumber(form.quantity)
+  const quantityTooHigh = quantity > available
   const submit = (event: FormEvent) => {
     event.preventDefault()
     setSubmitted(true)
     if (
       !form.date ||
-      !form.quantity ||
+      quantity <= 0 ||
       quantityTooHigh ||
       !form.sex ||
       !form.cause ||
       !form.responsible
-    )
+    ) {
+      focusFirstError(event.currentTarget as HTMLFormElement)
       return
+    }
     onSave({
-      id: Date.now(),
+      id: record?.id ?? Date.now(),
       date: formatDate(new Date(`${form.date}T12:00:00`)),
-      quantity: Number(form.quantity),
+      quantity,
       sex: form.sex as "Hembra" | "Macho",
       cause: form.cause,
       responsible: form.responsible,
+      annulled: record?.annulled,
+      annulReason: record?.annulReason,
     })
   }
   if (confirmExit) {
@@ -2695,7 +3215,10 @@ function MortalityModal({
     )
   }
   return (
-    <DialogShell title="Registrar mortalidad" onClose={attemptClose}>
+    <DialogShell
+      title={record ? "Editar mortalidad" : "Registrar mortalidad"}
+      onClose={attemptClose}
+    >
       <form onSubmit={submit}>
         <div className="form-content mortality-form">
           <div className="available-banner">
@@ -2713,6 +3236,7 @@ function MortalityModal({
               <DatePicker
                 value={form.date}
                 onChange={(value) => setForm({ ...form, date: value })}
+                max={TODAY_ISO}
                 label="Seleccionar fecha de mortalidad"
               />
               {submitted && !form.date && (
@@ -2732,15 +3256,10 @@ function MortalityModal({
               <span>
                 Cantidad <em>* obligatorio</em>
               </span>
-              <input
-                inputMode="numeric"
+              <ColombianNumberInput
+                integer
                 value={form.quantity}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    quantity: e.target.value.replace(/\D/g, ""),
-                  })
-                }
+                onChange={(value) => setForm({ ...form, quantity: value })}
                 placeholder="Ej. 1"
               />
               {submitted && !form.quantity && (
@@ -2841,7 +3360,7 @@ function MortalityModal({
             Cancelar
           </button>
           <button className="button primary" type="submit">
-            Registrar mortalidad
+            {record ? "Guardar cambios" : "Registrar mortalidad"}
           </button>
         </div>
       </form>
@@ -2855,7 +3374,11 @@ type Treatment = {
   date: string
   method: string
   overdue: boolean
-  applied: boolean
+  status: "Programado" | "Aplicado" | "Omitido"
+  recordedAt?: string
+  responsible?: string
+  product?: string
+  omissionReason?: string
 }
 
 function HealthTab({
@@ -2863,21 +3386,48 @@ function HealthTab({
   treatments,
   setTreatments,
   readOnly,
+  onNotice,
 }: {
   lot: Lot
   treatments: Treatment[]
   setTreatments: (items: Treatment[]) => void
   readOnly: boolean
+  onNotice: (text: string) => void
 }) {
   const [selected, setSelected] = useState<number[]>([])
-  const metrics = getLotMetrics(lot)
-  const apply = (ids: number[]) => {
+  const [applying, setApplying] = useState<Treatment[]>([])
+  const [omitting, setOmitting] = useState<Treatment | null>(null)
+  const metrics = calculateLotFigures(lot)
+  const pending = treatments.filter((item) => item.status === "Programado")
+  const history = treatments.filter((item) => item.status !== "Programado")
+  const updateStatus = (
+    ids: number[],
+    status: Treatment["status"],
+    notice: string,
+    details?: Partial<Treatment>,
+  ) => {
     setTreatments(
       treatments.map((item) =>
-        ids.includes(item.id) ? { ...item, applied: true } : item,
+        ids.includes(item.id)
+          ? {
+              ...item,
+              status,
+              recordedAt:
+                status === "Programado"
+                  ? undefined
+                  : (details?.recordedAt ??
+                    formatDate(new Date(`${TODAY_ISO}T12:00:00`))),
+              responsible:
+                status === "Programado" ? undefined : details?.responsible,
+              product: status === "Programado" ? undefined : details?.product,
+              omissionReason:
+                status === "Programado" ? undefined : details?.omissionReason,
+            }
+          : item,
       ),
     )
     setSelected([])
+    onNotice(notice)
   }
   return (
     <div className="tab-panel">
@@ -2891,7 +3441,9 @@ function HealthTab({
         <button
           className="button secondary apply-selected"
           disabled={!selected.length || readOnly}
-          onClick={() => apply(selected)}
+          onClick={() =>
+            setApplying(pending.filter((item) => selected.includes(item.id)))
+          }
         >
           <Icon name="check" size={17} />
           Aplicar seleccionados ({selected.length})
@@ -2903,15 +3455,12 @@ function HealthTab({
         </div>
       ) : (
         <div className="treatments-list">
-          {treatments.map((item) => (
-            <article
-              className={`treatment-row ${item.applied ? "applied" : ""}`}
-              key={item.id}
-            >
+          {pending.map((item) => (
+            <article className="treatment-row" key={item.id}>
               <label className="treatment-check">
                 <input
                   type="checkbox"
-                  disabled={item.applied || readOnly}
+                  disabled={readOnly}
                   checked={selected.includes(item.id)}
                   onChange={() =>
                     setSelected(
@@ -2928,41 +3477,36 @@ function HealthTab({
                 </span>
               </label>
               <span className="treatment-date large">
-                <b>{item.date.split(" ")[0]}</b>
-                {item.date.split(" ")[1]}
+                <b>{item.date.split("/")[0]}</b>
+                {new Date(
+                  `${item.date.split("/").reverse().join("-")}T12:00:00`,
+                )
+                  .toLocaleDateString("es-CO", { month: "short" })
+                  .replace(".", "")
+                  .toUpperCase()}
               </span>
               <div className="treatment-copy">
                 <div>
                   <h3>{item.name}</h3>
-                  {item.overdue && !item.applied && (
+                  {item.overdue && (
                     <span className="status critical">Vencido</span>
-                  )}
-                  {item.applied && (
-                    <span className="status positive">Aplicado</span>
                   )}
                 </div>
                 <p>
-                  {item.method} · Para {metrics.currentAnimals} animales ·{" "}
-                  {item.date}
+                  {item.method} · Para {metrics.currentAnimals} animales
                 </p>
               </div>
-              {!item.applied && !readOnly && (
+              {!readOnly && (
                 <div className="treatment-actions">
                   <button
                     className="text-button"
-                    onClick={() =>
-                      setTreatments(
-                        treatments.filter(
-                          (treatment) => treatment.id !== item.id,
-                        ),
-                      )
-                    }
+                    onClick={() => setOmitting(item)}
                   >
                     Omitir
                   </button>
                   <button
                     className="button secondary"
-                    onClick={() => apply([item.id])}
+                    onClick={() => setApplying([item])}
                   >
                     Aplicar
                   </button>
@@ -2970,9 +3514,255 @@ function HealthTab({
               )}
             </article>
           ))}
+          {!pending.length && (
+            <div className="inline-empty">
+              No hay tratamientos sanitarios pendientes.
+            </div>
+          )}
         </div>
       )}
+      {history.length > 0 && (
+        <section className="health-history records-card">
+          <div className="records-heading">
+            <div>
+              <h2>Historial sanitario</h2>
+              <p>{history.length} registros aplicados u omitidos</p>
+            </div>
+          </div>
+          <div className="health-history-list">
+            {history.map((item) => (
+              <article key={item.id}>
+                <span
+                  className={`status ${
+                    item.status === "Aplicado" ? "positive" : "neutral"
+                  }`}
+                >
+                  {item.status}
+                </span>
+                <div>
+                  <strong>{item.name}</strong>
+                  <p>
+                    {item.recordedAt ?? item.date} ·{" "}
+                    {item.responsible ?? "Sin responsable"}
+                    {item.omissionReason ? ` · ${item.omissionReason}` : ""}
+                  </p>
+                </div>
+                {!readOnly && (
+                  <button
+                    className="text-button"
+                    onClick={() =>
+                      updateStatus(
+                        [item.id],
+                        "Programado",
+                        "Acción sanitaria deshecha",
+                      )
+                    }
+                  >
+                    Deshacer
+                  </button>
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+      {applying.length > 0 && (
+        <ApplyTreatmentDialog
+          treatments={applying}
+          onClose={() => setApplying([])}
+          onConfirm={(details) => {
+            updateStatus(
+              applying.map((item) => item.id),
+              "Aplicado",
+              applying.length > 1
+                ? "Tratamientos aplicados"
+                : "Tratamiento aplicado",
+              details,
+            )
+            setApplying([])
+          }}
+        />
+      )}
+      {omitting && (
+        <OmitTreatmentDialog
+          treatment={omitting}
+          onClose={() => setOmitting(null)}
+          onConfirm={(omissionReason) => {
+            updateStatus([omitting.id], "Omitido", "Tratamiento omitido", {
+              responsible: CONNECTED_USER,
+              omissionReason,
+            })
+            setOmitting(null)
+          }}
+        />
+      )}
     </div>
+  )
+}
+
+function ApplyTreatmentDialog({
+  treatments,
+  onClose,
+  onConfirm,
+}: {
+  treatments: Treatment[]
+  onClose: () => void
+  onConfirm: (details: Partial<Treatment>) => void
+}) {
+  const [date, setDate] = useState(TODAY_ISO)
+  const [responsible, setResponsible] = useState(CONNECTED_USER)
+  const [product, setProduct] = useState("")
+  const [submitted, setSubmitted] = useState(false)
+  const scheduled = treatments[0]?.date
+  const [day, month, year] = scheduled?.split("/") ?? []
+  const scheduledIso = year && month && day ? `${year}-${month}-${day}` : ""
+  const warningDate = new Date(`${TODAY_ISO}T12:00:00`)
+  warningDate.setDate(warningDate.getDate() + 3)
+  const farAhead =
+    scheduledIso >
+    `${warningDate.getFullYear()}-${String(warningDate.getMonth() + 1).padStart(
+      2,
+      "0",
+    )}-${String(warningDate.getDate()).padStart(2, "0")}`
+  return (
+    <DialogShell title="Confirmar aplicación" onClose={onClose} size="small">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          setSubmitted(true)
+          if (!date || !responsible.trim()) {
+            focusFirstError(event.currentTarget)
+            return
+          }
+          onConfirm({
+            recordedAt: formatDate(new Date(`${date}T12:00:00`)),
+            responsible: responsible.trim(),
+            product: product.trim(),
+          })
+        }}
+      >
+        <div className="form-content compact-form">
+          {farAhead && (
+            <div className="weight-warning">
+              <Icon name="alert" size={18} />
+              Esta vacuna está programada para el {day}/{month}. ¿Aplicarla hoy?
+            </div>
+          )}
+          <label className={`field ${submitted && !date ? "has-error" : ""}`}>
+            <span>
+              Fecha de aplicación <em>* obligatorio</em>
+            </span>
+            <DatePicker
+              value={date}
+              onChange={setDate}
+              max={TODAY_ISO}
+              label="Seleccionar fecha de aplicación"
+            />
+          </label>
+          <label
+            className={`field ${
+              submitted && !responsible.trim() ? "has-error" : ""
+            }`}
+          >
+            <span>
+              Responsable <em>* obligatorio</em>
+            </span>
+            <input
+              value={responsible}
+              onChange={(event) => setResponsible(event.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span>Producto</span>
+            <input
+              value={product}
+              onChange={(event) => setProduct(event.target.value)}
+              placeholder="Nombre comercial"
+            />
+          </label>
+        </div>
+        <div className="modal-actions">
+          <button type="button" className="button secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="button primary">Confirmar aplicación</button>
+        </div>
+      </form>
+    </DialogShell>
+  )
+}
+
+function OmitTreatmentDialog({
+  treatment,
+  onClose,
+  onConfirm,
+}: {
+  treatment: Treatment
+  onClose: () => void
+  onConfirm: (reason: string) => void
+}) {
+  const [reason, setReason] = useState("")
+  const [other, setOther] = useState("")
+  const [submitted, setSubmitted] = useState(false)
+  const invalid = !reason || (reason === "Otro" && !other.trim())
+  return (
+    <DialogShell
+      title={`Omitir ${treatment.name}`}
+      onClose={onClose}
+      size="small"
+    >
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          setSubmitted(true)
+          if (invalid) {
+            focusFirstError(event.currentTarget)
+            return
+          }
+          onConfirm(reason === "Otro" ? other.trim() : reason)
+        }}
+      >
+        <div className="form-content compact-form">
+          <label className={`field ${submitted && !reason ? "has-error" : ""}`}>
+            <span>
+              Motivo <em>* obligatorio</em>
+            </span>
+            <select
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+            >
+              <option value="">Selecciona un motivo</option>
+              <option>Animales enfermos</option>
+              <option>Sin producto</option>
+              <option>Reprogramada</option>
+              <option>Otro</option>
+            </select>
+            {submitted && !reason && <small>Selecciona un motivo</small>}
+          </label>
+          {reason === "Otro" && (
+            <label
+              className={`field ${
+                submitted && !other.trim() ? "has-error" : ""
+              }`}
+            >
+              <span>
+                Especifica el motivo <em>* obligatorio</em>
+              </span>
+              <textarea
+                value={other}
+                onChange={(event) => setOther(event.target.value)}
+              />
+            </label>
+          )}
+        </div>
+        <div className="modal-actions">
+          <button type="button" className="button secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="button danger-outline">Omitir vacuna</button>
+        </div>
+      </form>
+    </DialogShell>
   )
 }
 
@@ -2983,19 +3773,25 @@ function TreatmentModal({
 }: {
   lot: Lot
   onClose: () => void
-  onSave: () => void
+  onSave: (treatment: Treatment) => void
 }) {
+  const metrics = calculateLotFigures(lot)
   const [form, setForm] = useState({
     treatment: "",
-    date: "",
+    date: TODAY_ISO,
     product: "",
     method: "Intramuscular",
     dose: "",
-    responsible: "",
+    responsible: CONNECTED_USER,
   })
+  const [submitted, setSubmitted] = useState(false)
   const [confirmExit, setConfirmExit] = useState(false)
   const dirty = Object.values(form).some(
-    (value) => value && value !== "Intramuscular",
+    (value) =>
+      value &&
+      value !== "Intramuscular" &&
+      value !== TODAY_ISO &&
+      value !== CONNECTED_USER,
   )
   const attemptClose = () => (dirty ? setConfirmExit(true) : onClose())
   if (confirmExit) {
@@ -3015,16 +3811,36 @@ function TreatmentModal({
       <form
         onSubmit={(event) => {
           event.preventDefault()
-          onSave()
+          setSubmitted(true)
+          if (
+            !form.treatment.trim() ||
+            !form.date ||
+            !form.responsible.trim()
+          ) {
+            focusFirstError(event.currentTarget)
+            return
+          }
+          onSave({
+            id: Date.now(),
+            name: form.treatment.trim(),
+            date: formatDate(new Date(`${form.date}T12:00:00`)),
+            method: form.method,
+            overdue: false,
+            status: "Programado",
+          })
         }}
       >
         <div className="form-content treatment-form">
           <div className="treatment-lot-note">
             <Icon name="info" size={18} />
-            La dosis se calculará para {lot.currentAnimals} animales.
+            La dosis se calculará para {metrics.currentAnimals} animales.
           </div>
           <div className="form-grid">
-            <label className="field">
+            <label
+              className={`field ${
+                submitted && !form.treatment.trim() ? "has-error" : ""
+              }`}
+            >
               <span>
                 Tratamiento <em>* obligatorio</em>
               </span>
@@ -3035,16 +3851,31 @@ function TreatmentModal({
                 }
                 placeholder="Ej. Vacuna Circovirus"
               />
+              {submitted && !form.treatment.trim() && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Escribe el tratamiento
+                </small>
+              )}
             </label>
-            <label className="field">
+            <label
+              className={`field ${submitted && !form.date ? "has-error" : ""}`}
+            >
               <span>
                 Fecha <em>* obligatorio</em>
               </span>
               <DatePicker
                 value={form.date}
                 onChange={(value) => setForm({ ...form, date: value })}
+                max={TODAY_ISO}
                 label="Seleccionar fecha del tratamiento"
               />
+              {submitted && !form.date && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Selecciona la fecha
+                </small>
+              )}
             </label>
             <label className="field">
               <span>Producto</span>
@@ -3071,20 +3902,20 @@ function TreatmentModal({
             </label>
             <label className="field">
               <span>Dosis por animal</span>
-              <input
-                inputMode="decimal"
+              <ColombianNumberInput
                 value={form.dose}
-                onChange={(event) =>
-                  setForm({
-                    ...form,
-                    dose: event.target.value.replace(/[^\d,.]/g, ""),
-                  })
-                }
-                placeholder="Ej. 2,0 ml"
+                onChange={(value) => setForm({ ...form, dose: value })}
+                placeholder="Ej. 2,0"
               />
             </label>
-            <label className="field">
-              <span>Responsable</span>
+            <label
+              className={`field ${
+                submitted && !form.responsible.trim() ? "has-error" : ""
+              }`}
+            >
+              <span>
+                Responsable <em>* obligatorio</em>
+              </span>
               <input
                 value={form.responsible}
                 onChange={(event) =>
@@ -3092,6 +3923,12 @@ function TreatmentModal({
                 }
                 placeholder="Nombre del responsable"
               />
+              {submitted && !form.responsible.trim() && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Escribe el responsable
+                </small>
+              )}
             </label>
           </div>
         </div>
@@ -3112,44 +3949,65 @@ function TreatmentModal({
   )
 }
 
-type LotMovement = {
-  id: number
-  date: string
-  party: string
-  females: number
-  males: number
-  totalWeight: number
-  value?: number
-  invoice?: string
-}
-
 function LotMovementModal({
   kind,
   available,
+  movement,
   onClose,
   onSave,
 }: {
   kind: "Compra" | "Venta"
   available: number
+  movement?: LotMovement
   onClose: () => void
   onSave: (movement: LotMovement) => void
 }) {
   const [form, setForm] = useState({
-    date: "",
-    party: "",
-    females: "",
-    males: "",
-    totalWeight: "",
-    value: "",
+    date: movement ? toIsoDate(movement.date) : TODAY_ISO,
+    party: movement?.party ?? "",
+    females: movement ? String(movement.females) : "",
+    males: movement ? String(movement.males) : "",
+    totalWeight: movement ? formatDecimal(movement.totalWeight) : "",
+    value: movement?.value ? String(movement.value) : "",
+    concept: movement?.concept ?? "",
+    quantity: movement?.quantity ? formatDecimal(movement.quantity) : "",
+    unit: (movement?.unit ?? "kg") as "kg" | "bultos" | "unidades",
+    responsible: movement?.responsible ?? CONNECTED_USER,
   })
-  const [invoice, setInvoice] = useState("")
+  const [purchaseType, setPurchaseType] =
+    useState<"Animales" | "Alimento" | "Otro insumo">(
+      movement?.purchaseType ?? "Animales",
+    )
+  const [invoice, setInvoice] = useState(movement?.invoice ?? "")
   const [submitted, setSubmitted] = useState(false)
   const [confirmExit, setConfirmExit] = useState(false)
-  const females = Number(form.females) || 0
-  const males = Number(form.males) || 0
+  const females = parseColombianNumber(form.females)
+  const males = parseColombianNumber(form.males)
   const animals = females + males
-  const exceedsAvailable = animals > available
-  const dirty = Object.values(form).some(Boolean) || Boolean(invoice)
+  const isAnimalMovement = kind === "Venta" || purchaseType === "Animales"
+  const exceedsAvailable = kind === "Venta" && animals > available
+  const dirty = movement
+    ? form.date !== toIsoDate(movement.date) ||
+      form.party !== movement.party ||
+      females !== movement.females ||
+      males !== movement.males ||
+      parseColombianNumber(form.totalWeight) !== movement.totalWeight ||
+      parseColombianNumber(form.value) !== (movement.value ?? 0) ||
+      form.concept !== (movement.concept ?? "") ||
+      parseColombianNumber(form.quantity) !== (movement.quantity ?? 0) ||
+      form.unit !== (movement.unit ?? "kg") ||
+      form.responsible !== (movement.responsible ?? CONNECTED_USER) ||
+      invoice !== (movement.invoice ?? "") ||
+      purchaseType !== (movement.purchaseType ?? "Animales")
+    : Object.entries(form).some(
+        ([key, value]) =>
+          value &&
+          !(
+            (key === "date" && value === TODAY_ISO) ||
+            (key === "responsible" && value === CONNECTED_USER) ||
+            (key === "unit" && value === "kg")
+          ),
+      ) || Boolean(invoice)
   const attemptClose = () => (dirty ? setConfirmExit(true) : onClose())
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -3157,24 +4015,44 @@ function LotMovementModal({
     if (
       !form.date ||
       !form.party.trim() ||
-      animals === 0 ||
-      !form.totalWeight ||
+      !form.responsible.trim() ||
+      (isAnimalMovement && animals === 0) ||
+      (isAnimalMovement && !form.totalWeight) ||
+      (!isAnimalMovement && !form.concept.trim()) ||
+      (!isAnimalMovement && !form.quantity) ||
       exceedsAvailable ||
-      (kind === "Venta" && !form.value)
-    )
+      !form.value
+    ) {
+      focusFirstError(event.currentTarget as HTMLFormElement)
       return
+    }
     onSave({
-      id: Date.now(),
+      id: movement?.id ?? Date.now(),
       date: formatDate(new Date(`${form.date}T12:00:00`)),
       party: form.party.trim(),
       females,
       males,
-      totalWeight: Number(
-        form.totalWeight.replace(/\./g, "").replace(",", "."),
-      ),
-      value:
-        kind === "Venta" ? Number(form.value.replace(/[^\d]/g, "")) : undefined,
+      totalWeight: isAnimalMovement
+        ? parseColombianNumber(form.totalWeight)
+        : purchaseType === "Alimento"
+          ? parseColombianNumber(form.quantity)
+          : 0,
+      purchaseType: kind === "Compra" ? purchaseType : undefined,
+      concept:
+        kind === "Compra"
+          ? isAnimalMovement
+            ? "Compra de animales"
+            : form.concept.trim()
+          : undefined,
+      quantity: !isAnimalMovement
+        ? parseColombianNumber(form.quantity)
+        : undefined,
+      unit: !isAnimalMovement ? form.unit : undefined,
+      value: parseColombianNumber(form.value),
       invoice: kind === "Compra" ? invoice : undefined,
+      responsible: form.responsible.trim(),
+      annulled: movement?.annulled,
+      annulReason: movement?.annulReason,
     })
   }
   if (confirmExit) {
@@ -3187,17 +4065,50 @@ function LotMovementModal({
   }
   return (
     <DialogShell
-      title={`Registrar ${kind.toLowerCase()}`}
+      title={`${movement ? "Editar" : "Registrar"} ${kind.toLowerCase()}`}
       onClose={attemptClose}
       size="wide"
     >
       <form onSubmit={submit}>
         <div className="form-content lot-movement-form">
-          <div className="available-banner">
-            <Icon name="pig" size={20} />
-            <span>Animales disponibles</span>
-            <strong>{available} animales</strong>
-          </div>
+          {kind === "Venta" && (
+            <div className="available-banner">
+              <Icon name="pig" size={20} />
+              <span>Animales disponibles</span>
+              <strong>{available} animales</strong>
+            </div>
+          )}
+          {kind === "Compra" && (
+            <fieldset className="purchase-type-selector">
+              <legend>
+                Tipo de compra <em>* obligatorio</em>
+              </legend>
+              <div>
+                {(["Animales", "Alimento", "Otro insumo"] as const).map(
+                  (type) => (
+                    <button
+                      type="button"
+                      className={purchaseType === type ? "active" : ""}
+                      onClick={() => setPurchaseType(type)}
+                      key={type}
+                    >
+                      <Icon
+                        name={
+                          type === "Animales"
+                            ? "pig"
+                            : type === "Alimento"
+                              ? "box"
+                              : "syringe"
+                        }
+                        size={18}
+                      />
+                      {type}
+                    </button>
+                  ),
+                )}
+              </div>
+            </fieldset>
+          )}
           <div className="form-grid">
             <label
               className={`field ${submitted && !form.date ? "has-error" : ""}`}
@@ -3209,7 +4120,35 @@ function LotMovementModal({
                 value={form.date}
                 onChange={(value) => setForm({ ...form, date: value })}
                 label={`Seleccionar fecha de ${kind.toLowerCase()}`}
+                max={TODAY_ISO}
               />
+              {submitted && !form.date && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Selecciona la fecha
+                </small>
+              )}
+            </label>
+            <label
+              className={`field ${
+                submitted && !form.responsible.trim() ? "has-error" : ""
+              }`}
+            >
+              <span>
+                Responsable <em>* obligatorio</em>
+              </span>
+              <input
+                value={form.responsible}
+                onChange={(event) =>
+                  setForm({ ...form, responsible: event.target.value })
+                }
+              />
+              {submitted && !form.responsible.trim() && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Escribe el responsable
+                </small>
+              )}
             </label>
             <label
               className={`field ${
@@ -3231,77 +4170,144 @@ function LotMovementModal({
                     : "Nombre del comprador"
                 }
               />
+              {submitted && !form.party.trim() && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Escribe el {kind === "Compra" ? "proveedor" : "comprador"}
+                </small>
+              )}
             </label>
-            <label className="field">
-              <span>Hembras</span>
-              <input
-                inputMode="numeric"
-                value={form.females}
-                onChange={(event) =>
-                  setForm({
-                    ...form,
-                    females: event.target.value.replace(/\D/g, ""),
-                  })
-                }
-                placeholder="Ej. 20"
-              />
-            </label>
-            <label className="field">
-              <span>Machos</span>
-              <input
-                inputMode="numeric"
-                value={form.males}
-                onChange={(event) =>
-                  setForm({
-                    ...form,
-                    males: event.target.value.replace(/\D/g, ""),
-                  })
-                }
-                placeholder="Ej. 20"
-              />
-            </label>
+            {isAnimalMovement ? (
+              <>
+                <label className="field">
+                  <span>Hembras</span>
+                  <ColombianNumberInput
+                    integer
+                    value={form.females}
+                    onChange={(value) => setForm({ ...form, females: value })}
+                    placeholder="Ej. 20"
+                  />
+                </label>
+                <label className="field">
+                  <span>Machos</span>
+                  <ColombianNumberInput
+                    integer
+                    value={form.males}
+                    onChange={(value) => setForm({ ...form, males: value })}
+                    placeholder="Ej. 20"
+                  />
+                </label>
+                <label
+                  className={`field ${
+                    submitted && !form.totalWeight ? "has-error" : ""
+                  }`}
+                >
+                  <span>
+                    Peso total (kg) <em>* obligatorio</em>
+                  </span>
+                  <ColombianNumberInput
+                    value={form.totalWeight}
+                    onChange={(value) =>
+                      setForm({ ...form, totalWeight: value })
+                    }
+                    placeholder="Ej. 1.250,0"
+                  />
+                  {submitted && !form.totalWeight && (
+                    <small>
+                      <Icon name="alert" size={14} />
+                      Escribe el peso total
+                    </small>
+                  )}
+                </label>
+              </>
+            ) : (
+              <>
+                <label
+                  className={`field ${
+                    submitted && !form.concept.trim() ? "has-error" : ""
+                  }`}
+                >
+                  <span>
+                    Concepto <em>* obligatorio</em>
+                  </span>
+                  <input
+                    value={form.concept}
+                    onChange={(event) =>
+                      setForm({ ...form, concept: event.target.value })
+                    }
+                    placeholder={
+                      purchaseType === "Alimento"
+                        ? "Ej. Concentrado iniciador"
+                        : "Ej. Desinfectante"
+                    }
+                  />
+                  {submitted && !form.concept.trim() && (
+                    <small>
+                      <Icon name="alert" size={14} />
+                      Escribe el concepto
+                    </small>
+                  )}
+                </label>
+                <label
+                  className={`field ${
+                    submitted && !form.quantity ? "has-error" : ""
+                  }`}
+                >
+                  <span>
+                    Cantidad <em>* obligatorio</em>
+                  </span>
+                  <div className="quantity-with-unit">
+                    <ColombianNumberInput
+                      value={form.quantity}
+                      onChange={(value) =>
+                        setForm({ ...form, quantity: value })
+                      }
+                      placeholder="Ej. 420,5"
+                    />
+                    <select
+                      value={form.unit}
+                      onChange={(event) =>
+                        setForm({
+                          ...form,
+                          unit: event.target.value as typeof form.unit,
+                        })
+                      }
+                      aria-label="Unidad de la compra"
+                    >
+                      <option value="kg">kg</option>
+                      <option value="bultos">bultos</option>
+                      <option value="unidades">unidades</option>
+                    </select>
+                  </div>
+                  {submitted && !form.quantity && (
+                    <small>
+                      <Icon name="alert" size={14} />
+                      Escribe la cantidad
+                    </small>
+                  )}
+                </label>
+              </>
+            )}
             <label
-              className={`field ${
-                submitted && !form.totalWeight ? "has-error" : ""
-              }`}
+              className={`field ${submitted && !form.value ? "has-error" : ""}`}
             >
               <span>
-                Peso total (kg) <em>* obligatorio</em>
+                Valor total <em>* obligatorio</em>
               </span>
-              <input
-                inputMode="decimal"
-                value={form.totalWeight}
-                onChange={(event) =>
-                  setForm({
-                    ...form,
-                    totalWeight: event.target.value.replace(/[^\d,.]/g, ""),
-                  })
-                }
-                placeholder="Ej. 1.250,0"
+              <ColombianNumberInput
+                integer
+                value={form.value}
+                onChange={(value) => setForm({ ...form, value })}
+                placeholder="Ej. 1.365.000"
               />
+              {submitted && !form.value && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Escribe el valor total
+                </small>
+              )}
             </label>
-            {kind === "Venta" ? (
-              <label
-                className={`field ${
-                  submitted && !form.value ? "has-error" : ""
-                }`}
-              >
-                <span>
-                  Valor total <em>* obligatorio</em>
-                </span>
-                <input
-                  inputMode="numeric"
-                  value={form.value}
-                  onChange={(event) =>
-                    setForm({
-                      ...form,
-                      value: event.target.value.replace(/\D/g, ""),
-                    })
-                  }
-                  placeholder="Ej. 9.500.000"
-                />
-              </label>
-            ) : (
+            {kind === "Compra" && (
               <label className="field invoice-upload">
                 <span>Foto de la factura</span>
                 <input
@@ -3318,23 +4324,31 @@ function LotMovementModal({
               </label>
             )}
           </div>
-          <div
-            className={`calculated-value ${
-              exceedsAvailable ? "calculated-error" : ""
-            }`}
-          >
-            <div>
-              <span>Total de animales</span>
-              <small>Hembras más machos</small>
+          {isAnimalMovement && (
+            <div
+              className={`calculated-value ${
+                exceedsAvailable ? "calculated-error" : ""
+              }`}
+            >
+              <div>
+                <span>Total de animales</span>
+                <small>Hembras más machos</small>
+              </div>
+              <strong>
+                {females} hembras + {males} machos = <b>{animals} animales</b>
+              </strong>
             </div>
-            <strong>
-              {females} hembras + {males} machos = <b>{animals} animales</b>
-            </strong>
-          </div>
+          )}
           {exceedsAvailable && (
             <div className="form-inline-error">
               <Icon name="alert" size={17} />
               El total no puede superar los {available} animales disponibles.
+            </div>
+          )}
+          {submitted && isAnimalMovement && animals === 0 && (
+            <div className="form-inline-error">
+              <Icon name="alert" size={17} />
+              Registra al menos una hembra o un macho.
             </div>
           )}
         </div>
@@ -3347,7 +4361,7 @@ function LotMovementModal({
             Cancelar
           </button>
           <button className="button primary" type="submit">
-            Registrar {kind.toLowerCase()}
+            {movement ? "Guardar cambios" : `Registrar ${kind.toLowerCase()}`}
           </button>
         </div>
       </form>
@@ -3355,24 +4369,53 @@ function LotMovementModal({
   )
 }
 
-function PurchasesTab({ records }: { records: LotMovement[] }) {
+function PurchasesTab({
+  records,
+  onChange,
+}: {
+  records: LotMovement[]
+  onChange: (records: LotMovement[]) => void
+}) {
+  const activeRecords = records.filter((record) => !record.annulled)
+  const total = activeRecords.reduce(
+    (sum, record) => sum + (record.value ?? 0),
+    0,
+  )
+  const food = activeRecords.filter(
+    (record) => record.purchaseType === "Alimento",
+  )
+  const foodQuantity = food.reduce(
+    (sum, record) => sum + (record.quantity ?? 0),
+    0,
+  )
+  const other = activeRecords.filter(
+    (record) => record.purchaseType === "Otro insumo",
+  )
+  const [menuOpen, setMenuOpen] = useState<number | null>(null)
+  const [editing, setEditing] = useState<LotMovement | null>(null)
+  const [annulling, setAnnulling] = useState<LotMovement | null>(null)
   return (
     <div className="tab-panel">
       <div className="neutral-summary-cards">
         <div>
           <span>Total comprado</span>
-          <strong>$ 4.280.000</strong>
-          <p>este ciclo</p>
+          <strong>$ {total.toLocaleString("es-CO")}</strong>
+          <p>{records.length} compras en este lote</p>
         </div>
         <div>
           <span>Concentrado</span>
-          <strong>1.260,0 kg</strong>
-          <p>3 compras</p>
+          <strong>{formatDecimal(foodQuantity)} kg</strong>
+          <p>{food.length} compras</p>
         </div>
         <div>
           <span>Otros insumos</span>
-          <strong>$ 380.000</strong>
-          <p>2 compras</p>
+          <strong>
+            ${" "}
+            {other
+              .reduce((sum, record) => sum + (record.value ?? 0), 0)
+              .toLocaleString("es-CO")}
+          </strong>
+          <p>{other.length} compras</p>
         </div>
       </div>
       <section className="records-card">
@@ -3391,60 +4434,146 @@ function PurchasesTab({ records }: { records: LotMovement[] }) {
                 <th>Proveedor</th>
                 <th>Cantidad</th>
                 <th>Factura / valor total</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {records.map((record) => (
-                <tr key={record.id}>
+                <tr
+                  className={record.annulled ? "record-annulled" : ""}
+                  key={record.id}
+                >
                   <td>{record.date}</td>
-                  <td>Compra de animales</td>
+                  <td>{record.concept ?? "Compra de animales"}</td>
                   <td>{record.party}</td>
                   <td>
-                    {record.females + record.males} animales ·{" "}
-                    {formatDecimal(record.totalWeight)} kg
+                    {record.purchaseType === "Animales" ? (
+                      <>
+                        {record.females + record.males} animales ·{" "}
+                        {formatDecimal(record.totalWeight)} kg
+                      </>
+                    ) : (
+                      <>
+                        {formatDecimal(record.quantity ?? 0)}{" "}
+                        {record.unit ?? "unidades"}
+                      </>
+                    )}
                   </td>
-                  <td>{record.invoice || "Sin factura adjunta"}</td>
+                  <td>
+                    $ {(record.value ?? 0).toLocaleString("es-CO")}
+                    {record.invoice ? ` · ${record.invoice}` : ""}
+                    {record.annulled && (
+                      <span className="status neutral">Anulado</span>
+                    )}
+                  </td>
+                  <td className="record-actions-cell">
+                    <button
+                      className="dots-button"
+                      aria-label="Acciones del registro"
+                      onClick={() =>
+                        setMenuOpen(menuOpen === record.id ? null : record.id)
+                      }
+                    >
+                      <Icon name="dots" size={19} />
+                    </button>
+                    {menuOpen === record.id && (
+                      <RecordActionsMenu
+                        onEdit={() => {
+                          setEditing(record)
+                          setMenuOpen(null)
+                        }}
+                        onAnnul={() => {
+                          setAnnulling(record)
+                          setMenuOpen(null)
+                        }}
+                      />
+                    )}
+                  </td>
                 </tr>
               ))}
-              <tr>
-                <td>08/03/2026</td>
-                <td>Concentrado iniciador</td>
-                <td>NutriCampo</td>
-                <td>420,0 kg</td>
-                <td>$ 1.365.000</td>
-              </tr>
-              <tr>
-                <td>25/02/2026</td>
-                <td>Concentrado iniciador</td>
-                <td>AgroNorte</td>
-                <td>420,0 kg</td>
-                <td>$ 1.344.000</td>
-              </tr>
+              {!records.length && (
+                <tr>
+                  <td colSpan={6}>Aún no hay compras registradas.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </section>
+      {editing && (
+        <LotMovementModal
+          kind="Compra"
+          available={0}
+          movement={editing}
+          onClose={() => setEditing(null)}
+          onSave={(updated) => {
+            onChange(
+              records.map((item) => (item.id === updated.id ? updated : item)),
+            )
+            setEditing(null)
+          }}
+        />
+      )}
+      {annulling && (
+        <AnnulRecordDialog
+          onClose={() => setAnnulling(null)}
+          onConfirm={(annulReason) => {
+            onChange(
+              records.map((item) =>
+                item.id === annulling.id
+                  ? { ...item, annulled: true, annulReason }
+                  : item,
+              ),
+            )
+            setAnnulling(null)
+          }}
+        />
+      )}
     </div>
   )
 }
 
-function SalesTab({ records }: { records: LotMovement[] }) {
+function SalesTab({
+  records,
+  available,
+  onChange,
+}: {
+  records: LotMovement[]
+  available: number
+  onChange: (records: LotMovement[]) => void
+}) {
+  const activeRecords = records.filter((record) => !record.annulled)
+  const animals = activeRecords.reduce(
+    (total, record) => total + record.females + record.males,
+    0,
+  )
+  const totalWeight = activeRecords.reduce(
+    (total, record) => total + record.totalWeight,
+    0,
+  )
+  const totalValue = activeRecords.reduce(
+    (total, record) => total + (record.value ?? 0),
+    0,
+  )
+  const [menuOpen, setMenuOpen] = useState<number | null>(null)
+  const [editing, setEditing] = useState<LotMovement | null>(null)
+  const [annulling, setAnnulling] = useState<LotMovement | null>(null)
   return (
     <div className="tab-panel">
       <div className="neutral-summary-cards">
         <div>
           <span>Animales vendidos</span>
-          <strong>64 animales</strong>
+          <strong>{animals} animales</strong>
           <p>animales vendidos</p>
         </div>
         <div>
           <span>Peso vendido</span>
-          <strong>2.086,4 kg</strong>
+          <strong>{formatDecimal(totalWeight)} kg</strong>
           <p>peso total</p>
         </div>
         <div>
           <span>Total ventas</span>
-          <strong>$ 18.420.000</strong>
+          <strong>$ {totalValue.toLocaleString("es-CO")}</strong>
           <p>ingresos del lote</p>
         </div>
       </div>
@@ -3465,11 +4594,15 @@ function SalesTab({ records }: { records: LotMovement[] }) {
                 <th>Peso total (kg)</th>
                 <th>Valor/kg</th>
                 <th>Total</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {records.map((record) => (
-                <tr key={record.id}>
+                <tr
+                  className={record.annulled ? "record-annulled" : ""}
+                  key={record.id}
+                >
                   <td>{record.date}</td>
                   <td>{record.party}</td>
                   <td>{record.females + record.males} animales</td>
@@ -3485,42 +4618,157 @@ function SalesTab({ records }: { records: LotMovement[] }) {
                     {record.value
                       ? `$ ${record.value.toLocaleString("es-CO")}`
                       : "Sin registrar"}
+                    {record.annulled && (
+                      <span className="status neutral">Anulado</span>
+                    )}
+                  </td>
+                  <td className="record-actions-cell">
+                    <button
+                      className="dots-button"
+                      aria-label="Acciones del registro"
+                      onClick={() =>
+                        setMenuOpen(menuOpen === record.id ? null : record.id)
+                      }
+                    >
+                      <Icon name="dots" size={19} />
+                    </button>
+                    {menuOpen === record.id && (
+                      <RecordActionsMenu
+                        onEdit={() => {
+                          setEditing(record)
+                          setMenuOpen(null)
+                        }}
+                        onAnnul={() => {
+                          setAnnulling(record)
+                          setMenuOpen(null)
+                        }}
+                      />
+                    )}
                   </td>
                 </tr>
               ))}
-              <tr>
-                <td>12/03/2026</td>
-                <td>Comercializadora del Norte</td>
-                <td>32 animales</td>
-                <td>1.049,6 kg</td>
-                <td>$ 8.850/kg</td>
-                <td>$ 9.288.960</td>
-              </tr>
-              <tr>
-                <td>03/03/2026</td>
-                <td>Porcícola Antioquia</td>
-                <td>32 animales</td>
-                <td>1.036,8 kg</td>
-                <td>$ 8.805/kg</td>
-                <td>$ 9.127.584</td>
-              </tr>
+              {!records.length && (
+                <tr>
+                  <td colSpan={7}>Aún no hay ventas registradas.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </section>
+      <section className="detail-section-card liquidation-card">
+        <div className="card-section-title">
+          <div>
+            <h2>Liquidación del lote</h2>
+            <p>Disponible cuando finalices el lote</p>
+          </div>
+        </div>
+      </section>
+      {editing && (
+        <LotMovementModal
+          kind="Venta"
+          available={available + editing.females + editing.males}
+          movement={editing}
+          onClose={() => setEditing(null)}
+          onSave={(updated) => {
+            onChange(
+              records.map((item) => (item.id === updated.id ? updated : item)),
+            )
+            setEditing(null)
+          }}
+        />
+      )}
+      {annulling && (
+        <AnnulRecordDialog
+          onClose={() => setAnnulling(null)}
+          onConfirm={(annulReason) => {
+            onChange(
+              records.map((item) =>
+                item.id === annulling.id
+                  ? { ...item, annulled: true, annulReason }
+                  : item,
+              ),
+            )
+            setAnnulling(null)
+          }}
+        />
+      )}
     </div>
   )
 }
 
-function EmptyDetailTab({ tab }: { tab: LotTab }) {
+function FinishLotDialog({
+  lot,
+  onClose,
+  onConfirm,
+}: {
+  lot: Lot
+  onClose: () => void
+  onConfirm: (date: string) => void
+}) {
+  const [date, setDate] = useState(TODAY_ISO)
+  const [submitted, setSubmitted] = useState(false)
+  const figures = calculateLotFigures(lot)
   return (
-    <div className="detail-empty">
-      <div className="empty-lot-art">
-        <Icon name={tab === "Identificación" ? "pig" : "table"} size={34} />
+    <DialogShell title="Finalizar lote" onClose={onClose} size="small">
+      <div className="finish-lot-content">
+        <span className="finish-lot-icon">
+          <Icon name="check" size={22} />
+        </span>
+        <div>
+          <h3>Finalizar {lot.code}</h3>
+          <p>
+            El lote quedará en modo de consulta. No podrás registrar nuevos
+            eventos, pero conservarás todo su historial.
+          </p>
+        </div>
+        <div className="finish-summary">
+          <div>
+            <span>Animales actuales</span>
+            <strong>{figures.currentAnimals}</strong>
+          </div>
+          <div>
+            <span>Vendidos</span>
+            <strong>{figures.soldAnimals}</strong>
+          </div>
+          <div>
+            <span>Mortalidad final</span>
+            <strong>{figures.mortalityAnimals}</strong>
+          </div>
+        </div>
+        <label className={`field ${submitted && !date ? "has-error" : ""}`}>
+          <span>
+            Fecha de finalización <em>* obligatorio</em>
+          </span>
+          <DatePicker
+            value={date}
+            onChange={setDate}
+            max={TODAY_ISO}
+            label="Seleccionar fecha de finalización"
+          />
+          {submitted && !date && (
+            <small>
+              <Icon name="alert" size={14} />
+              Selecciona la fecha de finalización
+            </small>
+          )}
+        </label>
       </div>
-      <h2>{tab}</h2>
-      <p>La información de {tab.toLowerCase()} del lote aparecerá aquí.</p>
-    </div>
+      <div className="modal-actions">
+        <button className="button secondary" onClick={onClose}>
+          Cancelar
+        </button>
+        <button
+          className="button primary"
+          onClick={() => {
+            setSubmitted(true)
+            if (date) onConfirm(date)
+          }}
+        >
+          Finalizar lote
+        </button>
+      </div>
+    </DialogShell>
   )
 }
 
@@ -3579,6 +4827,7 @@ function LotDetail({
   onUpdate,
   onDelete,
   onNotice,
+  existingCodes,
 }: {
   lot: Lot
   farmName: string
@@ -3586,6 +4835,7 @@ function LotDetail({
   onUpdate: (lot: Lot) => void
   onDelete: () => void
   onNotice: (text: string) => void
+  existingCodes: string[]
 }) {
   const [tab, setTab] = useState<LotTab>("Resumen")
   const [menuOpen, setMenuOpen] = useState(false)
@@ -3593,11 +4843,16 @@ function LotDetail({
   const [treatmentModal, setTreatmentModal] = useState(false)
   const [purchaseModal, setPurchaseModal] = useState(false)
   const [saleModal, setSaleModal] = useState(false)
+  const [finishOpen, setFinishOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const [records, setRecords] = useState(mortalityRecords)
-  const [purchaseRecords, setPurchaseRecords] = useState<LotMovement[]>([])
-  const [saleRecords, setSaleRecords] = useState<LotMovement[]>([])
-  const metrics = getLotMetrics(lot)
+  const [editOpen, setEditOpen] = useState(false)
+  const [undoFinishedLot, setUndoFinishedLot] = useState<Lot | null>(null)
+  useEffect(() => {
+    if (!undoFinishedLot) return
+    const timer = window.setTimeout(() => setUndoFinishedLot(null), 5000)
+    return () => window.clearTimeout(timer)
+  }, [undoFinishedLot])
+  const metrics = calculateLotFigures(lot)
   const [treatments, setTreatments] = useState<Treatment[]>([
     {
       id: 1,
@@ -3605,7 +4860,7 @@ function LotDetail({
       date: "10/03/2026",
       method: "Intramuscular",
       overdue: true,
-      applied: false,
+      status: "Programado",
     },
     {
       id: 2,
@@ -3613,7 +4868,7 @@ function LotDetail({
       date: "18/03/2026",
       method: "Intramuscular",
       overdue: false,
-      applied: false,
+      status: "Programado",
     },
     {
       id: 3,
@@ -3621,7 +4876,7 @@ function LotDetail({
       date: "25/03/2026",
       method: "Oral",
       overdue: false,
-      applied: false,
+      status: "Programado",
     },
   ])
   const action: Partial<Record<LotTab, TabAction>> = {
@@ -3663,12 +4918,11 @@ function LotDetail({
         onBack={onBack}
         onEdit={() => {
           setMenuOpen(false)
-          onNotice(`Edición de ${lot.code}`)
+          setEditOpen(true)
         }}
         onFinish={() => {
-          onUpdate({ ...lot, status: "Finalizado" })
           setMenuOpen(false)
-          onNotice("Lote finalizado")
+          setFinishOpen(true)
         }}
         onDelete={() => {
           setMenuOpen(false)
@@ -3701,38 +4955,48 @@ function LotDetail({
           )}
         </div>
       </div>
-      {tab === "Resumen" && <SummaryTab lot={lot} />}
-      {tab === "Mortalidad" && <MortalityTab lot={lot} records={records} />}
+      {tab === "Resumen" && (
+        <SummaryTab lot={lot} onEdit={() => setEditOpen(true)} />
+      )}
+      {tab === "Mortalidad" && (
+        <MortalityTab
+          lot={lot}
+          records={lot.mortalityRecords}
+          onChange={(mortalityRecords) =>
+            onUpdate({ ...lot, mortalityRecords })
+          }
+        />
+      )}
       {tab === "Sanidad" && (
         <HealthTab
           lot={lot}
           treatments={treatments}
           setTreatments={setTreatments}
           readOnly={lot.status === "Finalizado"}
+          onNotice={onNotice}
         />
       )}
-      {tab === "Compras" && <PurchasesTab records={purchaseRecords} />}
-      {tab === "Ventas" && <SalesTab records={saleRecords} />}
-      {(tab === "Liquidación" || tab === "Identificación") && (
-        <EmptyDetailTab tab={tab} />
+      {tab === "Compras" && (
+        <PurchasesTab
+          records={lot.purchaseRecords}
+          onChange={(purchaseRecords) => onUpdate({ ...lot, purchaseRecords })}
+        />
+      )}
+      {tab === "Ventas" && (
+        <SalesTab
+          records={lot.saleRecords}
+          available={metrics.currentAnimals}
+          onChange={(saleRecords) => onUpdate({ ...lot, saleRecords })}
+        />
       )}
       {mortalityModal && (
         <MortalityModal
           available={metrics.currentAnimals}
           onClose={() => setMortalityModal(false)}
           onSave={(record) => {
-            setRecords([record, ...records])
-            const currentAnimals = Math.max(
-              0,
-              metrics.currentAnimals - record.quantity,
-            )
             onUpdate({
               ...lot,
-              currentAnimals,
-              mortality: lot.initialAnimals
-                ? ((lot.initialAnimals - currentAnimals) / lot.initialAnimals) *
-                  100
-                : 0,
+              mortalityRecords: [record, ...lot.mortalityRecords],
             })
             setMortalityModal(false)
             onNotice("Mortalidad registrada")
@@ -3743,7 +5007,8 @@ function LotDetail({
         <TreatmentModal
           lot={lot}
           onClose={() => setTreatmentModal(false)}
-          onSave={() => {
+          onSave={(treatment) => {
+            setTreatments([treatment, ...treatments])
             setTreatmentModal(false)
             onNotice("Tratamiento registrado")
           }}
@@ -3755,7 +5020,10 @@ function LotDetail({
           available={metrics.currentAnimals}
           onClose={() => setPurchaseModal(false)}
           onSave={(movement) => {
-            setPurchaseRecords([movement, ...purchaseRecords])
+            onUpdate({
+              ...lot,
+              purchaseRecords: [movement, ...lot.purchaseRecords],
+            })
             setPurchaseModal(false)
             onNotice("Compra registrada")
           }}
@@ -3767,7 +5035,10 @@ function LotDetail({
           available={metrics.currentAnimals}
           onClose={() => setSaleModal(false)}
           onSave={(movement) => {
-            setSaleRecords([movement, ...saleRecords])
+            onUpdate({
+              ...lot,
+              saleRecords: [movement, ...lot.saleRecords],
+            })
             setSaleModal(false)
             onNotice("Venta registrada")
           }}
@@ -3779,6 +5050,65 @@ function LotDetail({
           onClose={() => setDeleteOpen(false)}
           onConfirm={onDelete}
         />
+      )}
+      {finishOpen && (
+        <FinishLotDialog
+          lot={lot}
+          onClose={() => setFinishOpen(false)}
+          onConfirm={(closedDate) => {
+            setUndoFinishedLot(lot)
+            onUpdate({ ...lot, status: "Finalizado", closedDate })
+            setFinishOpen(false)
+          }}
+        />
+      )}
+      {editOpen && (
+        <CreateLotModal
+          cycle={lot.cycle}
+          lot={lot}
+          existingCodes={existingCodes}
+          onClose={() => setEditOpen(false)}
+          onSave={(draft) => {
+            const females = parseColombianNumber(draft.females)
+            const males = parseColombianNumber(draft.males)
+            const initialAnimals = females + males
+            const initialTotalWeight = parseColombianNumber(draft.totalWeight)
+            onUpdate({
+              ...lot,
+              code: draft.code.trim(),
+              entryDate: draft.entryDate,
+              females,
+              males,
+              initialAnimals,
+              initialTotalWeight,
+              averageWeight:
+                initialAnimals > 0 ? initialTotalWeight / initialAnimals : 0,
+              targetWeight: parseColombianNumber(draft.targetWeight),
+              feedBrand: draft.feedBrand.trim(),
+              origin: draft.origin.trim(),
+              notes: draft.notes.trim(),
+              responsible: draft.responsible.trim(),
+            })
+            setEditOpen(false)
+            onNotice("Cambios guardados")
+          }}
+        />
+      )}
+      {undoFinishedLot && (
+        <div className="toast undo-toast" role="status">
+          <span>
+            <Icon name="check" size={17} />
+          </span>
+          Lote finalizado
+          <button
+            onClick={() => {
+              onUpdate(undoFinishedLot)
+              setUndoFinishedLot(null)
+            }}
+          >
+            Deshacer
+          </button>
+        </div>
       )}
     </>
   )
@@ -7685,11 +9015,12 @@ function FarmSummaryPage({
         ]
       : []),
     ...activeLots
-      .filter((lot) => lot.mortality > lot.mortalityGoal)
-      .map((lot) => ({
+      .map((lot) => ({ lot, figures: calculateLotFigures(lot) }))
+      .filter(({ lot, figures }) => figures.mortality > lot.mortalityGoal)
+      .map(({ lot, figures }) => ({
         id: `lot-${lot.id}`,
         title: "Mortalidad sobre la meta",
-        detail: `${lot.code} · ${formatDecimal(lot.mortality)} % frente a meta de ${formatDecimal(lot.mortalityGoal)} %`,
+        detail: `${lot.code} · ${formatDecimal(figures.mortality)} % frente a meta de ${formatDecimal(lot.mortalityGoal)} %`,
         urgency: 1,
         module: lot.cycle,
       })),
@@ -7789,7 +9120,8 @@ function FarmSummaryPage({
                   <small>
                     {cycleLots
                       .reduce(
-                        (sum, lot) => sum + getLotMetrics(lot).currentAnimals,
+                        (sum, lot) =>
+                          sum + calculateLotFigures(lot).currentAnimals,
                         0,
                       )
                       .toLocaleString("es-CO")}{" "}
@@ -8877,10 +10209,10 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
   const saveLot = (draft: LotDraft) => {
-    const females = Number(draft.females) || 0
-    const males = Number(draft.males) || 0
+    const females = parseColombianNumber(draft.females)
+    const males = parseColombianNumber(draft.males)
     const initialAnimals = females + males
-    const totalWeight = Number(draft.totalWeight.replace(",", ".")) || 0
+    const totalWeight = parseColombianNumber(draft.totalWeight)
     setLots([
       {
         id: Date.now(),
@@ -8892,11 +10224,19 @@ export default function App() {
         females,
         males,
         initialAnimals,
-        currentAnimals: initialAnimals,
         averageWeight: initialAnimals ? totalWeight / initialAnimals : 0,
-        mortality: 0,
         mortalityGoal: activeCycle === "Precebo" ? 2.5 : 2,
         gpd: 0,
+        mortalityRecords: [],
+        purchaseRecords: [],
+        saleRecords: [],
+        entryDate: draft.entryDate,
+        initialTotalWeight: totalWeight,
+        targetWeight: parseColombianNumber(draft.targetWeight),
+        feedBrand: draft.feedBrand.trim(),
+        origin: draft.origin.trim(),
+        notes: draft.notes.trim(),
+        responsible: draft.responsible.trim(),
       },
       ...lots,
     ])
@@ -9109,6 +10449,9 @@ export default function App() {
               setToast("Lote eliminado")
             }}
             onNotice={setToast}
+            existingCodes={lots
+              .filter((lot) => lot.farmId === selectedFarm.id)
+              .map((lot) => lot.code)}
           />
         ) : (
           <LotsList
@@ -9148,6 +10491,9 @@ export default function App() {
       {lotModal && (
         <CreateLotModal
           cycle={activeCycle}
+          existingCodes={lots
+            .filter((lot) => lot.farmId === selectedFarm.id)
+            .map((lot) => lot.code)}
           onClose={() => setLotModal(false)}
           onSave={saveLot}
         />
