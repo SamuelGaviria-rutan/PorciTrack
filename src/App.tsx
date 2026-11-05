@@ -7948,35 +7948,39 @@ function ReproducerPage({
         <div className="reproducer-filters">
           <div className="filter-group">
             <span>Tipo</span>
-            {(["Todos", "Macho", "Semen"] as const).map((item) => (
-              <button
-                className={kind === item ? "active" : ""}
-                onClick={() => setKind(item)}
-                key={item}
-              >
-                {item === "Macho" ? "Machos" : item}
-              </button>
-            ))}
+            <div className="view-toggle">
+              {(["Todos", "Macho", "Semen"] as const).map((item) => (
+                <button
+                  className={kind === item ? "active" : ""}
+                  onClick={() => setKind(item)}
+                  key={item}
+                >
+                  {item === "Macho" ? "Machos" : item}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="filter-group">
             <span>Estado</span>
-            {(["Todos", "Activo", "Fallecido", "Descartado"] as const).map(
-              (item) => (
-                <button
-                  className={status === item ? "active" : ""}
-                  onClick={() => setStatus(item)}
-                  key={item}
-                >
-                  {item === "Activo"
-                    ? "Activos"
-                    : item === "Fallecido"
-                      ? "Fallecidos"
-                      : item === "Descartado"
-                        ? "Descartados"
-                        : item}
-                </button>
-              ),
-            )}
+            <div className="view-toggle">
+              {(["Todos", "Activo", "Fallecido", "Descartado"] as const).map(
+                (item) => (
+                  <button
+                    className={status === item ? "active" : ""}
+                    onClick={() => setStatus(item)}
+                    key={item}
+                  >
+                    {item === "Activo"
+                      ? "Activos"
+                      : item === "Fallecido"
+                        ? "Fallecidos"
+                        : item === "Descartado"
+                          ? "Descartados"
+                          : item}
+                  </button>
+                ),
+              )}
+            </div>
           </div>
         </div>
         <div className="reproducer-grid">
@@ -8415,9 +8419,8 @@ function MedicineInventoryTable({
                 <td>
                   <div className="container-summary">
                     <span>
-                      {item.sealed}{" "}
-                      {item.sealed === 1 ? "sellado" : "sellados"} ·{" "}
-                      {item.open} {item.open === 1 ? "abierto" : "abiertos"}
+                      {item.sealed} {item.sealed === 1 ? "sellado" : "sellados"}{" "}
+                      · {item.open} {item.open === 1 ? "abierto" : "abiertos"}
                       {item.open ? ` (${item.openLevel} % restante)` : ""} ·{" "}
                       {item.empty} {item.empty === 1 ? "vacío" : "vacíos"}
                     </span>
@@ -9301,7 +9304,15 @@ function NewPediluvioPanel({
   const submit = (event: FormEvent) => {
     event.preventDefault()
     setSubmitted(true)
-    if (!form.date || !form.area || !form.product || !form.responsible) return
+    if (
+      !form.date ||
+      !form.area.trim() ||
+      !form.product.trim() ||
+      !form.responsible.trim()
+    ) {
+      focusFirstError(event.currentTarget as HTMLFormElement)
+      return
+    }
     onSave({
       id: Date.now(),
       ...form,
@@ -9358,12 +9369,14 @@ function NewPediluvioPanel({
                   onChange={(value) => setForm({ ...form, date: value })}
                   label="Seleccionar fecha del registro"
                 />
+                {submitted && !form.date && (
+                  <small>
+                    <Icon name="alert" size={14} />
+                    Selecciona la fecha
+                  </small>
+                )}
               </label>
-              <label
-                className={`field ${
-                  submitted && !form.time ? "has-error" : ""
-                }`}
-              >
+              <label className="field">
                 <span>Hora</span>
                 <input
                   type="time"
@@ -9375,7 +9388,9 @@ function NewPediluvioPanel({
               </label>
             </div>
             <label
-              className={`field ${submitted && !form.area ? "has-error" : ""}`}
+              className={`field ${
+                submitted && !form.area.trim() ? "has-error" : ""
+              }`}
             >
               <span>
                 Área <em>* obligatorio</em>
@@ -9386,11 +9401,18 @@ function NewPediluvioPanel({
                   setForm({ ...form, area: event.target.value })
                 }
                 placeholder="Ej. Precebo 1"
+                aria-invalid={submitted && !form.area.trim()}
               />
+              {submitted && !form.area.trim() && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Escribe el área
+                </small>
+              )}
             </label>
             <label
               className={`field ${
-                submitted && !form.product ? "has-error" : ""
+                submitted && !form.product.trim() ? "has-error" : ""
               }`}
             >
               <span>
@@ -9402,7 +9424,14 @@ function NewPediluvioPanel({
                   setForm({ ...form, product: event.target.value })
                 }
                 placeholder="Nombre del desinfectante"
+                aria-invalid={submitted && !form.product.trim()}
               />
+              {submitted && !form.product.trim() && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Escribe el producto
+                </small>
+              )}
             </label>
             <div className="form-grid">
               <label className="field">
@@ -9439,7 +9468,7 @@ function NewPediluvioPanel({
             </div>
             <label
               className={`field ${
-                submitted && !form.responsible ? "has-error" : ""
+                submitted && !form.responsible.trim() ? "has-error" : ""
               }`}
             >
               <span>
@@ -9451,7 +9480,14 @@ function NewPediluvioPanel({
                   setForm({ ...form, responsible: event.target.value })
                 }
                 placeholder="Nombre de quien realizó el control"
+                aria-invalid={submitted && !form.responsible.trim()}
               />
+              {submitted && !form.responsible.trim() && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Escribe el responsable
+                </small>
+              )}
             </label>
           </div>
           <div className="panel-actions">
@@ -10875,7 +10911,9 @@ function DashboardsPage({
                     <p>{section.description}</p>
                   </div>
                   <div
-                    className={`report-section-toggle ${checked ? "included" : ""}`}
+                    className={`report-section-toggle ${
+                      checked ? "included" : ""
+                    }`}
                     aria-hidden="true"
                   >
                     <strong>{checked ? "Incluido" : "No incluido"}</strong>
@@ -11380,10 +11418,7 @@ export default function App() {
         ) : page === "porciTable" ? (
           <PorciTablePage farmName={selectedFarm.name} />
         ) : page === "dashboards" ? (
-          <DashboardsPage
-            initialScope={dashboardScope}
-            onNotice={setToast}
-          />
+          <DashboardsPage initialScope={dashboardScope} onNotice={setToast} />
         ) : page === "calendar" ? (
           <CalendarPage farm={selectedFarm} onNotice={setToast} />
         ) : page === "settings" ? (
