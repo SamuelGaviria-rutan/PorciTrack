@@ -10703,7 +10703,7 @@ function DashboardsPage({
     new Date(`${startDate}T12:00:00`),
   )} al ${formatDate(new Date(`${endDate}T12:00:00`))}`
   const reportSubtitle = isConsolidated
-    ? `Consolidado · ${initialFarms.length} granjas · ${formattedPeriod}`
+    ? `Consolidado · ${initialFarms.length} granjas · período ${formattedPeriod}`
     : `${scope} · ${formattedPeriod}`
 
   if (!role) {
@@ -11288,6 +11288,7 @@ export default function App() {
             onConsolidated={() => {
               setDashboardScope(consolidatedReportScope)
               setPage("dashboards")
+              setSelectedLot(null)
               window.scrollTo({ top: 0, behavior: "smooth" })
             }}
             onCreateLot={() => setLotModal(true)}
