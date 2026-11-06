@@ -2,12 +2,14 @@ import {
   FormEvent,
   ReactNode,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
 } from "react"
+import { createPortal } from "react-dom"
 
-type IconName = "home" | "sow" | "boar" | "piglet" | "growth" | "box" | "table" | "chart" | "calendar" | "settings" | "mic" | "plus" | "edit" | "pin" | "alert" | "pig" | "trend" | "chevron" | "logout" | "menu" | "x" | "check" | "trash" | "arrow" | "dots" | "list" | "grid" | "weight" | "clock" | "info" | "syringe" | "bell" | "download" | "search" | "heart" | "baby" | "droplet" | "filter" | "sort"
+type IconName = "home" | "sow" | "boar" | "piglet" | "growth" | "box" | "table" | "chart" | "calendar" | "settings" | "mic" | "plus" | "edit" | "pin" | "alert" | "pig" | "trend" | "chevron" | "logout" | "menu" | "x" | "check" | "trash" | "arrow" | "dots" | "list" | "grid" | "weight" | "clock" | "info" | "syringe" | "bell" | "download" | "search" | "heart" | "baby" | "droplet" | "filter" | "sort" | "star"
 
 function Icon({
   name,
@@ -216,6 +218,9 @@ function Icon({
         <path d="m3 8 2-2 2 2M5 6v12" />
       </>
     ),
+    star: (
+      <path d="m12 2.8 2.8 5.7 6.3.9-4.5 4.4 1 6.2-5.6-2.9L6.4 20l1-6.2-4.5-4.4 6.3-.9Z" />
+    ),
   }
   return (
     <svg
@@ -252,6 +257,14 @@ type Farm = {
   animals: number
   mortality: string
   goal: string
+}
+
+type HomeFarmAlert = {
+  id: string
+  title: string
+  detail: string
+  urgency: number
+  module: string
 }
 
 const initialFarms: Farm[] = [
@@ -292,6 +305,41 @@ const initialFarms: Farm[] = [
     goal: "≤ 2,2 %",
   },
 ]
+
+const homeFarmAlerts: Record<number, HomeFarmAlert[]> = {
+  1: [
+    {
+      id: "esperanza-vaccine",
+      title: "Vacuna Circovirus por vencer",
+      detail: "Cerda #1305 · el refuerzo vence mañana",
+      urgency: 1,
+      module: "Plantel reproductivo",
+    },
+    {
+      id: "esperanza-mortality",
+      title: "Mortalidad sobre la meta",
+      detail: "Lote PC-2025-017 · requiere revisión",
+      urgency: 2,
+      module: "Precebo",
+    },
+    {
+      id: "esperanza-inventory",
+      title: "Stock mínimo alcanzado",
+      detail: "Vacuna Circovirus · quedan 2 ítems",
+      urgency: 3,
+      module: "Inventario",
+    },
+  ],
+  3: [
+    {
+      id: "san-jose-inventory",
+      title: "Revisar inventario",
+      detail: "Oxitocina San José · 1 ítem disponible, mínimo 3",
+      urgency: 1,
+      module: "Inventario",
+    },
+  ],
+}
 
 type ProductionCycle = "Precebo" | "Levante"
 type LotStatus = "Activo" | "Finalizado"
@@ -629,7 +677,16 @@ function Sidebar({
     )
   return (
     <aside className="sidebar">
-      <Logo />
+      <button
+        className="brand-button"
+        aria-label="Ir a Inicio"
+        onClick={() => {
+          setFarmMenuOpen(false)
+          onNavigate("Inicio")
+        }}
+      >
+        <Logo />
+      </button>
       <button
         className={`all-farms-link ${isHome ? "active" : ""}`}
         onClick={() => onNavigate("Inicio")}
@@ -796,7 +853,16 @@ function MobileNavigation({
   return (
     <>
       <div className="mobile-top">
-        <Logo />
+        <button
+          className="brand-button"
+          aria-label="Ir a Inicio"
+          onClick={() => {
+            onNavigate("Inicio")
+            setOpen(false)
+          }}
+        >
+          <Logo />
+        </button>
         <button
           className="icon-button menu-button"
           onClick={() => setOpen(!open)}
@@ -809,7 +875,7 @@ function MobileNavigation({
       {open && (
         <div className="mobile-drawer">
           <button
-            className="mobile-all-farms"
+            className={`mobile-all-farms ${isHome ? "active" : ""}`}
             onClick={() => {
               onNavigate("Inicio")
               setOpen(false)
@@ -1056,12 +1122,24 @@ function VoiceRegistrationModal({
   )
 }
 
-function StatusBadge({ alerts }: { alerts: number }) {
+function StatusBadge({
+  alerts,
+  open,
+  onClick,
+}: {
+  alerts: number
+  open?: boolean
+  onClick?: () => void
+}) {
   return alerts > 0 ? (
-    <span className="status warning">
+    <button
+      className="status warning farm-alert-button"
+      onClick={onClick}
+      aria-expanded={open}
+    >
       <Icon name="alert" size={14} />
       {alerts} {alerts === 1 ? "alerta" : "alertas"}
-    </span>
+    </button>
   ) : (
     <span className="status positive">
       <Icon name="check" size={14} />
@@ -1076,15 +1154,26 @@ function FarmCard({
   onSummary,
   onCycle,
   onTool,
+  onResolveAlert,
 }: {
   farm: Farm
   onEdit: () => void
   onSummary: () => void
   onCycle: (cycle: Cycle) => void
   onTool: (tool: string) => void
+  onResolveAlert: (module: string) => void
 }) {
+  const [alertsOpen, setAlertsOpen] = useState(false)
+  const alertWrapRef = useDismissibleMenu(alertsOpen, () =>
+    setAlertsOpen(false),
+  )
+  const configuredAlerts = homeFarmAlerts[farm.id] ?? []
+  const alerts = configuredAlerts.slice(0, farm.alerts)
+  const cardCycles = cycleOrder.filter(
+    (cycle) => cycle === "Reproductor" || farm.cycles.includes(cycle),
+  )
   return (
-    <article className="farm-card">
+    <article className={`farm-card ${alertsOpen ? "alerts-open" : ""}`}>
       <div className="farm-heading">
         <div>
           <div className="farm-name-line">
@@ -1107,43 +1196,58 @@ function FarmCard({
             <Icon name="arrow" size={15} />
           </button>
         </div>
-        <StatusBadge alerts={farm.alerts} />
-      </div>
-      <div className="metrics">
-        <div
-          className={`metric alert-metric ${farm.alerts === 0 ? "good" : ""}`}
-        >
-          <span>Alertas pendientes</span>
-          <strong>{farm.alerts}</strong>
-          <small>{farm.urgent}</small>
-        </div>
-        <div className="metric">
-          <span>Lotes activos</span>
-          <strong>{farm.lots}</strong>
-          <small>En producción</small>
-        </div>
-        <div className="metric">
-          <span>Animales totales</span>
-          <strong>{farm.animals.toLocaleString("es-CO")}</strong>
-          <small>Inventario actual</small>
-        </div>
-        <div className="metric">
-          <span>Mortalidad del mes</span>
-          <strong>{farm.mortality}</strong>
-          <small>Meta {farm.goal}</small>
+        <div className="farm-alert-wrap" ref={alertWrapRef}>
+          <StatusBadge
+            alerts={farm.alerts}
+            open={alertsOpen}
+            onClick={() => setAlertsOpen(!alertsOpen)}
+          />
+          {alertsOpen && (
+            <div className="alerts-popover farm-alerts-popover">
+              <div className="popover-heading">
+                <strong>Alertas</strong>
+                <span>Ordenadas por urgencia</span>
+              </div>
+              {alerts
+                .slice()
+                .sort((a, b) => a.urgency - b.urgency)
+                .map((alert) => (
+                  <div className="popover-alert" key={alert.id}>
+                    <span className={`alert-dot urgency-${alert.urgency}`} />
+                    <div>
+                      <strong>{alert.title}</strong>
+                      <p>{alert.detail}</p>
+                      <button
+                        onClick={() => {
+                          setAlertsOpen(false)
+                          onResolveAlert(alert.module)
+                        }}
+                      >
+                        Resolver ahora
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
       </div>
       <div className="farm-section">
         <span className="section-label">Ciclos activos</span>
         <div className="cycle-list">
-          {cycleOrder
-            .filter((cycle) => farm.cycles.includes(cycle))
-            .map((cycle) => (
+          {cardCycles.map((cycle) =>
+            cycle === "Reproductor" ? (
+              <span className="visual-cycle" key={cycle}>
+                <Icon name="boar" size={16} />
+                Reproductor
+              </span>
+            ) : (
               <button key={cycle} onClick={() => onCycle(cycle)}>
                 {cycle}
                 <Icon name="arrow" size={15} />
               </button>
-            ))}
+            ),
+          )}
         </div>
       </div>
       <div className="farm-section tools-section">
@@ -1168,11 +1272,6 @@ function Skeletons() {
         <div className="farm-card skeleton-card" key={item}>
           <div className="skeleton w-40" />
           <div className="skeleton w-28" />
-          <div className="skeleton-metrics">
-            {[1, 2, 3, 4].map((x) => (
-              <div className="skeleton metric-skeleton" key={x} />
-            ))}
-          </div>
           <div className="skeleton w-full" />
           <div className="skeleton w-3-4" />
         </div>
@@ -1688,8 +1787,15 @@ function DatePicker({
   max?: string
   label?: string
 }) {
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const popoverRef = useRef<HTMLDivElement>(null)
   const selectedDate = value ? new Date(`${value}T12:00:00`) : null
   const [open, setOpen] = useState(false)
+  const [popoverPosition, setPopoverPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 286,
+  })
   const [visibleMonth, setVisibleMonth] = useState(
     () => selectedDate ?? new Date(2026, 2, 1, 12),
   )
@@ -1701,6 +1807,43 @@ function DatePicker({
     return () =>
       window.removeEventListener("porci-date-picker-open", closeOtherPicker)
   }, [label])
+  useLayoutEffect(() => {
+    if (!open) return
+
+    const positionPopover = () => {
+      const trigger = triggerRef.current
+      if (!trigger) return
+
+      const viewportMargin = 12
+      const gap = 6
+      const rect = trigger.getBoundingClientRect()
+      const width = Math.min(286, window.innerWidth - viewportMargin * 2)
+      const height = popoverRef.current?.getBoundingClientRect().height ?? 330
+      const left = Math.min(
+        Math.max(rect.left, viewportMargin),
+        window.innerWidth - width - viewportMargin,
+      )
+      const fitsBelow =
+        window.innerHeight - rect.bottom >= height + gap + viewportMargin
+      const top = fitsBelow
+        ? rect.bottom + gap
+        : Math.max(viewportMargin, rect.top - height - gap)
+
+      setPopoverPosition({ top, left, width })
+    }
+
+    positionPopover()
+    const animationFrame = window.requestAnimationFrame(positionPopover)
+    const settledTimer = window.setTimeout(positionPopover, 250)
+    window.addEventListener("resize", positionPopover)
+    window.addEventListener("scroll", positionPopover, true)
+    return () => {
+      window.cancelAnimationFrame(animationFrame)
+      window.clearTimeout(settledTimer)
+      window.removeEventListener("resize", positionPopover)
+      window.removeEventListener("scroll", positionPopover, true)
+    }
+  }, [open, visibleMonth])
   const year = visibleMonth.getFullYear()
   const month = visibleMonth.getMonth()
   const firstWeekday = new Date(year, month, 1).getDay()
@@ -1713,6 +1856,7 @@ function DatePicker({
   return (
     <div className="date-picker">
       <button
+        ref={triggerRef}
         type="button"
         className={`date-picker-trigger ${value ? "" : "placeholder"}`}
         onClick={() => {
@@ -1729,65 +1873,77 @@ function DatePicker({
         <span>{selectedDate ? formatDate(selectedDate) : "dd/mm/aaaa"}</span>
         <Icon name="calendar" size={18} />
       </button>
-      {open && (
-        <div className="date-picker-popover">
-          <div className="date-picker-heading">
-            <button
-              type="button"
-              className="icon-button"
-              aria-label="Mes anterior"
-              onClick={() => setVisibleMonth(new Date(year, month - 1, 1, 12))}
-            >
-              <Icon name="chevron" size={17} />
-            </button>
-            <strong>
-              {visibleMonth.toLocaleDateString("es-CO", {
-                month: "long",
-                year: "numeric",
+      {open &&
+        createPortal(
+          <div
+            className="date-picker-popover"
+            ref={popoverRef}
+            style={popoverPosition}
+          >
+            <div className="date-picker-heading">
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Mes anterior"
+                onClick={() =>
+                  setVisibleMonth(new Date(year, month - 1, 1, 12))
+                }
+              >
+                <Icon name="chevron" size={17} />
+              </button>
+              <strong>
+                {visibleMonth.toLocaleDateString("es-CO", {
+                  month: "long",
+                  year: "numeric",
+                })}
+              </strong>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Mes siguiente"
+                onClick={() =>
+                  setVisibleMonth(new Date(year, month + 1, 1, 12))
+                }
+              >
+                <Icon name="chevron" size={17} />
+              </button>
+            </div>
+            <div className="date-picker-weekdays">
+              {["D", "L", "M", "M", "J", "V", "S"].map((day, index) => (
+                <span key={`${day}-${index}`}>{day}</span>
+              ))}
+            </div>
+            <div className="date-picker-grid">
+              {Array.from({ length: firstWeekday }, (_, index) => (
+                <span key={`empty-${index}`} />
+              ))}
+              {Array.from({ length: daysInMonth }, (_, index) => {
+                const day = index + 1
+                const iso = toIso(day)
+                const disabled = Boolean(
+                  (min && iso < min) || (max && iso > max),
+                )
+                return (
+                  <button
+                    type="button"
+                    className={`${value === iso ? "selected" : ""} ${
+                      iso === TODAY_ISO ? "today" : ""
+                    }`}
+                    disabled={disabled}
+                    onClick={() => {
+                      onChange(iso)
+                      setOpen(false)
+                    }}
+                    key={iso}
+                  >
+                    {day}
+                  </button>
+                )
               })}
-            </strong>
-            <button
-              type="button"
-              className="icon-button"
-              aria-label="Mes siguiente"
-              onClick={() => setVisibleMonth(new Date(year, month + 1, 1, 12))}
-            >
-              <Icon name="chevron" size={17} />
-            </button>
-          </div>
-          <div className="date-picker-weekdays">
-            {["D", "L", "M", "M", "J", "V", "S"].map((day, index) => (
-              <span key={`${day}-${index}`}>{day}</span>
-            ))}
-          </div>
-          <div className="date-picker-grid">
-            {Array.from({ length: firstWeekday }, (_, index) => (
-              <span key={`empty-${index}`} />
-            ))}
-            {Array.from({ length: daysInMonth }, (_, index) => {
-              const day = index + 1
-              const iso = toIso(day)
-              const disabled = Boolean((min && iso < min) || (max && iso > max))
-              return (
-                <button
-                  type="button"
-                  className={`${value === iso ? "selected" : ""} ${
-                    iso === TODAY_ISO ? "today" : ""
-                  }`}
-                  disabled={disabled}
-                  onClick={() => {
-                    onChange(iso)
-                    setOpen(false)
-                  }}
-                  key={iso}
-                >
-                  {day}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }
@@ -1874,6 +2030,30 @@ function LotMenu({
   )
 }
 
+function useDismissibleMenu(open: boolean, onClose: () => void) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!ref.current?.contains(event.target as Node)) onClose()
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose()
+    }
+
+    document.addEventListener("mousedown", handlePointerDown)
+    document.addEventListener("keydown", handleKeyDown)
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown)
+      document.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [open, onClose])
+
+  return ref
+}
+
 function LotCard({
   lot,
   menuOpen,
@@ -1886,6 +2066,7 @@ function LotCard({
   onAction: (action: "view" | "edit" | "finish" | "delete", lot: Lot) => void
 }) {
   const metrics = calculateLotFigures(lot)
+  const menuRef = useDismissibleMenu(menuOpen, onMenu)
   return (
     <article
       className="lot-card interactive"
@@ -1904,7 +2085,7 @@ function LotCard({
           <span className="lot-label">Código del lote</span>
           <h3>{lot.code}</h3>
         </div>
-        <div className="lot-card-actions">
+        <div className="lot-card-actions" ref={menuRef}>
           <span
             className={`status ${
               lot.status === "Activo" ? "positive" : "neutral"
@@ -2100,6 +2281,7 @@ function LotsList({
 }) {
   const [view, setView] = useState<"cards" | "table">("cards")
   const [menuOpen, setMenuOpen] = useState<number | null>(null)
+  const [editingLot, setEditingLot] = useState<Lot | null>(null)
   const [deletingLot, setDeletingLot] = useState<Lot | null>(null)
   const [finishingLot, setFinishingLot] = useState<Lot | null>(null)
   const [undoFinishedLot, setUndoFinishedLot] = useState<Lot | null>(null)
@@ -2118,7 +2300,7 @@ function LotsList({
     } else if (kind === "delete") {
       setDeletingLot(lot)
     } else if (kind === "edit") {
-      onNotice(`Edición de ${lot.code}`)
+      setEditingLot(lot)
     } else {
       onOpenLot(lot)
     }
@@ -2211,6 +2393,19 @@ function LotsList({
           }}
         />
       )}
+      {editingLot && (
+        <CreateLotModal
+          cycle={editingLot.cycle}
+          lot={editingLot}
+          existingCodes={lots.map((lot) => lot.code)}
+          onClose={() => setEditingLot(null)}
+          onSave={(draft) => {
+            onUpdate(updateLotFromDraft(editingLot, draft))
+            setEditingLot(null)
+            onNotice("Lote actualizado")
+          }}
+        />
+      )}
       {finishingLot && (
         <FinishLotDialog
           lot={finishingLot}
@@ -2257,6 +2452,29 @@ type LotDraft = {
   origin: string
   notes: string
   responsible: string
+}
+
+function updateLotFromDraft(lot: Lot, draft: LotDraft): Lot {
+  const females = parseColombianNumber(draft.females)
+  const males = parseColombianNumber(draft.males)
+  const initialAnimals = females + males
+  const initialTotalWeight = parseColombianNumber(draft.totalWeight)
+
+  return {
+    ...lot,
+    code: draft.code.trim(),
+    entryDate: draft.entryDate,
+    females,
+    males,
+    initialAnimals,
+    initialTotalWeight,
+    averageWeight: initialAnimals > 0 ? initialTotalWeight / initialAnimals : 0,
+    targetWeight: parseColombianNumber(draft.targetWeight),
+    feedBrand: draft.feedBrand.trim(),
+    origin: draft.origin.trim(),
+    notes: draft.notes.trim(),
+    responsible: draft.responsible.trim(),
+  }
 }
 
 function CreateLotModal({
@@ -2736,6 +2954,7 @@ function LotDetailHeader({
   disabledReason: string
 }) {
   const metrics = calculateLotFigures(lot)
+  const menuRef = useDismissibleMenu(menuOpen, onMenu)
   return (
     <header className="lot-detail-header">
       <div className="breadcrumbs">
@@ -2793,7 +3012,7 @@ function LotDetailHeader({
               </button>
             </div>
           )}
-          <div className="detail-menu-wrap">
+          <div className="detail-menu-wrap" ref={menuRef}>
             <button
               className="detail-menu-button"
               onClick={onMenu}
@@ -5082,28 +5301,9 @@ function LotDetail({
           existingCodes={existingCodes}
           onClose={() => setEditOpen(false)}
           onSave={(draft) => {
-            const females = parseColombianNumber(draft.females)
-            const males = parseColombianNumber(draft.males)
-            const initialAnimals = females + males
-            const initialTotalWeight = parseColombianNumber(draft.totalWeight)
-            onUpdate({
-              ...lot,
-              code: draft.code.trim(),
-              entryDate: draft.entryDate,
-              females,
-              males,
-              initialAnimals,
-              initialTotalWeight,
-              averageWeight:
-                initialAnimals > 0 ? initialTotalWeight / initialAnimals : 0,
-              targetWeight: parseColombianNumber(draft.targetWeight),
-              feedBrand: draft.feedBrand.trim(),
-              origin: draft.origin.trim(),
-              notes: draft.notes.trim(),
-              responsible: draft.responsible.trim(),
-            })
+            onUpdate(updateLotFromDraft(lot, draft))
             setEditOpen(false)
-            onNotice("Cambios guardados")
+            onNotice("Lote actualizado")
           }}
         />
       )}
@@ -8257,18 +8457,70 @@ function RemoveInventoryDialog({
 }
 
 function InventoryRowMenu({
+  anchor,
+  onClose,
   onHistory,
   onEdit,
   onCount,
   onRemove,
 }: {
+  anchor: HTMLButtonElement
+  onClose: () => void
   onHistory: () => void
   onEdit: () => void
   onCount: () => void
   onRemove: () => void
 }) {
-  return (
-    <div className="lot-menu inventory-row-menu">
+  const menuRef = useRef<HTMLDivElement>(null)
+  const [position, setPosition] = useState({ top: 0, left: 0 })
+
+  useLayoutEffect(() => {
+    const positionMenu = () => {
+      const menu = menuRef.current
+      if (!menu) return
+
+      const viewportMargin = 12
+      const gap = 6
+      const anchorRect = anchor.getBoundingClientRect()
+      const menuRect = menu.getBoundingClientRect()
+      const left = Math.min(
+        Math.max(anchorRect.right - menuRect.width, viewportMargin),
+        window.innerWidth - menuRect.width - viewportMargin,
+      )
+      const fitsBelow =
+        window.innerHeight - anchorRect.bottom >=
+        menuRect.height + gap + viewportMargin
+      const top = fitsBelow
+        ? anchorRect.bottom + gap
+        : Math.max(viewportMargin, anchorRect.top - menuRect.height - gap)
+
+      setPosition({ top, left })
+    }
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node
+      if (!menuRef.current?.contains(target) && !anchor.contains(target)) {
+        onClose()
+      }
+    }
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose()
+    }
+
+    positionMenu()
+    window.addEventListener("resize", positionMenu)
+    window.addEventListener("scroll", positionMenu, true)
+    document.addEventListener("mousedown", handlePointerDown)
+    document.addEventListener("keydown", handleKeyDown)
+    return () => {
+      window.removeEventListener("resize", positionMenu)
+      window.removeEventListener("scroll", positionMenu, true)
+      document.removeEventListener("mousedown", handlePointerDown)
+      document.removeEventListener("keydown", handleKeyDown)
+    }
+  }, [anchor, onClose])
+
+  return createPortal(
+    <div className="lot-menu inventory-row-menu" ref={menuRef} style={position}>
       <button onClick={onHistory}>
         <Icon name="clock" size={16} />
         Ver historial
@@ -8286,7 +8538,8 @@ function InventoryRowMenu({
         <Icon name="trash" size={16} />
         Dar de baja
       </button>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -8305,6 +8558,11 @@ function FoodInventoryTable({
   onNotice: (text: string) => void
   onRemove: (item: FoodItem) => void
 }) {
+  const [menuAnchor, setMenuAnchor] = useState<HTMLButtonElement | null>(null)
+  const closeMenu = () => {
+    setMenuOpen(null)
+    setMenuAnchor(null)
+  }
   return (
     <div className="table-wrap inventory-table food-table">
       <table>
@@ -8345,26 +8603,35 @@ function FoodInventoryTable({
                   <button
                     className="dots-button"
                     aria-label={`Acciones de ${item.name}`}
-                    onClick={() => setMenuOpen(menuOpen === key ? null : key)}
+                    onClick={(event) => {
+                      if (menuOpen === key) {
+                        closeMenu()
+                      } else {
+                        setMenuAnchor(event.currentTarget)
+                        setMenuOpen(key)
+                      }
+                    }}
                   >
                     <Icon name="dots" size={20} />
                   </button>
-                  {menuOpen === key && (
+                  {menuOpen === key && menuAnchor && (
                     <InventoryRowMenu
+                      anchor={menuAnchor}
+                      onClose={closeMenu}
                       onHistory={() => {
-                        setMenuOpen(null)
+                        closeMenu()
                         onView("Historial")
                       }}
                       onEdit={() => {
-                        setMenuOpen(null)
+                        closeMenu()
                         onNotice(`Edición de ${item.name}`)
                       }}
                       onCount={() => {
-                        setMenuOpen(null)
+                        closeMenu()
                         onView("Conteo físico")
                       }}
                       onRemove={() => {
-                        setMenuOpen(null)
+                        closeMenu()
                         onRemove(item)
                       }}
                     />
@@ -8394,6 +8661,11 @@ function MedicineInventoryTable({
   onNotice: (text: string) => void
   onRemove: (item: MedicineItem) => void
 }) {
+  const [menuAnchor, setMenuAnchor] = useState<HTMLButtonElement | null>(null)
+  const closeMenu = () => {
+    setMenuOpen(null)
+    setMenuAnchor(null)
+  }
   return (
     <div className="table-wrap inventory-table medicine-table">
       <table>
@@ -8458,26 +8730,35 @@ function MedicineInventoryTable({
                   <button
                     className="dots-button"
                     aria-label={`Acciones de ${item.name}`}
-                    onClick={() => setMenuOpen(menuOpen === key ? null : key)}
+                    onClick={(event) => {
+                      if (menuOpen === key) {
+                        closeMenu()
+                      } else {
+                        setMenuAnchor(event.currentTarget)
+                        setMenuOpen(key)
+                      }
+                    }}
                   >
                     <Icon name="dots" size={20} />
                   </button>
-                  {menuOpen === key && (
+                  {menuOpen === key && menuAnchor && (
                     <InventoryRowMenu
+                      anchor={menuAnchor}
+                      onClose={closeMenu}
                       onHistory={() => {
-                        setMenuOpen(null)
+                        closeMenu()
                         onView("Historial")
                       }}
                       onEdit={() => {
-                        setMenuOpen(null)
+                        closeMenu()
                         onNotice(`Edición de ${item.name}`)
                       }}
                       onCount={() => {
-                        setMenuOpen(null)
+                        closeMenu()
                         onView("Conteo físico")
                       }}
                       onRemove={() => {
-                        setMenuOpen(null)
+                        closeMenu()
                         onRemove(item)
                       }}
                     />
@@ -9508,50 +9789,824 @@ function NewPediluvioPanel({
   )
 }
 
-function PorciTablePage({ farmName }: { farmName: string }) {
-  const [selectedTable, setSelectedTable] = useState("Control de pediluvios")
+type PorciColumnType = "Texto" | "Número" | "Fecha" | "Hora" | "Lista de opciones" | "Estado Hecho/Pendiente"
+
+type PorciColumn = {
+  id: string
+  name: string
+  type: PorciColumnType
+  required: boolean
+  locked?: boolean
+}
+
+type PorciTableDefinition = {
+  id: string
+  name: string
+  icon: IconName
+  columns: PorciColumn[]
+}
+
+type PorciDynamicRecord = {
+  id: number
+  values: Record<string, string>
+}
+
+const porciIconOptions: IconName[] = [
+  "table",
+  "droplet",
+  "check",
+  "trend",
+  "box",
+  "calendar",
+]
+
+const porciColumnTypes: PorciColumnType[] = [
+  "Texto",
+  "Número",
+  "Fecha",
+  "Hora",
+  "Lista de opciones",
+  "Estado Hecho/Pendiente",
+]
+
+const initialPorciTables: PorciTableDefinition[] = [
+  {
+    id: "pediluvios",
+    name: "Control de pediluvios",
+    icon: "droplet",
+    columns: [
+      {
+        id: "date",
+        name: "Fecha",
+        type: "Fecha",
+        required: true,
+        locked: true,
+      },
+      {
+        id: "area",
+        name: "Área",
+        type: "Texto",
+        required: true,
+        locked: true,
+      },
+      { id: "product", name: "Producto", type: "Texto", required: true },
+      {
+        id: "productQuantity",
+        name: "Cantidad de producto (ml)",
+        type: "Número",
+        required: false,
+      },
+      {
+        id: "waterQuantity",
+        name: "Cantidad de agua (L)",
+        type: "Número",
+        required: false,
+      },
+      { id: "time", name: "Hora", type: "Hora", required: false },
+      {
+        id: "responsible",
+        name: "Responsable",
+        type: "Texto",
+        required: true,
+      },
+      {
+        id: "status",
+        name: "Estado",
+        type: "Estado Hecho/Pendiente",
+        required: true,
+      },
+    ],
+  },
+  {
+    id: "corrales",
+    name: "Limpieza de corrales",
+    icon: "check",
+    columns: [
+      {
+        id: "date",
+        name: "Fecha",
+        type: "Fecha",
+        required: true,
+        locked: true,
+      },
+      {
+        id: "area",
+        name: "Área",
+        type: "Texto",
+        required: true,
+        locked: true,
+      },
+      {
+        id: "responsible",
+        name: "Responsable",
+        type: "Texto",
+        required: false,
+      },
+      {
+        id: "status",
+        name: "Estado",
+        type: "Estado Hecho/Pendiente",
+        required: true,
+      },
+    ],
+  },
+  {
+    id: "temperaturas",
+    name: "Temperatura de salas",
+    icon: "trend",
+    columns: [
+      {
+        id: "date",
+        name: "Fecha",
+        type: "Fecha",
+        required: true,
+        locked: true,
+      },
+      {
+        id: "area",
+        name: "Área",
+        type: "Texto",
+        required: true,
+        locked: true,
+      },
+      {
+        id: "temperature",
+        name: "Temperatura",
+        type: "Número",
+        required: true,
+      },
+      { id: "time", name: "Hora", type: "Hora", required: false },
+    ],
+  },
+]
+
+const initialPorciRecords: Record<string, PorciDynamicRecord[]> = {
+  pediluvios: initialPediluvioRecords.map((record) => ({
+    id: record.id,
+    values: {
+      date: record.date,
+      area: record.area,
+      product: record.product,
+      productQuantity: record.productQuantity,
+      waterQuantity: record.waterQuantity,
+      time: record.time,
+      responsible: record.responsible,
+      status: record.status,
+    },
+  })),
+  corrales: [],
+  temperaturas: [],
+}
+
+function PorciTableListItem({
+  table,
+  selected,
+  menuOpen,
+  onSelect,
+  onMenu,
+  onCloseMenu,
+  onEdit,
+  onDuplicate,
+  onDelete,
+}: {
+  table: PorciTableDefinition
+  selected: boolean
+  menuOpen: boolean
+  onSelect: () => void
+  onMenu: () => void
+  onCloseMenu: () => void
+  onEdit: () => void
+  onDuplicate: () => void
+  onDelete: () => void
+}) {
+  const menuRef = useDismissibleMenu(menuOpen, onCloseMenu)
+  return (
+    <div
+      className={`porci-table-list-item ${selected ? "active" : ""}`}
+      ref={menuRef}
+    >
+      <button className="porci-table-select" onClick={onSelect}>
+        <Icon name={table.icon} size={18} />
+        <span>{table.name}</span>
+      </button>
+      <button
+        className="porci-table-menu-button"
+        aria-label={`Opciones de ${table.name}`}
+        aria-expanded={menuOpen}
+        onClick={onMenu}
+      >
+        <Icon name="dots" size={18} />
+      </button>
+      {menuOpen && (
+        <div className="lot-menu porci-table-menu">
+          <button onClick={onEdit}>
+            <Icon name="edit" size={16} />
+            Editar tabla
+          </button>
+          <button onClick={onDuplicate}>
+            <Icon name="list" size={16} />
+            Duplicar
+          </button>
+          <div className="menu-divider" />
+          <button className="delete-item" onClick={onDelete}>
+            <Icon name="trash" size={16} />
+            Eliminar tabla
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TableDesignerPanel({
+  table,
+  onClose,
+  onSave,
+}: {
+  table?: PorciTableDefinition
+  onClose: () => void
+  onSave: (table: PorciTableDefinition) => void
+}) {
+  const defaultColumns: PorciColumn[] = [
+    {
+      id: "date",
+      name: "Fecha",
+      type: "Fecha",
+      required: true,
+      locked: true,
+    },
+    {
+      id: "area",
+      name: "Área",
+      type: "Texto",
+      required: true,
+      locked: true,
+    },
+  ]
+  const [name, setName] = useState(table?.name ?? "")
+  const [icon, setIcon] = useState<IconName>(table?.icon ?? "table")
+  const [columns, setColumns] = useState<PorciColumn[]>(
+    table?.columns.map((column) => ({ ...column })) ?? defaultColumns,
+  )
+  const [submitted, setSubmitted] = useState(false)
+  const moveColumn = (index: number, direction: -1 | 1) => {
+    const destination = index + direction
+    if (destination < 0 || destination >= columns.length) return
+    const next = [...columns]
+    ;[next[index], next[destination]] = [next[destination], next[index]]
+    setColumns(next)
+  }
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setSubmitted(true)
+    if (!name.trim() || columns.some((column) => !column.name.trim())) {
+      focusFirstError(event.currentTarget)
+      return
+    }
+    onSave({
+      id: table?.id ?? `table-${Date.now()}`,
+      name: name.trim(),
+      icon,
+      columns: columns.map((column) => ({
+        ...column,
+        name: column.name.trim(),
+      })),
+    })
+  }
+  return (
+    <div
+      className="side-panel-backdrop"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <aside
+        className="sow-panel porci-form-panel table-designer-panel"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="panel-heading">
+          <div>
+            <span>PorciTabla</span>
+            <h2>{table ? "Editar tabla" : "Nueva tabla"}</h2>
+          </div>
+          <button className="icon-button" aria-label="Cerrar" onClick={onClose}>
+            <Icon name="x" size={20} />
+          </button>
+        </div>
+        <form className="panel-form" onSubmit={submit}>
+          <div className="panel-body">
+            <label
+              className={`field ${
+                submitted && !name.trim() ? "has-error" : ""
+              }`}
+            >
+              <span>
+                Nombre <em>* obligatorio</em>
+              </span>
+              <input
+                autoFocus
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="Ej. Control de visitantes"
+                aria-invalid={submitted && !name.trim()}
+              />
+              {submitted && !name.trim() && (
+                <small>
+                  <Icon name="alert" size={14} />
+                  Escribe el nombre de la tabla
+                </small>
+              )}
+            </label>
+            <fieldset className="porci-icon-picker">
+              <legend>Ícono</legend>
+              <div>
+                {porciIconOptions.map((option) => (
+                  <button
+                    type="button"
+                    className={icon === option ? "selected" : ""}
+                    aria-label={`Usar ícono ${option}`}
+                    aria-pressed={icon === option}
+                    onClick={() => setIcon(option)}
+                    key={option}
+                  >
+                    <Icon name={option} size={20} />
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <div className="column-builder-heading">
+              <div>
+                <strong>Columnas</strong>
+                <p>Fecha y Área siempre están incluidas.</p>
+              </div>
+              <button
+                type="button"
+                className="button secondary"
+                onClick={() =>
+                  setColumns([
+                    ...columns,
+                    {
+                      id: `column-${Date.now()}`,
+                      name: "",
+                      type: "Texto",
+                      required: false,
+                    },
+                  ])
+                }
+              >
+                <Icon name="plus" size={16} />
+                Agregar columna
+              </button>
+            </div>
+            <div className="column-builder-list">
+              {columns.map((column, index) => (
+                <div className="column-builder-row" key={column.id}>
+                  <div className="column-order-actions">
+                    <button
+                      type="button"
+                      aria-label={`Subir ${column.name || "columna"}`}
+                      disabled={index === 0}
+                      onClick={() => moveColumn(index, -1)}
+                    >
+                      <Icon name="chevron" size={15} />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Bajar ${column.name || "columna"}`}
+                      disabled={index === columns.length - 1}
+                      onClick={() => moveColumn(index, 1)}
+                    >
+                      <Icon name="chevron" size={15} />
+                    </button>
+                  </div>
+                  <label
+                    className={`field ${
+                      submitted && !column.name.trim() ? "has-error" : ""
+                    }`}
+                  >
+                    <span>Nombre</span>
+                    <input
+                      value={column.name}
+                      onChange={(event) =>
+                        setColumns(
+                          columns.map((item) =>
+                            item.id === column.id
+                              ? { ...item, name: event.target.value }
+                              : item,
+                          ),
+                        )
+                      }
+                      aria-invalid={submitted && !column.name.trim()}
+                    />
+                  </label>
+                  <label className="field">
+                    <span>Tipo</span>
+                    <select
+                      value={column.type}
+                      onChange={(event) =>
+                        setColumns(
+                          columns.map((item) =>
+                            item.id === column.id
+                              ? {
+                                  ...item,
+                                  type: event.target.value as PorciColumnType,
+                                }
+                              : item,
+                          ),
+                        )
+                      }
+                    >
+                      {porciColumnTypes.map((type) => (
+                        <option key={type}>{type}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="column-required">
+                    <input
+                      type="checkbox"
+                      checked={column.required}
+                      onChange={(event) =>
+                        setColumns(
+                          columns.map((item) =>
+                            item.id === column.id
+                              ? { ...item, required: event.target.checked }
+                              : item,
+                          ),
+                        )
+                      }
+                    />
+                    Obligatorio
+                  </label>
+                  <button
+                    type="button"
+                    className="column-delete"
+                    aria-label={`Eliminar ${column.name || "columna"}`}
+                    disabled={column.locked}
+                    onClick={() =>
+                      setColumns(
+                        columns.filter((item) => item.id !== column.id),
+                      )
+                    }
+                  >
+                    <Icon name="trash" size={17} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="panel-actions">
+            <button
+              type="button"
+              className="button secondary"
+              onClick={onClose}
+            >
+              Cancelar
+            </button>
+            <button className="button primary" type="submit">
+              {table ? "Guardar cambios" : "Crear tabla"}
+            </button>
+          </div>
+        </form>
+      </aside>
+    </div>
+  )
+}
+
+function DynamicRecordPanel({
+  table,
+  onClose,
+  onSave,
+}: {
+  table: PorciTableDefinition
+  onClose: () => void
+  onSave: (record: PorciDynamicRecord) => void
+}) {
+  const [values, setValues] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      table.columns
+        .filter((column) => column.type === "Estado Hecho/Pendiente")
+        .map((column) => [column.id, "Pendiente"]),
+    ),
+  )
+  const [submitted, setSubmitted] = useState(false)
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setSubmitted(true)
+    if (
+      table.columns.some(
+        (column) => column.required && !(values[column.id] ?? "").trim(),
+      )
+    ) {
+      focusFirstError(event.currentTarget)
+      return
+    }
+    const formattedValues = { ...values }
+    table.columns.forEach((column) => {
+      if (column.type === "Fecha" && values[column.id]) {
+        formattedValues[column.id] = formatDate(
+          new Date(`${values[column.id]}T12:00:00`),
+        )
+      }
+      if (
+        column.type === "Estado Hecho/Pendiente" &&
+        !formattedValues[column.id]
+      ) {
+        formattedValues[column.id] = "Pendiente"
+      }
+    })
+    onSave({ id: Date.now(), values: formattedValues })
+  }
+  return (
+    <div
+      className="side-panel-backdrop"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <aside
+        className="sow-panel porci-form-panel"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="panel-heading">
+          <div>
+            <span>{table.name}</span>
+            <h2>Nuevo registro</h2>
+          </div>
+          <button className="icon-button" aria-label="Cerrar" onClick={onClose}>
+            <Icon name="x" size={20} />
+          </button>
+        </div>
+        <form className="panel-form" onSubmit={submit}>
+          <div className="panel-body">
+            {table.columns.map((column) => {
+              const value = values[column.id] ?? ""
+              const hasError = submitted && column.required && !value.trim()
+              return (
+                <label
+                  className={`field ${hasError ? "has-error" : ""}`}
+                  key={column.id}
+                >
+                  <span>
+                    {column.name}
+                    {column.required && <em>* obligatorio</em>}
+                  </span>
+                  {column.type === "Fecha" ? (
+                    <DatePicker
+                      value={value}
+                      onChange={(next) =>
+                        setValues({ ...values, [column.id]: next })
+                      }
+                      label={`Seleccionar ${column.name.toLowerCase()}`}
+                    />
+                  ) : column.type === "Estado Hecho/Pendiente" ? (
+                    <select
+                      value={value || "Pendiente"}
+                      onChange={(event) =>
+                        setValues({
+                          ...values,
+                          [column.id]: event.target.value,
+                        })
+                      }
+                    >
+                      <option>Pendiente</option>
+                      <option>Hecho</option>
+                    </select>
+                  ) : (
+                    <input
+                      type={column.type === "Hora" ? "time" : "text"}
+                      inputMode={
+                        column.type === "Número" ? "decimal" : undefined
+                      }
+                      value={value}
+                      onChange={(event) =>
+                        setValues({
+                          ...values,
+                          [column.id]:
+                            column.type === "Número"
+                              ? event.target.value.replace(/[^\d,.]/g, "")
+                              : event.target.value,
+                        })
+                      }
+                      aria-invalid={hasError}
+                    />
+                  )}
+                  {hasError && (
+                    <small>
+                      <Icon name="alert" size={14} />
+                      Completa este campo
+                    </small>
+                  )}
+                </label>
+              )
+            })}
+          </div>
+          <div className="panel-actions">
+            <button
+              type="button"
+              className="button secondary"
+              onClick={onClose}
+            >
+              Cancelar
+            </button>
+            <button className="button primary" type="submit">
+              Guardar registro
+            </button>
+          </div>
+        </form>
+      </aside>
+    </div>
+  )
+}
+
+function DeletePorciTableDialog({
+  table,
+  onClose,
+  onConfirm,
+}: {
+  table: PorciTableDefinition
+  onClose: () => void
+  onConfirm: () => void
+}) {
+  return (
+    <DialogShell title="Eliminar tabla" onClose={onClose} size="small">
+      <div className="delete-content">
+        <div className="danger-icon">
+          <Icon name="trash" size={22} />
+        </div>
+        <p>
+          Se eliminará <strong>{table.name}</strong> y todos sus registros. Esta
+          acción no se puede deshacer.
+        </p>
+      </div>
+      <div className="modal-actions">
+        <button className="button secondary" onClick={onClose}>
+          Cancelar
+        </button>
+        <button className="button danger" onClick={onConfirm}>
+          Eliminar tabla
+        </button>
+      </div>
+    </DialogShell>
+  )
+}
+
+function ExportPorciTableDialog({
+  table,
+  onClose,
+  onExport,
+}: {
+  table: PorciTableDefinition
+  onClose: () => void
+  onExport: () => void
+}) {
+  const [format, setFormat] = useState("Excel .xlsx")
+  const [scope, setScope] = useState(
+    "Registros visibles con los filtros actuales",
+  )
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
+  return (
+    <DialogShell title={`Exportar · ${table.name}`} onClose={onClose}>
+      <div className="form-content export-table-form">
+        <fieldset>
+          <legend>Formato</legend>
+          {["Excel .xlsx", "CSV", "PDF"].map((option) => (
+            <label key={option}>
+              <input
+                type="radio"
+                name="export-format"
+                checked={format === option}
+                onChange={() => setFormat(option)}
+              />
+              <span>{option}</span>
+            </label>
+          ))}
+        </fieldset>
+        <fieldset>
+          <legend>Alcance</legend>
+          {[
+            "Registros visibles con los filtros actuales",
+            "Todos los registros",
+          ].map((option) => (
+            <label key={option}>
+              <input
+                type="radio"
+                name="export-scope"
+                checked={scope === option}
+                onChange={() => setScope(option)}
+              />
+              <span>{option}</span>
+            </label>
+          ))}
+        </fieldset>
+        <div>
+          <strong>Rango de fechas</strong>
+          <div className="form-grid">
+            <label className="field">
+              <span>Desde</span>
+              <DatePicker
+                value={startDate}
+                max={endDate || undefined}
+                onChange={setStartDate}
+                label="Fecha inicial de exportación"
+              />
+            </label>
+            <label className="field">
+              <span>Hasta</span>
+              <DatePicker
+                value={endDate}
+                min={startDate || undefined}
+                onChange={setEndDate}
+                label="Fecha final de exportación"
+              />
+            </label>
+          </div>
+        </div>
+      </div>
+      <div className="modal-actions">
+        <button className="button secondary" onClick={onClose}>
+          Cancelar
+        </button>
+        <button className="button primary" onClick={onExport}>
+          <Icon name="download" size={17} />
+          Exportar
+        </button>
+      </div>
+    </DialogShell>
+  )
+}
+
+function PorciTablePage({
+  farmName,
+  onNotice,
+}: {
+  farmName: string
+  onNotice: (text: string) => void
+}) {
+  const [tables, setTables] = useState(initialPorciTables)
+  const [selectedTableId, setSelectedTableId] = useState("pediluvios")
   const tableScrollRef = useRef<HTMLDivElement>(null)
-  const [records, setRecords] = useState(initialPediluvioRecords)
+  const [recordsByTable, setRecordsByTable] =
+    useState<Record<string, PorciDynamicRecord[]>>(initialPorciRecords)
   const [areaFilter, setAreaFilter] = useState("Todas")
   const [statusFilter, setStatusFilter] = useState("Todos")
   const [dateFilter, setDateFilter] = useState("")
   const [filtersOpen, setFiltersOpen] = useState(true)
   const [sortAscending, setSortAscending] = useState(false)
-  const [panelOpen, setPanelOpen] = useState(false)
-  const tableNames = [
-    "Control de pediluvios",
-    "Limpieza de corrales",
-    "Temperatura de salas",
-  ]
+  const [recordPanelOpen, setRecordPanelOpen] = useState(false)
+  const [designerOpen, setDesignerOpen] = useState(false)
+  const [editingTable, setEditingTable] = useState<PorciTableDefinition | null>(
+    null,
+  )
+  const [deletingTable, setDeletingTable] =
+    useState<PorciTableDefinition | null>(null)
+  const [tableMenuOpen, setTableMenuOpen] = useState<string | null>(null)
+  const [exportOpen, setExportOpen] = useState(false)
+  const selectedTable =
+    tables.find((table) => table.id === selectedTableId) ?? tables[0]
+  const records = recordsByTable[selectedTable.id] ?? []
   useEffect(() => {
     if (tableScrollRef.current) {
       tableScrollRef.current.scrollLeft = 0
     }
-  }, [selectedTable])
-  const updateRecord = (
-    id: number,
-    field: keyof PediluvioRecord,
-    value: string,
-  ) => {
-    setRecords(
-      records.map((record) =>
-        record.id === id ? { ...record, [field]: value } : record,
+  }, [selectedTableId])
+  const updateRecord = (id: number, field: string, value: string) => {
+    setRecordsByTable({
+      ...recordsByTable,
+      [selectedTable.id]: records.map((record) =>
+        record.id === id
+          ? { ...record, values: { ...record.values, [field]: value } }
+          : record,
       ),
-    )
+    })
   }
   const filtered = records.filter(
     (record) =>
-      (areaFilter === "Todas" || record.area === areaFilter) &&
-      (statusFilter === "Todos" || record.status === statusFilter) &&
+      (areaFilter === "Todas" || record.values.area === areaFilter) &&
+      (statusFilter === "Todos" || record.values.status === statusFilter) &&
       (!dateFilter ||
-        record.date.split("/").reverse().join("-") === dateFilter),
+        record.values.date?.split("/").reverse().join("-") === dateFilter),
   )
   const visibleRecords = filtered.slice().sort((a, b) => {
     const dateDifference =
-      new Date(a.date.split("/").reverse().join("-")).getTime() -
-      new Date(b.date.split("/").reverse().join("-")).getTime()
+      new Date(a.values.date?.split("/").reverse().join("-") ?? 0).getTime() -
+      new Date(b.values.date?.split("/").reverse().join("-") ?? 0).getTime()
     return sortAscending ? dateDifference : -dateDifference
   })
+  const createOrUpdateTable = (definition: PorciTableDefinition) => {
+    const exists = tables.some((table) => table.id === definition.id)
+    setTables(
+      exists
+        ? tables.map((table) =>
+            table.id === definition.id ? definition : table,
+          )
+        : [...tables, definition],
+    )
+    if (!exists) {
+      setRecordsByTable({ ...recordsByTable, [definition.id]: [] })
+    }
+    setSelectedTableId(definition.id)
+    setDesignerOpen(false)
+    setEditingTable(null)
+  }
   return (
     <>
       <div className="connected-tool-page porci-table-page">
@@ -9570,7 +10625,7 @@ function PorciTablePage({ farmName }: { farmName: string }) {
           <div className="header-actions">
             <button
               className="button primary"
-              onClick={() => setPanelOpen(true)}
+              onClick={() => setRecordPanelOpen(true)}
             >
               <Icon name="plus" size={18} />
               Nuevo registro
@@ -9580,61 +10635,93 @@ function PorciTablePage({ farmName }: { farmName: string }) {
         <div className="porci-workspace">
           <aside className="porci-table-list">
             <span>Tablas</span>
-            {tableNames.map((name) => (
-              <button
-                className={selectedTable === name ? "active" : ""}
-                onClick={() => setSelectedTable(name)}
-                key={name}
-              >
-                <Icon
-                  name={
-                    name === "Control de pediluvios"
-                      ? "droplet"
-                      : name === "Limpieza de corrales"
-                        ? "check"
-                        : "trend"
+            {tables.map((table) => (
+              <PorciTableListItem
+                table={table}
+                selected={selectedTable.id === table.id}
+                menuOpen={tableMenuOpen === table.id}
+                onSelect={() => setSelectedTableId(table.id)}
+                onMenu={() =>
+                  setTableMenuOpen(tableMenuOpen === table.id ? null : table.id)
+                }
+                onCloseMenu={() => setTableMenuOpen(null)}
+                onEdit={() => {
+                  setTableMenuOpen(null)
+                  setEditingTable(table)
+                  setDesignerOpen(true)
+                }}
+                onDuplicate={() => {
+                  const duplicate = {
+                    ...table,
+                    id: `table-${Date.now()}`,
+                    name: `${table.name} (copia)`,
+                    columns: table.columns.map((column) => ({ ...column })),
                   }
-                  size={18}
-                />
-                <span>{name}</span>
-                <Icon name="chevron" size={15} />
-              </button>
+                  setTables([...tables, duplicate])
+                  setRecordsByTable({
+                    ...recordsByTable,
+                    [duplicate.id]: [],
+                  })
+                  setSelectedTableId(duplicate.id)
+                  setTableMenuOpen(null)
+                }}
+                onDelete={() => {
+                  setTableMenuOpen(null)
+                  setDeletingTable(table)
+                }}
+                key={table.id}
+              />
             ))}
+            <button
+              className="button secondary new-porci-table"
+              onClick={() => {
+                setEditingTable(null)
+                setDesignerOpen(true)
+              }}
+            >
+              <Icon name="plus" size={16} />
+              Nueva tabla
+            </button>
           </aside>
           <section className="porci-table-content">
             <div className="porci-table-title">
               <div>
-                <h2>{selectedTable}</h2>
-                <p>
-                  {selectedTable === "Control de pediluvios"
-                    ? `${filtered.length} registros visibles`
-                    : "Tabla operativa"}
-                </p>
+                <h2>{selectedTable.name}</h2>
+                <p>{filtered.length} registros visibles</p>
               </div>
-              {selectedTable === "Control de pediluvios" && (
-                <div className="porci-table-tools">
-                  <button
-                    className={`icon-button ${filtersOpen ? "active" : ""}`}
-                    aria-label="Filtros"
-                    onClick={() => setFiltersOpen(!filtersOpen)}
-                  >
-                    <Icon name="filter" size={24} />
-                  </button>
-                  <button
-                    className="icon-button"
-                    aria-label={
-                      sortAscending
-                        ? "Ordenar de más reciente a más antiguo"
-                        : "Ordenar de más antiguo a más reciente"
-                    }
-                    onClick={() => setSortAscending(!sortAscending)}
-                  >
-                    <Icon name="sort" size={24} />
-                  </button>
-                </div>
-              )}
+              <div className="porci-table-tools">
+                {selectedTable.id === "pediluvios" && (
+                  <>
+                    <button
+                      className={`icon-button ${filtersOpen ? "active" : ""}`}
+                      aria-label="Filtros"
+                      onClick={() => setFiltersOpen(!filtersOpen)}
+                    >
+                      <Icon name="filter" size={24} />
+                    </button>
+                    <button
+                      className="icon-button"
+                      aria-label={
+                        sortAscending
+                          ? "Ordenar de más reciente a más antiguo"
+                          : "Ordenar de más antiguo a más reciente"
+                      }
+                      onClick={() => setSortAscending(!sortAscending)}
+                    >
+                      <Icon name="sort" size={24} />
+                    </button>
+                  </>
+                )}
+                <button
+                  className="button secondary"
+                  onClick={() => setExportOpen(true)}
+                >
+                  <Icon name="download" size={17} />
+                  Exportar
+                </button>
+              </div>
             </div>
-            {selectedTable === "Control de pediluvios" && filtersOpen && (
+            {selectedTable.id === "pediluvios" && filtersOpen && (
               <div className="porci-filters">
                 <span>Filtros</span>
                 <label>
@@ -9644,11 +10731,11 @@ function PorciTablePage({ farmName }: { farmName: string }) {
                     onChange={(event) => setAreaFilter(event.target.value)}
                   >
                     <option>Todas</option>
-                    {[...new Set(records.map((record) => record.area))].map(
-                      (area) => (
-                        <option key={area}>{area}</option>
-                      ),
-                    )}
+                    {[
+                      ...new Set(records.map((record) => record.values.area)),
+                    ].map((area) => (
+                      <option key={area}>{area}</option>
+                    ))}
                   </select>
                 </label>
                 <label>
@@ -9682,91 +10769,76 @@ function PorciTablePage({ farmName }: { farmName: string }) {
                 </button>
               </div>
             )}
-            {selectedTable === "Control de pediluvios" ? (
+            {visibleRecords.length ? (
               <div className="porci-scroll-table" ref={tableScrollRef}>
-                <table>
+                <table
+                  style={{
+                    minWidth: Math.max(700, selectedTable.columns.length * 155),
+                  }}
+                >
                   <thead>
                     <tr>
-                      <th className="sticky-date">Fecha</th>
-                      <th className="sticky-area">Área</th>
-                      <th>Producto</th>
-                      <th>Cantidad de producto (ml)</th>
-                      <th>Cantidad de agua (L)</th>
-                      <th>Hora</th>
-                      <th>Responsable</th>
-                      <th>Estado</th>
+                      {selectedTable.columns.map((column, index) => (
+                        <th
+                          className={
+                            index === 0
+                              ? "sticky-date"
+                              : index === 1
+                                ? "sticky-area"
+                                : ""
+                          }
+                          key={column.id}
+                        >
+                          {column.name}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
                     {visibleRecords.map((record) => (
                       <tr key={record.id}>
-                        <EditableTableCell
-                          className="sticky-date"
-                          value={record.date}
-                          onSave={(value) =>
-                            updateRecord(record.id, "date", value)
-                          }
-                        />
-                        <EditableTableCell
-                          className="sticky-area"
-                          value={record.area}
-                          onSave={(value) =>
-                            updateRecord(record.id, "area", value)
-                          }
-                        />
-                        <EditableTableCell
-                          value={record.product}
-                          onSave={(value) =>
-                            updateRecord(record.id, "product", value)
-                          }
-                        />
-                        <EditableTableCell
-                          value={record.productQuantity}
-                          suffix=" ml"
-                          onSave={(value) =>
-                            updateRecord(record.id, "productQuantity", value)
-                          }
-                        />
-                        <EditableTableCell
-                          value={record.waterQuantity}
-                          suffix=" L"
-                          onSave={(value) =>
-                            updateRecord(record.id, "waterQuantity", value)
-                          }
-                        />
-                        <EditableTableCell
-                          value={record.time}
-                          onSave={(value) =>
-                            updateRecord(record.id, "time", value)
-                          }
-                        />
-                        <EditableTableCell
-                          value={record.responsible}
-                          onSave={(value) =>
-                            updateRecord(record.id, "responsible", value)
-                          }
-                        />
-                        <td>
-                          <button
-                            className={`status ${
-                              record.status === "Hecho" ? "positive" : "warning"
-                            }`}
-                            onClick={() =>
-                              updateRecord(
-                                record.id,
-                                "status",
-                                record.status === "Hecho"
-                                  ? "Pendiente"
-                                  : "Hecho",
-                              )
-                            }
-                          >
-                            {record.status === "Hecho" && (
-                              <Icon name="check" size={14} />
-                            )}
-                            {record.status}
-                          </button>
-                        </td>
+                        {selectedTable.columns.map((column, index) =>
+                          column.type === "Estado Hecho/Pendiente" ? (
+                            <td key={column.id}>
+                              <button
+                                className={`status ${
+                                  record.values[column.id] === "Hecho"
+                                    ? "positive"
+                                    : "warning"
+                                }`}
+                                onClick={() =>
+                                  updateRecord(
+                                    record.id,
+                                    column.id,
+                                    record.values[column.id] === "Hecho"
+                                      ? "Pendiente"
+                                      : "Hecho",
+                                  )
+                                }
+                              >
+                                {record.values[column.id] === "Hecho" && (
+                                  <Icon name="check" size={14} />
+                                )}
+                                {record.values[column.id] || "Pendiente"}
+                              </button>
+                            </td>
+                          ) : (
+                            <EditableTableCell
+                              className={
+                                index === 0
+                                  ? "sticky-date"
+                                  : index === 1
+                                    ? "sticky-area"
+                                    : ""
+                              }
+                              value={record.values[column.id] ?? "—"}
+                              onSave={(value) =>
+                                updateRecord(record.id, column.id, value)
+                              }
+                              key={column.id}
+                            />
+                          ),
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -9774,20 +10846,67 @@ function PorciTablePage({ farmName }: { farmName: string }) {
               </div>
             ) : (
               <div className="porci-empty-table">
-                <Icon name="table" size={32} />
-                <h3>{selectedTable}</h3>
-                <p>Esta tabla está lista para recibir registros.</p>
+                <Icon name={selectedTable.icon} size={32} />
+                <h3>Aún no hay registros</h3>
+                <p>Agrega el primer registro de {selectedTable.name}.</p>
+                <button
+                  className="button primary"
+                  onClick={() => setRecordPanelOpen(true)}
+                >
+                  <Icon name="plus" size={17} />
+                  Nuevo registro
+                </button>
               </div>
             )}
           </section>
         </div>
       </div>
-      {panelOpen && (
-        <NewPediluvioPanel
-          onClose={() => setPanelOpen(false)}
+      {recordPanelOpen && (
+        <DynamicRecordPanel
+          table={selectedTable}
+          onClose={() => setRecordPanelOpen(false)}
           onSave={(record) => {
-            setRecords([record, ...records])
-            setPanelOpen(false)
+            setRecordsByTable({
+              ...recordsByTable,
+              [selectedTable.id]: [record, ...records],
+            })
+            setRecordPanelOpen(false)
+          }}
+        />
+      )}
+      {designerOpen && (
+        <TableDesignerPanel
+          table={editingTable ?? undefined}
+          onClose={() => {
+            setDesignerOpen(false)
+            setEditingTable(null)
+          }}
+          onSave={createOrUpdateTable}
+        />
+      )}
+      {deletingTable && (
+        <DeletePorciTableDialog
+          table={deletingTable}
+          onClose={() => setDeletingTable(null)}
+          onConfirm={() => {
+            const remaining = tables.filter(
+              (table) => table.id !== deletingTable.id,
+            )
+            setTables(remaining)
+            if (selectedTableId === deletingTable.id) {
+              setSelectedTableId(remaining[0].id)
+            }
+            setDeletingTable(null)
+          }}
+        />
+      )}
+      {exportOpen && (
+        <ExportPorciTableDialog
+          table={selectedTable}
+          onClose={() => setExportOpen(false)}
+          onExport={() => {
+            setExportOpen(false)
+            onNotice("Archivo descargado")
           }}
         />
       )}
@@ -10367,6 +11486,382 @@ function SettingsPage({
 type ReportRole = "Gerencia" | "Veterinario" | "Producción"
 type ReportSection = "Indicadores principales" | "Mortalidad por lote" | "Partos por mes"
 
+type ReportCatalogItem = {
+  id: string
+  name: string
+  description: string
+  subcategory?: string
+}
+
+type ReportCatalogCategory = {
+  name: string
+  reports: ReportCatalogItem[]
+  subcategories?: string[]
+}
+
+const reportCatalog: ReportCatalogCategory[] = [
+  {
+    name: "General",
+    reports: [
+      {
+        id: "stock-animal",
+        name: "Stock animal",
+        description: "Stock animal activo por etapa productiva",
+      },
+      {
+        id: "analisis-post-destete",
+        name: "Análisis post-destete",
+        description:
+          "Flujo, supervivencia y eficiencia desde el destete hasta Levante",
+      },
+      {
+        id: "analisis-reproductivo",
+        name: "Análisis reproductivo",
+        description: "Indicadores mensuales y tabla detallada de reproducción",
+      },
+    ],
+  },
+  {
+    name: "Reproducción",
+    subcategories: [
+      "General",
+      "Gestación",
+      "Maternidad",
+      "Descartes",
+      "Reproductores",
+      "Reemplazo",
+    ],
+    reports: [
+      {
+        id: "estado-plantel-reproductivo",
+        name: "Estado del plantel reproductivo",
+        description: "Distribución del plantel por estado, banda y lote",
+        subcategory: "General",
+      },
+      {
+        id: "resultados-maternidad",
+        name: "Resultados de maternidad",
+        description: "Partos, nacimientos y destete por periodo",
+        subcategory: "Maternidad",
+      },
+      {
+        id: "inventario-reproductivo",
+        name: "Inventario reproductivo",
+        description: "Reposición, descarte, mortalidad y balance",
+        subcategory: "General",
+      },
+      {
+        id: "partos-previstos",
+        name: "Partos previstos en el mes",
+        description:
+          "Calendario de partos probables sin novedad, según la fecha estimada de parto",
+        subcategory: "Gestación",
+      },
+      {
+        id: "alertas-gestacion",
+        name: "Informe de alertas de gestación",
+        description:
+          "Hembras agrupadas por alerta de gestación en el período seleccionado",
+        subcategory: "Gestación",
+      },
+      {
+        id: "desempeno-lactancia",
+        name: "Desempeño de lactancia",
+        description:
+          "Analiza supervivencia, pérdidas y evolución de las camadas durante la lactancia",
+        subcategory: "Maternidad",
+      },
+      {
+        id: "resultados-destete",
+        name: "Resultados de destete",
+        description: "Cantidad, promedio, peso y comportamiento de destetes",
+        subcategory: "Maternidad",
+      },
+      {
+        id: "supervivencia-camadas",
+        name: "Supervivencia de camadas",
+        description: "Nacidos vivos que llegan al destete",
+        subcategory: "Maternidad",
+      },
+      {
+        id: "alertas-maternidad",
+        name: "Alertas de maternidad",
+        description: "Pérdidas y registros que requieren revisión",
+        subcategory: "Maternidad",
+      },
+      {
+        id: "descartes-realizados",
+        name: "Descartes realizados",
+        description:
+          "Analiza las bajas reproductivas realizadas, sus causas y el perfil de las hembras descartadas",
+        subcategory: "Descartes",
+      },
+      {
+        id: "proyeccion-descartes",
+        name: "Proyección de descartes",
+        description:
+          "Identifica hembras próximas a criterios de descarte y explica qué factores requieren revisión",
+        subcategory: "Descartes",
+      },
+      {
+        id: "seguimiento-descartes",
+        name: "Seguimiento de descartes",
+        description:
+          "Analiza el tiempo entre la marcación para descarte y la baja efectiva de la hembra",
+        subcategory: "Descartes",
+      },
+      {
+        id: "desempeno-reproductores",
+        name: "Desempeño de reproductores",
+        description:
+          "Compara la efectividad de los reproductores según servicios, concepción y nacidos vivos",
+        subcategory: "Reproductores",
+      },
+      {
+        id: "perdidas-semen",
+        name: "Pérdidas de semen",
+        description:
+          "Analiza semen descartado, vencido o perdido y las causas asociadas",
+        subcategory: "Reproductores",
+      },
+      {
+        id: "preparacion-servicio",
+        name: "Preparación para servicio",
+        description:
+          "Analiza la edad, estado y entrada a servicio de las hembras de reemplazo por banda y lote",
+        subcategory: "Reemplazo",
+      },
+      {
+        id: "preparacion-reemplazos-banda",
+        name: "Preparación de reemplazos por banda",
+        description:
+          "Consulta las próximas bandas programadas y cuántas hembras están listas para servicio o continúan en adaptación",
+        subcategory: "Reemplazo",
+      },
+    ],
+  },
+  {
+    name: "Precebo",
+    reports: [
+      {
+        id: "precebo-lotes-cerrados",
+        name: "Desempeño de lotes cerrados",
+        description:
+          "IEP, GPD, mortalidad y días en fase de los lotes de precebo finalizados",
+      },
+      {
+        id: "mortalidad-precebo",
+        name: "Mortalidad en Precebo",
+        description:
+          "Analiza las causas, concentración y evolución de la mortalidad en Precebo",
+      },
+      {
+        id: "consumo-alimento-precebo",
+        name: "Consumo de alimento",
+        description:
+          "Analiza la evolución del consumo de alimento durante la fase",
+      },
+      {
+        id: "crecimiento-lotes-precebo",
+        name: "Crecimiento de lotes",
+        description: "Compara el peso registrado de los lotes de Precebo",
+      },
+    ],
+  },
+  {
+    name: "Levante / Finalización",
+    reports: [
+      {
+        id: "levante-lotes-cerrados",
+        name: "Desempeño de lotes cerrados",
+        description:
+          "IEP, GPD, mortalidad y días en fase de los lotes de levante finalizados",
+      },
+      {
+        id: "mortalidad-lf",
+        name: "Mortalidad · L/F",
+        description: "Analiza las causas y concentración de mortalidad",
+      },
+      {
+        id: "consumo-alimento-lf",
+        name: "Consumo de alimento · L/F",
+        description: "Compara consumo real contra la curva configurada",
+      },
+      {
+        id: "crecimiento-lotes-lf",
+        name: "Crecimiento de lotes · L/F",
+        description: "Compara peso real contra la curva por edad",
+      },
+    ],
+  },
+  {
+    name: "Ventas",
+    reports: [
+      {
+        id: "informe-ventas",
+        name: "Informe de ventas",
+        description:
+          "Análisis comercial de las ventas de animales por granja, lote, etapa y cliente.",
+        subcategory: "General",
+      },
+      {
+        id: "rentabilidad-lote",
+        name: "Rentabilidad por lote",
+        description: "Compara ingresos, costos, utilidad y margen",
+        subcategory: "General",
+      },
+      {
+        id: "ingresos-costos-margen",
+        name: "Ingresos, costos y margen",
+        description: "Evolución comercial por período",
+        subcategory: "General",
+      },
+      {
+        id: "composicion-costos",
+        name: "Composición de costos",
+        description: "Distribución del costo productivo",
+        subcategory: "General",
+      },
+      {
+        id: "ventas-periodo-clientes",
+        name: "Ventas por período y clientes",
+        description: "Distribución de ingresos y volumen vendido",
+        subcategory: "General",
+      },
+      {
+        id: "precio-calidad-venta",
+        name: "Precio y calidad de venta",
+        description: "Precio por kg de lotes comercializados",
+        subcategory: "General",
+      },
+      {
+        id: "ventas-stock-concentrado",
+        name: "Stock de concentrado",
+        description: "Referencias con mayor y menor stock disponible",
+        subcategory: "Concentrado",
+      },
+      {
+        id: "gasto-consumo-etapa",
+        name: "Gasto y consumo por etapa",
+        description: "Consumo y costo de concentrado por etapa productiva",
+        subcategory: "Concentrado",
+      },
+      {
+        id: "ventas-compras-concentrado",
+        name: "Compras de concentrado",
+        description:
+          "Entradas reales de concentrado por factura, sin mezclar consumos",
+        subcategory: "Concentrado",
+      },
+      {
+        id: "ventas-stock-medicamentos",
+        name: "Stock de medicamentos",
+        description: "Valor disponible por medicamento",
+        subcategory: "Medicamentos",
+      },
+      {
+        id: "analisis-etapa-medicamentos",
+        name: "Análisis por etapa",
+        description: "Consumo y costo de medicamentos por etapa productiva",
+        subcategory: "Medicamentos",
+      },
+      {
+        id: "gasto-sanitario-lote",
+        name: "Gasto sanitario por lote",
+        description: "Gasto de medicamentos y tratamientos por lote",
+        subcategory: "Medicamentos",
+      },
+      {
+        id: "ventas-compras-medicamentos",
+        name: "Compras de medicamentos",
+        description:
+          "Entradas reales de medicamentos por factura, sin mezclar salidas",
+        subcategory: "Medicamentos",
+      },
+    ],
+  },
+  {
+    name: "Inventario",
+    reports: [
+      {
+        id: "estado-cobertura-stock",
+        name: "Estado y cobertura de stock",
+        description: "Analiza cobertura y referencias críticas de concentrado",
+        subcategory: "Concentrado",
+      },
+      {
+        id: "movimientos-inventario",
+        name: "Movimientos de inventario",
+        description: "Entradas y salidas de concentrado por período",
+        subcategory: "Concentrado",
+      },
+      {
+        id: "kardex-concentrado",
+        name: "Kardex de concentrado",
+        description: "Consulta la trazabilidad de una referencia",
+        subcategory: "Concentrado",
+      },
+      {
+        id: "inventario-compras-concentrado",
+        name: "Compras de concentrado",
+        description: "Analiza las compras de concentrado",
+        subcategory: "Concentrado",
+      },
+      {
+        id: "estado-stock-medicamentos",
+        name: "Estado de stock de medicamentos",
+        description:
+          "Compara el saldo disponible por referencia, cada una en su propia unidad",
+        subcategory: "Medicamentos",
+      },
+      {
+        id: "movimientos-medicamentos",
+        name: "Movimientos de medicamentos",
+        description: "Entradas, salidas y ajustes registrados por período",
+        subcategory: "Medicamentos",
+      },
+      {
+        id: "kardex-medicamentos",
+        name: "Kardex de medicamentos",
+        description:
+          "Consulta la trazabilidad y el saldo corrido de una referencia",
+        subcategory: "Medicamentos",
+      },
+      {
+        id: "vencimientos-lotes",
+        name: "Vencimientos y lotes",
+        description: "Lotes con saldo agrupados por cercanía al vencimiento",
+        subcategory: "Medicamentos",
+      },
+    ],
+  },
+  {
+    name: "Sanidad",
+    reports: [
+      {
+        id: "mortalidad-causas",
+        name: "Mortalidad y causas",
+        description: "¿Dónde se presenta mayor mortalidad?",
+      },
+      {
+        id: "signos-sanitarios",
+        name: "Signos sanitarios",
+        description: "Frecuencia de signos generales y específicos",
+      },
+      {
+        id: "tratamientos-medicamentos",
+        name: "Tratamientos y medicamentos",
+        description: "Uso y efectividad de tratamientos",
+      },
+      {
+        id: "vacunacion-prevencion",
+        name: "Vacunación y prevención",
+        description: "Cumplimiento y vacunaciones vencidas",
+      },
+    ],
+  },
+]
+
 type ChartPoint = {
   label: string
   value: number
@@ -10642,19 +12137,28 @@ function DashboardsPage({
   onNotice: (text: string) => void
 }) {
   const today = new Date().toISOString().slice(0, 10)
-  const [role, setRole] = useState<ReportRole | null>(null)
+  const [selectedReport, setSelectedReport] =
+    useState<ReportCatalogItem | null>(null)
   const [scope, setScope] = useState(initialScope)
   const [editingReport, setEditingReport] = useState(false)
-  const [sectionsByRole, setSectionsByRole] =
-    useState<Record<ReportRole, ReportSection[]>>({
-      Gerencia: [
-        "Indicadores principales",
-        "Mortalidad por lote",
-        "Partos por mes",
-      ],
-      Veterinario: ["Indicadores principales", "Mortalidad por lote"],
-      Producción: ["Indicadores principales", "Partos por mes"],
-    })
+  const [activeSections, setActiveSections] = useState<ReportSection[]>([
+    "Indicadores principales",
+    "Mortalidad por lote",
+    "Partos por mes",
+  ])
+  const [favorites, setFavorites] = useState<Set<string>>(
+    () =>
+      new Set([
+        "estado-plantel-reproductivo",
+        "resultados-maternidad",
+        "inventario-reproductivo",
+      ]),
+  )
+  const [openCategories, setOpenCategories] = useState<Set<string>>(
+    () => new Set(reportCatalog.map((category) => category.name)),
+  )
+  const [categoryFilters, setCategoryFilters] =
+    useState<Record<string, string>>({})
   const [startDate, setStartDate] = useState(`${today.slice(0, 4)}-01-01`)
   const [endDate, setEndDate] = useState(today)
   const reportScopes = [
@@ -10716,7 +12220,6 @@ function DashboardsPage({
       description: "Evolución mensual de los partos registrados.",
     },
   ]
-  const activeSections = role ? sectionsByRole[role] : []
   const daysInPeriod = Math.max(
     1,
     Math.round(
@@ -10742,7 +12245,7 @@ function DashboardsPage({
     ? `Consolidado · ${initialFarms.length} granjas · período ${formattedPeriod}`
     : `${scope} · ${formattedPeriod}`
 
-  if (!role) {
+  if (!selectedReport) {
     return (
       <div className="connected-tool-page reports-page">
         <header className="page-header connected-page-header">
@@ -10754,32 +12257,131 @@ function DashboardsPage({
               <Icon name="chevron" size={14} />
               <strong>Tableros</strong>
             </div>
-            <h1>Tableros · {isConsolidated ? "Consolidado" : scope}</h1>
-            <p>Elige una plantilla de informe según tu rol</p>
+            <h1>Banco de informes</h1>
+            <p>
+              Consulta y abre los tableros disponibles para{" "}
+              {isConsolidated ? "todas las granjas" : scope}
+            </p>
           </div>
         </header>
-        <div className="report-templates">
-          <ReportTemplateCard
-            role="Gerencia"
-            icon="chart"
-            description="Rentabilidad, producción y cumplimiento de metas."
-            accent="#DCE8D9"
-            onView={() => setRole("Gerencia")}
-          />
-          <ReportTemplateCard
-            role="Veterinario"
-            icon="syringe"
-            description="Mortalidad, sanidad y desempeño reproductivo."
-            accent="#DDEADB"
-            onView={() => setRole("Veterinario")}
-          />
-          <ReportTemplateCard
-            role="Producción"
-            icon="growth"
-            description="Lotes, pesos, conversión y movimientos."
-            accent="#F9E4D7"
-            onView={() => setRole("Producción")}
-          />
+        <div className="report-bank">
+          {reportCatalog.map((category) => {
+            const open = openCategories.has(category.name)
+            const subcategories =
+              category.subcategories ??
+              Array.from(
+                new Set(
+                  category.reports
+                    .map((report) => report.subcategory)
+                    .filter((value): value is string => Boolean(value)),
+                ),
+              )
+            const activeFilter = categoryFilters[category.name]
+            const visibleReports = activeFilter
+              ? category.reports.filter(
+                  (report) => report.subcategory === activeFilter,
+                )
+              : category.reports
+            return (
+              <section className="report-bank-category" key={category.name}>
+                <button
+                  className="report-bank-heading"
+                  onClick={() =>
+                    setOpenCategories((current) => {
+                      const next = new Set(current)
+                      if (next.has(category.name)) next.delete(category.name)
+                      else next.add(category.name)
+                      return next
+                    })
+                  }
+                  aria-expanded={open}
+                >
+                  <strong>{category.name}</strong>
+                  <span>
+                    {category.reports.length}{" "}
+                    {category.reports.length === 1 ? "tablero" : "tableros"}
+                    <Icon name="chevron" size={17} />
+                  </span>
+                </button>
+                {open && (
+                  <div className="report-bank-body">
+                    {subcategories.length > 0 && (
+                      <div
+                        className="report-subcategories"
+                        aria-label={`Subcategorías de ${category.name}`}
+                      >
+                        {subcategories.map((subcategory) => (
+                          <button
+                            key={subcategory}
+                            className={
+                              activeFilter === subcategory ? "active" : ""
+                            }
+                            aria-pressed={activeFilter === subcategory}
+                            onClick={() =>
+                              setCategoryFilters((current) => ({
+                                ...current,
+                                [category.name]:
+                                  current[category.name] === subcategory
+                                    ? ""
+                                    : subcategory,
+                              }))
+                            }
+                          >
+                            {subcategory}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div className="report-bank-grid">
+                      {visibleReports.map((report) => {
+                        const favorite = favorites.has(report.id)
+                        return (
+                          <article className="report-bank-card" key={report.id}>
+                            <button
+                              className="report-card-main"
+                              onClick={() => {
+                                setSelectedReport(report)
+                                setEditingReport(false)
+                                window.scrollTo({ top: 0, behavior: "smooth" })
+                              }}
+                            >
+                              <span className="report-card-icon">
+                                <Icon name="chart" size={20} />
+                              </span>
+                              <span>
+                                <strong>{report.name}</strong>
+                                <small>{report.description}</small>
+                              </span>
+                            </button>
+                            <button
+                              className={`report-favorite ${
+                                favorite ? "active" : ""
+                              }`}
+                              aria-label={`${
+                                favorite ? "Quitar" : "Agregar"
+                              } ${report.name} de favoritos`}
+                              aria-pressed={favorite}
+                              onClick={() =>
+                                setFavorites((current) => {
+                                  const next = new Set(current)
+                                  if (next.has(report.id))
+                                    next.delete(report.id)
+                                  else next.add(report.id)
+                                  return next
+                                })
+                              }
+                            >
+                              <Icon name="star" size={20} />
+                            </button>
+                          </article>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </section>
+            )
+          })}
         </div>
       </div>
     )
@@ -10793,18 +12395,18 @@ function DashboardsPage({
             <button
               onClick={() => {
                 setEditingReport(false)
-                setRole(null)
+                setSelectedReport(null)
               }}
             >
-              Tableros
+              Banco de informes
             </button>
             <Icon name="chevron" size={14} />
-            <strong>Informe de {role}</strong>
+            <strong>{selectedReport.name}</strong>
           </div>
           <div className="report-title-line">
             <div>
               <div>
-                <h1>Informe de {role}</h1>
+                <h1>{selectedReport.name}</h1>
                 <span className="status neutral">
                   {editingReport ? "Edición" : "Solo lectura"}
                 </span>
@@ -10893,14 +12495,13 @@ function DashboardsPage({
                     type="checkbox"
                     checked={checked}
                     onChange={() =>
-                      setSectionsByRole({
-                        ...sectionsByRole,
-                        [role]: checked
+                      setActiveSections(
+                        checked
                           ? activeSections.filter(
                               (name) => name !== section.name,
                             )
                           : [...activeSections, section.name],
-                      })
+                      )
                     }
                   />
                   <span>
@@ -11080,6 +12681,13 @@ export default function App() {
         .toLocaleString("es-CO"),
     [farms],
   )
+  const totalAlerts = farms.reduce((sum, farm) => sum + farm.alerts, 0)
+  const totalLots = farms.reduce((sum, farm) => sum + farm.lots, 0)
+  const mostUrgentAlert =
+    farms.find((farm) => farm.alerts > 0)?.urgent ?? "Todo está al día"
+  const consolidatedMortality = averageReportValue(
+    Object.values(reportDataByFarm).map((data) => data.mortalityRate),
+  )
   const alertCounts: Record<string, number> = {
     "Plantel reproductivo": selectedFarm.cycles.includes("Plantel reproductivo")
       ? initialBreedingAlerts.length
@@ -11233,6 +12841,14 @@ export default function App() {
     setLotModal(false)
     setToast("Lote creado")
   }
+  const updateLot = (updated: Lot) => {
+    setLots((current) =>
+      current.map((lot) => (lot.id === updated.id ? updated : lot)),
+    )
+    setSelectedLot((current) =>
+      current?.id === updated.id ? updated : current,
+    )
+  }
   const confirmDelete = () => {
     if (!deleting) return
     setFarms(farms.filter((farm) => farm.id !== deleting.id))
@@ -11336,15 +12952,34 @@ export default function App() {
         {page === "home" ? (
           <>
             {!loading && farms.length > 0 && (
-              <div className="summary-line">
-                <span>
-                  <strong>{farms.length}</strong> granjas activas
-                </span>
-                <span className="summary-dot" />
-                <span>
-                  <strong>{totalAnimals}</strong> animales registrados
-                </span>
-              </div>
+              <section className="home-summary">
+                <div className="home-summary-heading">
+                  <strong>Resumen general</strong>{" "}
+                  <span>· {farms.length} granjas</span>
+                </div>
+                <div className="home-summary-metrics">
+                  <div className={totalAlerts ? "summary-alert" : ""}>
+                    <span>Alertas pendientes</span>
+                    <strong>{totalAlerts}</strong>
+                    <small>{mostUrgentAlert}</small>
+                  </div>
+                  <div>
+                    <span>Lotes activos</span>
+                    <strong>{totalLots}</strong>
+                    <small>En producción</small>
+                  </div>
+                  <div>
+                    <span>Animales totales</span>
+                    <strong>{totalAnimals}</strong>
+                    <small>Inventario actual</small>
+                  </div>
+                  <div>
+                    <span>Mortalidad del mes</span>
+                    <strong>{formatDecimal(consolidatedMortality)} %</strong>
+                    <small>Meta ≤ 2,0 %</small>
+                  </div>
+                </div>
+              </section>
             )}
             {loading ? (
               <Skeletons />
@@ -11358,6 +12993,19 @@ export default function App() {
                     onSummary={() => changeFarm(farm)}
                     onCycle={(cycle) => openCycle(farm, cycle)}
                     onTool={(tool) => openTool(farm, tool)}
+                    onResolveAlert={(module) => {
+                      setSelectedFarm(farm)
+                      if (
+                        module === "Plantel reproductivo" ||
+                        module === "Reproductor" ||
+                        module === "Precebo" ||
+                        module === "Levante"
+                      ) {
+                        openCycle(farm, module)
+                      } else {
+                        openTool(farm, module)
+                      }
+                    }}
                   />
                 ))}
               </div>
@@ -11379,11 +13027,7 @@ export default function App() {
             lots={lots.filter((lot) => lot.farmId === selectedFarm.id)}
             loading={cycleLoading}
             onCreate={() => setLotModal(true)}
-            onUpdate={(updated) =>
-              setLots(
-                lots.map((lot) => (lot.id === updated.id ? updated : lot)),
-              )
-            }
+            onUpdate={updateLot}
             onDelete={(deleted) =>
               setLots(lots.filter((lot) => lot.id !== deleted.id))
             }
@@ -11416,7 +13060,7 @@ export default function App() {
             onNotice={setToast}
           />
         ) : page === "porciTable" ? (
-          <PorciTablePage farmName={selectedFarm.name} />
+          <PorciTablePage farmName={selectedFarm.name} onNotice={setToast} />
         ) : page === "dashboards" ? (
           <DashboardsPage initialScope={dashboardScope} onNotice={setToast} />
         ) : page === "calendar" ? (
@@ -11433,10 +13077,7 @@ export default function App() {
             farmName={selectedFarm.name}
             onBack={() => setPage("cycle")}
             onUpdate={(updated) => {
-              setSelectedLot(updated)
-              setLots(
-                lots.map((lot) => (lot.id === updated.id ? updated : lot)),
-              )
+              updateLot(updated)
             }}
             onDelete={() => {
               setLots(lots.filter((lot) => lot.id !== selectedLot.id))
