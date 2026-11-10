@@ -324,7 +324,8 @@ type HomeFarmAlert = {
   title: string
   detail: string
   urgency: number
-  module: string
+  module: "Plantel reproductivo" | "Reproductor" | "Inventario" | "Sanidad del lote" | "PorciTabla" | "Carpeta ICA"
+  destination: string
 }
 
 const initialFarms: Farm[] = [
@@ -365,41 +366,6 @@ const initialFarms: Farm[] = [
     goal: "≤ 2,2 %",
   },
 ]
-
-const homeFarmAlerts: Record<number, HomeFarmAlert[]> = {
-  1: [
-    {
-      id: "esperanza-vaccine",
-      title: "Vacuna Circovirus por vencer",
-      detail: "Cerda #1305 · el refuerzo vence mañana",
-      urgency: 1,
-      module: "Plantel reproductivo",
-    },
-    {
-      id: "esperanza-mortality",
-      title: "Mortalidad sobre la meta",
-      detail: "Lote PC-2025-017 · requiere revisión",
-      urgency: 2,
-      module: "Precebo",
-    },
-    {
-      id: "esperanza-inventory",
-      title: "Stock mínimo alcanzado",
-      detail: "Vacuna Circovirus · quedan 2 ítems",
-      urgency: 3,
-      module: "Inventario",
-    },
-  ],
-  3: [
-    {
-      id: "san-jose-inventory",
-      title: "Revisar inventario",
-      detail: "Oxitocina San José · 1 ítem disponible, mínimo 3",
-      urgency: 1,
-      module: "Inventario",
-    },
-  ],
-}
 
 type ProductionCycle = "Precebo" | "Levante"
 type LotStatus = "Activo" | "Finalizado"
@@ -442,10 +408,16 @@ type LotTransfer = {
   id: number
   date: string
   direction: "Salida" | "Entrada"
+  kind?: "Migración" | "Traslado"
   otherLot: string
   animals: number
+  females: number
+  males: number
   averageWeight: number
+  totalWeight: number
   responsible: string
+  reason?: string
+  notes?: string
 }
 type Lot = {
   id: number
@@ -1032,7 +1004,9 @@ function MobileNavigation({
       {open && (
         <div className="mobile-drawer">
           <button
-            className={`mobile-all-farms ${active === "Inicio" ? "active" : ""}`}
+            className={`mobile-all-farms ${
+              active === "Inicio" ? "active" : ""
+            }`}
             onClick={() => {
               onNavigate("Inicio")
               closeDrawer()
@@ -1233,8 +1207,10 @@ function Header({
   onVoice,
 }: HeaderProps) {
   return (
-    <header className="page-header">
-      <div>
+    <header
+      className={`page-header ${page === "home" ? "home-page-header" : ""}`}
+    >
+      <div className="page-header-copy">
         <div className="breadcrumbs">
           <span>Inicio</span>
           {page === "cycle" && (
@@ -1250,17 +1226,19 @@ function Header({
         {page === "home" && <p>Resumen de tus granjas y operaciones</p>}
       </div>
       {page === "home" && (
+        <label className="search-field home-farm-search">
+          <Icon name="search" size={18} />
+          <input
+            type="search"
+            value={farmQuery}
+            onChange={(event) => onFarmQueryChange(event.target.value)}
+            placeholder="Buscar granja por nombre"
+            aria-label="Buscar granja por nombre"
+          />
+        </label>
+      )}
+      {page === "home" && (
         <div className="header-actions home-header-actions">
-          <label className="search-field home-farm-search">
-            <Icon name="search" size={18} />
-            <input
-              type="search"
-              value={farmQuery}
-              onChange={(event) => onFarmQueryChange(event.target.value)}
-              placeholder="Buscar granja por nombre"
-              aria-label="Buscar granja por nombre"
-            />
-          </label>
           <button className="button secondary voice" onClick={onVoice}>
             <Icon name="mic" size={19} />
             Registro por voz
@@ -1346,7 +1324,7 @@ function StatusBadge({
       aria-label={`${alerts} ${alerts === 1 ? "alerta" : "alertas"}`}
     >
       <Icon name="alert" size={14} />
-      {alerts}
+      {alerts} {alerts === 1 ? "alerta" : "alertas"}
     </button>
   ) : (
     <span className="status positive">
@@ -1358,6 +1336,7 @@ function StatusBadge({
 
 function FarmCard({
   farm,
+  alerts,
   favorite,
   onEdit,
   onFavorite,
@@ -1367,6 +1346,7 @@ function FarmCard({
   onResolveAlert,
 }: {
   farm: Farm
+  alerts: HomeFarmAlert[]
   favorite: boolean
   onEdit: () => void
   onFavorite: () => void
@@ -1379,8 +1359,6 @@ function FarmCard({
   const alertWrapRef = useDismissibleMenu(alertsOpen, () =>
     setAlertsOpen(false),
   )
-  const configuredAlerts = homeFarmAlerts[farm.id] ?? []
-  const alerts = configuredAlerts.slice(0, farm.alerts)
   const cardCycles = cycleOrder.filter((cycle) => farm.cycles.includes(cycle))
   return (
     <article
@@ -1427,7 +1405,7 @@ function FarmCard({
           </button>
           <div className="farm-alert-wrap" ref={alertWrapRef}>
             <StatusBadge
-              alerts={farm.alerts}
+              alerts={alerts.length}
               open={alertsOpen}
               onClick={() => setAlertsOpen(!alertsOpen)}
             />
@@ -1449,7 +1427,7 @@ function FarmCard({
                         <button
                           onClick={() => {
                             setAlertsOpen(false)
-                            onResolveAlert(alert.module)
+                            onResolveAlert(alert.destination)
                           }}
                         >
                           Resolver ahora
@@ -2190,9 +2168,48 @@ const calculateLotFigures = (lot: Lot) => {
     (total, record) => (record.annulled ? total : total + record.quantity),
     0,
   )
+  const transferredAnimals = (lot.transferRecords ?? [])
+    .filter((record) => record.direction === "Salida")
+    .reduce((total, record) => total + record.animals, 0)
+  const transferredFemales = (lot.transferRecords ?? [])
+    .filter((record) => record.direction === "Salida")
+    .reduce((total, record) => total + record.females, 0)
+  const transferredMales = (lot.transferRecords ?? [])
+    .filter((record) => record.direction === "Salida")
+    .reduce((total, record) => total + record.males, 0)
+  const purchasedFemales = lot.purchaseRecords
+    .filter((record) => record.purchaseType === "Animales" && !record.annulled)
+    .reduce((total, record) => total + record.females, 0)
+  const purchasedMales = lot.purchaseRecords
+    .filter((record) => record.purchaseType === "Animales" && !record.annulled)
+    .reduce((total, record) => total + record.males, 0)
+  const soldFemales = lot.saleRecords
+    .filter((record) => !record.annulled)
+    .reduce((total, record) => total + record.females, 0)
+  const soldMales = lot.saleRecords
+    .filter((record) => !record.annulled)
+    .reduce((total, record) => total + record.males, 0)
+  const deadFemales = lot.mortalityRecords
+    .filter((record) => !record.annulled && record.sex === "Hembra")
+    .reduce((total, record) => total + record.quantity, 0)
+  const deadMales = lot.mortalityRecords
+    .filter((record) => !record.annulled && record.sex === "Macho")
+    .reduce((total, record) => total + record.quantity, 0)
+  const currentFemales = Math.max(
+    0,
+    lot.females +
+      purchasedFemales -
+      soldFemales -
+      deadFemales -
+      transferredFemales,
+  )
+  const currentMales = Math.max(
+    0,
+    lot.males + purchasedMales - soldMales - deadMales - transferredMales,
+  )
   const currentAnimals = Math.max(
     0,
-    enteredAnimals - mortalityAnimals - soldAnimals,
+    enteredAnimals - mortalityAnimals - soldAnimals - transferredAnimals,
   )
   const day = Math.max(0, lot.day)
   const mortality =
@@ -2210,6 +2227,9 @@ const calculateLotFigures = (lot: Lot) => {
     purchasedAnimals,
     soldAnimals,
     mortalityAnimals,
+    transferredAnimals,
+    currentFemales,
+    currentMales,
     day,
     mortality,
     mortalityTone,
@@ -2430,7 +2450,7 @@ function LotsTable({
                 </td>
                 <td>{countLabel(metrics.day, "día", "días")}</td>
                 <td>
-                  {lot.females} / {lot.males}
+                  {metrics.currentFemales} / {metrics.currentMales}
                 </td>
                 <td>
                   {metrics.currentAnimals} / {metrics.enteredAnimals} animales
@@ -2500,7 +2520,7 @@ function LotsList({
   onDelete: (lot: Lot) => void
   onNotice: (text: string) => void
   onOpenLot: (lot: Lot) => void
-  onMigrate: (lot: Lot, date: string) => void
+  onMigrate: (lot: Lot, draft: MigrationDraft) => void
 }) {
   const [view, setView] = useState<"cards" | "table">("cards")
   const [menuOpen, setMenuOpen] = useState<number | null>(null)
@@ -2536,8 +2556,8 @@ function LotsList({
         <div className="list-toolbar">
           <p>
             <strong>{cycleLots.length}</strong>{" "}
-            {cycleLots.length === 1 ? "lote registrado" : "lotes registrados"} en{" "}
-            {cycle}
+            {cycleLots.length === 1 ? "lote registrado" : "lotes registrados"}{" "}
+            en {cycle}
           </p>
           <div className="view-toggle" aria-label="Cambiar vista">
             <button
@@ -2669,9 +2689,13 @@ function LotsList({
       {migratingLot && (
         <MigrateLotDialog
           lot={migratingLot}
+          destinationLots={lots.filter(
+            (lot) => lot.cycle === "Levante" && lot.status === "Activo",
+          )}
+          existingLotCodes={lots.map((lot) => lot.code)}
           onClose={() => setMigratingLot(null)}
-          onConfirm={(date) => {
-            onMigrate(migratingLot, date)
+          onConfirm={(draft) => {
+            onMigrate(migratingLot, draft)
             setMigratingLot(null)
           }}
         />
@@ -3521,7 +3545,9 @@ function MortalityTab({
         <div className="records-heading">
           <div>
             <h2>Historial de mortalidad</h2>
-            <p>{countLabel(records.length, "registro", "registros")} en este lote</p>
+            <p>
+              {countLabel(records.length, "registro", "registros")} en este lote
+            </p>
           </div>
         </div>
         <div className="table-wrap borderless">
@@ -4928,8 +4954,12 @@ function PurchasesTab({
                   <td>
                     {record.purchaseType === "Animales" ? (
                       <>
-                        {countLabel(record.females + record.males, "animal", "animales")} ·{" "}
-                        {formatDecimal(record.totalWeight)} kg
+                        {countLabel(
+                          record.females + record.males,
+                          "animal",
+                          "animales",
+                        )}{" "}
+                        · {formatDecimal(record.totalWeight)} kg
                       </>
                     ) : (
                       <>
@@ -5085,7 +5115,11 @@ function SalesTab({
                   <td>{record.date}</td>
                   <td>{record.party}</td>
                   <td>
-                    {countLabel(record.females + record.males, "animal", "animales")}
+                    {countLabel(
+                      record.females + record.males,
+                      "animal",
+                      "animales",
+                    )}
                   </td>
                   <td>{formatDecimal(record.totalWeight)} kg</td>
                   <td>
@@ -5377,8 +5411,8 @@ function MovementsTab({ records }: { records: LotTransfer[] }) {
       <section className="records-card">
         <div className="records-heading">
           <div>
-            <h2>Movimientos entre ciclos</h2>
-            <p>Trazabilidad de entradas y salidas por migración</p>
+            <h2>Movimientos del lote</h2>
+            <p>Traslados y migraciones registrados como entradas y salidas</p>
           </div>
         </div>
         {records.length ? (
@@ -5390,7 +5424,10 @@ function MovementsTab({ records }: { records: LotTransfer[] }) {
                   <th>Movimiento</th>
                   <th>Lote relacionado</th>
                   <th>Animales</th>
+                  <th>H / M</th>
+                  <th>Motivo</th>
                   <th>Peso promedio</th>
+                  <th>Peso total</th>
                   <th>Responsable</th>
                 </tr>
               </thead>
@@ -5406,14 +5443,19 @@ function MovementsTab({ records }: { records: LotTransfer[] }) {
                             : "neutral"
                         }`}
                       >
-                        {record.direction}
+                        {record.kind ?? "Migración"} · {record.direction}
                       </span>
                     </td>
                     <td>
                       <strong>{record.otherLot}</strong>
                     </td>
                     <td>{record.animals}</td>
+                    <td>
+                      {record.females} / {record.males}
+                    </td>
+                    <td>{record.reason || record.notes || "—"}</td>
                     <td>{formatDecimal(record.averageWeight)} kg</td>
+                    <td>{formatDecimal(record.totalWeight)} kg</td>
                     <td>{record.responsible}</td>
                   </tr>
                 ))}
@@ -5422,7 +5464,7 @@ function MovementsTab({ records }: { records: LotTransfer[] }) {
           </div>
         ) : (
           <div className="inline-empty records-empty">
-            Este lote todavía no tiene movimientos entre ciclos.
+            Este lote todavía no tiene movimientos registrados.
           </div>
         )}
       </section>
@@ -5430,68 +5472,478 @@ function MovementsTab({ records }: { records: LotTransfer[] }) {
   )
 }
 
-function MigrateLotDialog({
+type LotTransferDraft = {
+  destinationLotId: number
+  date: string
+  females: number
+  males: number
+  reason: string
+}
+
+function TransferLotDialog({
   lot,
+  destinationLots,
   onClose,
   onConfirm,
 }: {
   lot: Lot
+  destinationLots: Lot[]
   onClose: () => void
-  onConfirm: (date: string) => void
+  onConfirm: (draft: LotTransferDraft) => void
+}) {
+  const figures = calculateLotFigures(lot)
+  const [destinationLotId, setDestinationLotId] = useState(
+    String(destinationLots[0]?.id ?? ""),
+  )
+  const [date, setDate] = useState(TODAY_ISO)
+  const [females, setFemales] = useState("")
+  const [males, setMales] = useState("")
+  const [reason, setReason] = useState("")
+  const [submitted, setSubmitted] = useState(false)
+  const femaleCount = Math.floor(parseColombianNumber(females))
+  const maleCount = Math.floor(parseColombianNumber(males))
+  const animals = femaleCount + maleCount
+  const exceedsAvailable =
+    femaleCount > figures.currentFemales ||
+    maleCount > figures.currentMales ||
+    animals > figures.currentAnimals
+  const invalid =
+    !destinationLotId ||
+    !date ||
+    femaleCount < 0 ||
+    maleCount < 0 ||
+    animals <= 0 ||
+    exceedsAvailable ||
+    !reason.trim()
+
+  return (
+    <DialogShell title="Registrar traslado" onClose={onClose}>
+      <form
+        className="migration-form"
+        onSubmit={(event) => {
+          event.preventDefault()
+          setSubmitted(true)
+          if (invalid) return
+          onConfirm({
+            destinationLotId: Number(destinationLotId),
+            date,
+            females: femaleCount,
+            males: maleCount,
+            reason: reason.trim(),
+          })
+        }}
+      >
+        <div className="migration-form-body">
+          <div className="migration-available">
+            <span>Disponibles en {lot.code}</span>
+            <strong>{figures.currentAnimals} animales</strong>
+            <small>
+              {figures.currentFemales} hembras · {figures.currentMales} machos
+            </small>
+          </div>
+          <label
+            className={`field ${
+              submitted && !destinationLotId ? "has-error" : ""
+            }`}
+          >
+            <span>
+              Lote destino <em>* obligatorio</em>
+            </span>
+            <select
+              value={destinationLotId}
+              onChange={(event) => setDestinationLotId(event.target.value)}
+            >
+              {destinationLots.map((destination) => (
+                <option value={destination.id} key={destination.id}>
+                  {destination.code} ·{" "}
+                  {calculateLotFigures(destination).currentAnimals} animales
+                </option>
+              ))}
+            </select>
+            <small>Mismo ciclo: {lot.cycle}</small>
+          </label>
+          <div className="migration-grid">
+            <label className={`field ${submitted && !date ? "has-error" : ""}`}>
+              <span>
+                Fecha <em>* obligatorio</em>
+              </span>
+              <DatePicker
+                value={date}
+                max={TODAY_ISO}
+                onChange={setDate}
+                label="Seleccionar fecha del traslado"
+              />
+            </label>
+            <div />
+            <label
+              className={`field ${
+                submitted &&
+                (femaleCount < 0 || femaleCount > figures.currentFemales)
+                  ? "has-error"
+                  : ""
+              }`}
+            >
+              <span>
+                Hembras <em>* obligatorio</em>
+              </span>
+              <input
+                inputMode="numeric"
+                min="0"
+                value={females}
+                onChange={(event) => setFemales(event.target.value)}
+                placeholder="0"
+              />
+            </label>
+            <label
+              className={`field ${
+                submitted && (maleCount < 0 || maleCount > figures.currentMales)
+                  ? "has-error"
+                  : ""
+              }`}
+            >
+              <span>
+                Machos <em>* obligatorio</em>
+              </span>
+              <input
+                inputMode="numeric"
+                min="0"
+                value={males}
+                onChange={(event) => setMales(event.target.value)}
+                placeholder="0"
+              />
+            </label>
+          </div>
+          {submitted && (animals <= 0 || exceedsAvailable) && (
+            <small className="migration-error">
+              <Icon name="alert" size={14} />
+              Indica al menos un animal sin superar las hembras o machos
+              disponibles.
+            </small>
+          )}
+          <label
+            className={`field ${
+              submitted && !reason.trim() ? "has-error" : ""
+            }`}
+          >
+            <span>
+              Motivo <em>* obligatorio</em>
+            </span>
+            <textarea
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder="Ej. Redistribución por capacidad del corral"
+            />
+          </label>
+        </div>
+        <div className="modal-actions">
+          <button type="button" className="button secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button type="submit" className="button primary">
+            Registrar traslado
+          </button>
+        </div>
+      </form>
+    </DialogShell>
+  )
+}
+
+type MigrationDraft = {
+  date: string
+  females: number
+  males: number
+  averageWeight: number
+  totalWeight: number
+  destination: "existing" | "new"
+  destinationLotId?: number
+  newLotCode?: string
+  targetWeight?: number
+  notes: string
+}
+
+function MigrateLotDialog({
+  lot,
+  destinationLots,
+  existingLotCodes,
+  onClose,
+  onConfirm,
+}: {
+  lot: Lot
+  destinationLots: Lot[]
+  existingLotCodes: string[]
+  onClose: () => void
+  onConfirm: (draft: MigrationDraft) => void
 }) {
   const [date, setDate] = useState(TODAY_ISO)
+  const [females, setFemales] = useState("")
+  const [males, setMales] = useState("")
+  const [averageWeight, setAverageWeight] = useState(
+    formatDecimal(lot.averageWeight),
+  )
+  const [totalWeight, setTotalWeight] = useState("")
+  const [destination, setDestination] = useState<"existing" | "new">(
+    destinationLots.length ? "existing" : "new",
+  )
+  const [destinationLotId, setDestinationLotId] = useState(
+    destinationLots[0]?.id ? String(destinationLots[0].id) : "",
+  )
+  const [newLotCode, setNewLotCode] = useState("")
+  const [targetWeight, setTargetWeight] = useState("")
+  const [notes, setNotes] = useState("")
+  const [submitted, setSubmitted] = useState(false)
   const figures = calculateLotFigures(lot)
+  const femaleCount = Math.floor(parseColombianNumber(females))
+  const maleCount = Math.floor(parseColombianNumber(males))
+  const animals = femaleCount + maleCount
+  const average = parseColombianNumber(averageWeight)
+  const total = parseColombianNumber(totalWeight)
+  const tooMany =
+    animals > figures.currentAnimals ||
+    femaleCount > figures.currentFemales ||
+    maleCount > figures.currentMales
+  const duplicateCode = existingLotCodes.some(
+    (code) =>
+      code.toLocaleLowerCase() === newLotCode.trim().toLocaleLowerCase(),
+  )
+  const invalid =
+    !date ||
+    !females ||
+    !males ||
+    femaleCount < 0 ||
+    maleCount < 0 ||
+    animals <= 0 ||
+    tooMany ||
+    average <= 0 ||
+    total <= 0 ||
+    (destination === "existing" && !destinationLotId) ||
+    (destination === "new" &&
+      (!newLotCode.trim() ||
+        duplicateCode ||
+        parseColombianNumber(targetWeight) <= 0))
+  const updateAnimals = (nextFemales: string, nextMales: string) => {
+    const nextAnimals =
+      Math.floor(parseColombianNumber(nextFemales)) +
+      Math.floor(parseColombianNumber(nextMales))
+    setFemales(nextFemales)
+    setMales(nextMales)
+    if (average > 0 && nextAnimals > 0) {
+      setTotalWeight(formatDecimal(average * nextAnimals))
+    }
+  }
   return (
-    <DialogShell title="Migrar lote a Levante" onClose={onClose} size="small">
-      <div className="finish-lot-content">
-        <span className="finish-lot-icon">
-          <Icon name="growth" size={22} />
-        </span>
-        <div>
-          <h3>{lot.code} pasará a Levante</h3>
-          <p>
-            Se cerrará el lote de Precebo y se creará un lote activo en Levante,
-            conservando el origen en el historial de movimientos.
-          </p>
+    <DialogShell title="Migrar a Levante" onClose={onClose}>
+      <form
+        className="migration-form"
+        onSubmit={(event) => {
+          event.preventDefault()
+          setSubmitted(true)
+          if (invalid) return
+          onConfirm({
+            date,
+            females: femaleCount,
+            males: maleCount,
+            averageWeight: average,
+            totalWeight: total,
+            destination,
+            destinationLotId:
+              destination === "existing" ? Number(destinationLotId) : undefined,
+            newLotCode: destination === "new" ? newLotCode.trim() : undefined,
+            targetWeight:
+              destination === "new"
+                ? parseColombianNumber(targetWeight)
+                : undefined,
+            notes: notes.trim(),
+          })
+        }}
+      >
+        <div className="migration-form-body">
+          <div className="migration-available">
+            <span>Disponibles en {lot.code}</span>
+            <strong>{figures.currentAnimals} animales</strong>
+            <small>
+              {figures.currentFemales} hembras · {figures.currentMales} machos
+            </small>
+          </div>
+          <div className="migration-grid">
+            <label className="field">
+              <span>
+                Fecha <em>* obligatorio</em>
+              </span>
+              <DatePicker
+                value={date}
+                max={TODAY_ISO}
+                onChange={setDate}
+                label="Seleccionar fecha de migración"
+              />
+            </label>
+            <div />
+            <label
+              className={`field ${
+                submitted && (!females || femaleCount > figures.currentFemales)
+                  ? "has-error"
+                  : ""
+              }`}
+            >
+              <span>
+                Hembras <em>* obligatorio</em>
+              </span>
+              <input
+                inputMode="numeric"
+                value={females}
+                onChange={(event) => updateAnimals(event.target.value, males)}
+                placeholder="0"
+              />
+            </label>
+            <label
+              className={`field ${
+                submitted && (!males || maleCount > figures.currentMales)
+                  ? "has-error"
+                  : ""
+              }`}
+            >
+              <span>
+                Machos <em>* obligatorio</em>
+              </span>
+              <input
+                inputMode="numeric"
+                value={males}
+                onChange={(event) => updateAnimals(females, event.target.value)}
+                placeholder="0"
+              />
+            </label>
+          </div>
+          {submitted &&
+            (animals <= 0 || femaleCount < 0 || maleCount < 0 || tooMany) && (
+              <small className="migration-error">
+                <Icon name="alert" size={14} />
+                La suma debe ser mayor que 0 y no puede superar los animales
+                disponibles.
+              </small>
+            )}
+          <div className="migration-grid">
+            <label className="field">
+              <span>Peso promedio (kg)</span>
+              <input
+                inputMode="decimal"
+                value={averageWeight}
+                onChange={(event) => {
+                  const value = event.target.value
+                  setAverageWeight(value)
+                  const nextAverage = parseColombianNumber(value)
+                  if (nextAverage > 0 && animals > 0) {
+                    setTotalWeight(formatDecimal(nextAverage * animals))
+                  }
+                }}
+              />
+            </label>
+            <label className="field">
+              <span>Peso total (kg)</span>
+              <input
+                inputMode="decimal"
+                value={totalWeight}
+                onChange={(event) => {
+                  const value = event.target.value
+                  setTotalWeight(value)
+                  const nextTotal = parseColombianNumber(value)
+                  if (nextTotal > 0 && animals > 0) {
+                    setAverageWeight(formatDecimal(nextTotal / animals))
+                  }
+                }}
+                placeholder="0"
+              />
+            </label>
+          </div>
+          <fieldset className="migration-destination">
+            <legend>Destino</legend>
+            <div className="migration-destination-options">
+              <label>
+                <input
+                  type="radio"
+                  checked={destination === "existing"}
+                  disabled={!destinationLots.length}
+                  onChange={() => setDestination("existing")}
+                />
+                Lote existente
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  checked={destination === "new"}
+                  onChange={() => setDestination("new")}
+                />
+                Nuevo lote en Levante
+              </label>
+            </div>
+            {destination === "existing" ? (
+              <label className="field">
+                <span>Lote de Levante</span>
+                <select
+                  value={destinationLotId}
+                  onChange={(event) => setDestinationLotId(event.target.value)}
+                >
+                  {destinationLots.map((item) => (
+                    <option value={item.id} key={item.id}>
+                      {item.code} · {calculateLotFigures(item).currentAnimals}{" "}
+                      animales
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <div className="migration-grid">
+                <label
+                  className={`field ${
+                    submitted && (!newLotCode.trim() || duplicateCode)
+                      ? "has-error"
+                      : ""
+                  }`}
+                >
+                  <span>Nombre del lote</span>
+                  <input
+                    value={newLotCode}
+                    onChange={(event) => setNewLotCode(event.target.value)}
+                    placeholder="Ej. LV-2026-09"
+                  />
+                  {submitted && duplicateCode && (
+                    <small>Ya existe un lote con este nombre.</small>
+                  )}
+                </label>
+                <label
+                  className={`field ${
+                    submitted && parseColombianNumber(targetWeight) <= 0
+                      ? "has-error"
+                      : ""
+                  }`}
+                >
+                  <span>Peso objetivo (kg)</span>
+                  <input
+                    inputMode="decimal"
+                    value={targetWeight}
+                    onChange={(event) => setTargetWeight(event.target.value)}
+                    placeholder="110"
+                  />
+                </label>
+              </div>
+            )}
+          </fieldset>
+          <label className="field">
+            <span>Notas</span>
+            <textarea
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+              placeholder="Información adicional de la migración"
+            />
+          </label>
         </div>
-        <div className="finish-summary">
-          <div>
-            <span>Animales</span>
-            <strong>{figures.currentAnimals}</strong>
-          </div>
-          <div>
-            <span>Peso promedio</span>
-            <strong>{formatDecimal(lot.averageWeight)} kg</strong>
-          </div>
-          <div>
-            <span>Destino</span>
-            <strong>Levante</strong>
-          </div>
+        <div className="modal-actions">
+          <button type="button" className="button secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="button primary" type="submit">
+            Confirmar migración
+          </button>
         </div>
-        <label className="field">
-          <span>
-            Fecha de migración <em>* obligatorio</em>
-          </span>
-          <DatePicker
-            value={date}
-            max={TODAY_ISO}
-            onChange={setDate}
-            label="Seleccionar fecha de migración"
-          />
-        </label>
-      </div>
-      <div className="modal-actions">
-        <button className="button secondary" onClick={onClose}>
-          Cancelar
-        </button>
-        <button
-          className="button primary"
-          disabled={!date || figures.currentAnimals === 0}
-          onClick={() => onConfirm(date)}
-        >
-          Confirmar migración
-        </button>
-      </div>
+      </form>
     </DialogShell>
   )
 }
@@ -5622,16 +6074,20 @@ function DeleteLotDialog({
 function LotDetail({
   lot,
   farmName,
+  destinationLots,
   onBack,
   onUpdate,
+  onTransfer,
   onDelete,
   onNotice,
   existingCodes,
 }: {
   lot: Lot
   farmName: string
+  destinationLots: Lot[]
   onBack: () => void
   onUpdate: (lot: Lot) => void
+  onTransfer: (source: Lot, draft: LotTransferDraft) => void
   onDelete: () => void
   onNotice: (text: string) => void
   existingCodes: string[]
@@ -5643,6 +6099,7 @@ function LotDetail({
   const [consumptionModal, setConsumptionModal] = useState(false)
   const [purchaseModal, setPurchaseModal] = useState(false)
   const [saleModal, setSaleModal] = useState(false)
+  const [transferModal, setTransferModal] = useState(false)
   const [finishOpen, setFinishOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -5665,15 +6122,15 @@ function LotDetail({
     {
       id: 2,
       name: "Refuerzo vacuna Circovirus",
-      date: "18/03/2026",
+      date: "14/03/2026",
       method: "Intramuscular",
-      overdue: false,
+      overdue: true,
       status: "Programado",
     },
     {
       id: 3,
       name: "Desparasitación interna",
-      date: "25/03/2026",
+      date: "16/03/2026",
       method: "Oral",
       overdue: false,
       status: "Programado",
@@ -5700,18 +6157,26 @@ function LotDetail({
       label: "Registrar venta",
       run: () => setSaleModal(true),
     },
+    Movimientos: {
+      label: "Registrar traslado",
+      run: () => setTransferModal(true),
+    },
   }
   const currentAction = action[tab]
   const actionDisabled =
     lot.status === "Finalizado" ||
+    (tab === "Movimientos" &&
+      (metrics.currentAnimals === 0 || destinationLots.length === 0)) ||
     ((tab === "Mortalidad" || tab === "Sanidad") &&
       metrics.currentAnimals === 0)
   const disabledReason =
     lot.status === "Finalizado"
       ? "Este lote está finalizado y es solo de consulta"
-      : metrics.currentAnimals === 0
-        ? "Este lote no tiene animales disponibles"
-        : ""
+      : tab === "Movimientos" && destinationLots.length === 0
+        ? `No hay otro lote activo de ${lot.cycle} disponible`
+        : metrics.currentAnimals === 0
+          ? "Este lote no tiene animales disponibles"
+          : ""
   return (
     <>
       <LotDetailHeader
@@ -5865,6 +6330,17 @@ function LotDetail({
           }}
         />
       )}
+      {transferModal && (
+        <TransferLotDialog
+          lot={lot}
+          destinationLots={destinationLots}
+          onClose={() => setTransferModal(false)}
+          onConfirm={(draft) => {
+            onTransfer(lot, draft)
+            setTransferModal(false)
+          }}
+        />
+      )}
       {deleteOpen && (
         <DeleteLotDialog
           lot={lot}
@@ -5966,8 +6442,8 @@ type SowHealthChange = {
 
 const initialSowVaccines: SowVaccine[] = [
   { id: 1, name: "Parvovirus", date: "16/03/2026", overdue: true },
-  { id: 2, name: "Leptospira", date: "19/03/2026", overdue: false },
-  { id: 3, name: "Erisipela", date: "22/03/2026", overdue: false },
+  { id: 2, name: "Leptospira", date: "14/03/2026", overdue: true },
+  { id: 3, name: "Erisipela", date: "12/03/2026", overdue: true },
 ]
 
 const sowStages: SowStage[] = ["Gestación", "Lactancia", "Vacía", "Reemplazo"]
@@ -6007,7 +6483,7 @@ const initialSows: Sow[] = Array.from({ length: 26 }, (_, index) => {
       stage === "Gestación"
         ? index === 0
           ? "14/03/2026"
-          : `${18 + (index % 9)}/03/2026`
+          : `${String(15 - (index % 9)).padStart(2, "0")}/03/2026`
         : undefined,
     piglets: stage === "Lactancia" ? 10 + (index % 4) : undefined,
     weightKg: stage === "Reemplazo" ? 135 + (index - 22) * 4 : undefined,
@@ -6754,6 +7230,7 @@ function BirthModal({
               </span>
               <DatePicker
                 value={form.date}
+                max={TODAY_ISO}
                 onChange={(value) => setForm({ ...form, date: value })}
                 label="Seleccionar fecha del parto"
               />
@@ -7028,6 +7505,7 @@ function BreedingEventModal({
               </span>
               <DatePicker
                 value={form.date}
+                max={TODAY_ISO}
                 onChange={(date) => setForm({ ...form, date })}
                 label={`Seleccionar fecha de ${eventType.toLowerCase()}`}
               />
@@ -8238,6 +8716,7 @@ const reproducerTabs: ReproducerTab[] = [
 
 function ReproducerHeader({
   farmName,
+  alerts,
   moreOpen,
   setMoreOpen,
   alertsOpen,
@@ -8246,6 +8725,7 @@ function ReproducerHeader({
   onNotice,
 }: {
   farmName: string
+  alerts: HomeFarmAlert[]
   moreOpen: boolean
   setMoreOpen: (value: boolean) => void
   alertsOpen: boolean
@@ -8274,28 +8754,23 @@ function ReproducerHeader({
             onClick={() => setAlertsOpen(!alertsOpen)}
           >
             <Icon name="bell" size={19} />
-            <b>2</b>
+            {alerts.length > 0 && <b>{alerts.length}</b>}
           </button>
           {alertsOpen && (
             <div className="alerts-popover reproducer-alerts-popover">
               <div className="popover-heading">
                 <strong>Alertas sanitarias</strong>
-                <span>2 requieren seguimiento</span>
+                <span>{alerts.length} requieren seguimiento</span>
               </div>
-              <div className="popover-alert">
-                <span className="alert-dot urgency-1" />
-                <div>
-                  <strong>Vacuna pendiente</strong>
-                  <p>Macho Demo Duroc · hoy</p>
+              {alerts.map((alert) => (
+                <div className="popover-alert" key={alert.id}>
+                  <span className={`alert-dot urgency-${alert.urgency}`} />
+                  <div>
+                    <strong>{alert.title}</strong>
+                    <p>{alert.detail}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="popover-alert">
-                <span className="alert-dot urgency-2" />
-                <div>
-                  <strong>Revisión de lote</strong>
-                  <p>Semen Genética Externa · 2 días</p>
-                </div>
-              </div>
+              ))}
             </div>
           )}
         </div>
@@ -8440,7 +8915,8 @@ function AddReproducerModal({
       lastService: reproducer?.lastService ?? "Sin registros",
       breed: form.breed || "Sin especificar",
       lot: form.lot || (kind === "Macho" ? "M-2025" : "S-2026"),
-      entryDate: reproducer?.entryDate ?? formatDate(new Date()),
+      entryDate:
+        reproducer?.entryDate ?? formatDate(new Date(`${TODAY_ISO}T12:00:00`)),
       birthDate: reproducer?.birthDate,
       secondaryId: reproducer?.secondaryId ?? "Sin registrar",
       code: reproducer?.code ?? `REP-${String(Date.now()).slice(-3)}`,
@@ -8610,6 +9086,7 @@ function RegisterServiceModal({
               </span>
               <DatePicker
                 value={date}
+                max={TODAY_ISO}
                 onChange={setDate}
                 label="Seleccionar fecha del servicio"
               />
@@ -9014,7 +9491,7 @@ function ReproducerDetail({
             onUpdate({
               ...reproducer,
               servicesThisMonth: reproducer.servicesThisMonth + 1,
-              lastService: formatDate(new Date()),
+              lastService: formatDate(new Date(`${TODAY_ISO}T12:00:00`)),
             })
             setServiceOpen(false)
             onNotice("Servicio registrado")
@@ -9124,6 +9601,7 @@ function ReproducerStatusDialog({
             </span>
             <DatePicker
               value={date}
+              max={TODAY_ISO}
               onChange={setDate}
               label="Fecha de la novedad"
             />
@@ -9183,6 +9661,7 @@ function ReproducerRecordDialog({
             </span>
             <DatePicker
               value={date}
+              max={TODAY_ISO}
               onChange={setDate}
               label="Fecha del registro"
             />
@@ -9770,7 +10249,7 @@ function ReproducerDetailV2({
                       <td>{reproducer.method}</td>
                       <td>1</td>
                       <td>114</td>
-                      <td>06/07/2026</td>
+                      <td>16/03/2026</td>
                       <td>12</td>
                       <td>0</td>
                       <td>0</td>
@@ -9837,9 +10316,11 @@ function ReproducerDetailV2({
 
 function ReproducerPage({
   farmName,
+  alerts,
   onNotice,
 }: {
   farmName: string
+  alerts: HomeFarmAlert[]
   onNotice: (text: string) => void
 }) {
   const [reproducers, setReproducers] = useState(() =>
@@ -9936,6 +10417,7 @@ function ReproducerPage({
       <div className="reproducer-page">
         <ReproducerHeader
           farmName={farmName}
+          alerts={alerts}
           moreOpen={moreOpen}
           setMoreOpen={setMoreOpen}
           alertsOpen={alertsOpen}
@@ -10173,7 +10655,7 @@ const initialMedicineItems: MedicineItem[] = [
     open: 1,
     openLevel: 40,
     empty: 2,
-    expiry: "18/03/2026",
+    expiry: "15/03/2026",
   },
   {
     id: 2,
@@ -10184,7 +10666,7 @@ const initialMedicineItems: MedicineItem[] = [
     open: 0,
     openLevel: 0,
     empty: 1,
-    expiry: "30/04/2026",
+    expiry: "14/03/2026",
   },
   {
     id: 3,
@@ -10195,7 +10677,7 @@ const initialMedicineItems: MedicineItem[] = [
     open: 1,
     openLevel: 75,
     empty: 0,
-    expiry: "15/08/2026",
+    expiry: "16/03/2026",
   },
 ]
 
@@ -10215,7 +10697,7 @@ const initialInventoryAttention: InventoryAttention[] = [
     category: "Medicamentos",
     product: "Vacuna Circovirus",
     title: "Medicamento por vencer",
-    detail: "Vence el 18/03/2026 · quedan 4 ítems",
+    detail: "Venció el 15/03/2026 · quedan 4 ítems",
     action: "Dar de baja",
     critical: true,
   },
@@ -10848,7 +11330,7 @@ function PurchaseModal({
     category,
     product: product ?? "",
     quantity: "",
-    date: "",
+    date: TODAY_ISO,
     supplier: "",
   })
   const [invoice, setInvoice] = useState("")
@@ -10857,7 +11339,8 @@ function PurchaseModal({
   const dirty =
     form.category !== category ||
     form.product !== (product ?? "") ||
-    Boolean(form.quantity || form.date || form.supplier || invoice)
+    form.date !== TODAY_ISO ||
+    Boolean(form.quantity || form.supplier || invoice)
   const attemptClose = () => (dirty ? setConfirmExit(true) : onClose())
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -10954,6 +11437,7 @@ function PurchaseModal({
               </span>
               <DatePicker
                 value={form.date}
+                max={TODAY_ISO}
                 onChange={(value) => setForm({ ...form, date: value })}
                 label="Seleccionar fecha de compra"
               />
@@ -11239,7 +11723,9 @@ function InventoryPage({
                         minimum: 0,
                         unit: "kg",
                         lot: "Sin lote",
-                        lastPurchase: formatDate(new Date()),
+                        lastPurchase: formatDate(
+                          new Date(`${TODAY_ISO}T12:00:00`),
+                        ),
                       },
                     ],
               )
@@ -11475,7 +11961,7 @@ function NewPediluvioPanel({
   onSave: (record: PediluvioRecord) => void
 }) {
   const [form, setForm] = useState<PediluvioDraft>({
-    date: "",
+    date: TODAY_ISO,
     area: "",
     product: "",
     productQuantity: "",
@@ -11485,7 +11971,11 @@ function NewPediluvioPanel({
   })
   const [submitted, setSubmitted] = useState(false)
   const [confirmExit, setConfirmExit] = useState(false)
-  const dirty = Object.values(form).some(Boolean)
+  const dirty =
+    form.date !== TODAY_ISO ||
+    Object.entries(form).some(
+      ([key, value]) => key !== "date" && Boolean(value),
+    )
   const attemptClose = () => (dirty ? setConfirmExit(true) : onClose())
   const submit = (event: FormEvent) => {
     event.preventDefault()
@@ -11552,6 +12042,7 @@ function NewPediluvioPanel({
                 </span>
                 <DatePicker
                   value={form.date}
+                  max={TODAY_ISO}
                   onChange={(value) => setForm({ ...form, date: value })}
                   label="Seleccionar fecha del registro"
                 />
@@ -12256,6 +12747,7 @@ function DynamicRecordPanel({
                   {column.type === "Fecha" ? (
                     <DatePicker
                       value={value}
+                      max={TODAY_ISO}
                       onChange={(next) =>
                         setValues({ ...values, [column.id]: next })
                       }
@@ -12366,8 +12858,8 @@ function ExportPorciTableDialog({
   const [scope, setScope] = useState(
     "Registros visibles con los filtros actuales",
   )
-  const [startDate, setStartDate] = useState("")
-  const [endDate, setEndDate] = useState("")
+  const [startDate, setStartDate] = useState("2026-02-15")
+  const [endDate, setEndDate] = useState(TODAY_ISO)
   return (
     <DialogShell title={`Exportar · ${table.name}`} onClose={onClose}>
       <div className="form-content export-table-form">
@@ -12409,7 +12901,7 @@ function ExportPorciTableDialog({
               <span>Desde</span>
               <DatePicker
                 value={startDate}
-                max={endDate || undefined}
+                max={endDate}
                 onChange={setStartDate}
                 label="Fecha inicial de exportación"
               />
@@ -12418,7 +12910,8 @@ function ExportPorciTableDialog({
               <span>Hasta</span>
               <DatePicker
                 value={endDate}
-                min={startDate || undefined}
+                min={startDate}
+                max={TODAY_ISO}
                 onChange={setEndDate}
                 label="Fecha final de exportación"
               />
@@ -12596,7 +13089,11 @@ function PorciTablePage({
               <div>
                 <h2>{selectedTable.name}</h2>
                 <p>
-                  {countLabel(filtered.length, "registro visible", "registros visibles")}
+                  {countLabel(
+                    filtered.length,
+                    "registro visible",
+                    "registros visibles",
+                  )}
                 </p>
               </div>
               <div className="porci-table-tools">
@@ -12827,63 +13324,19 @@ function PorciTablePage({
 function FarmSummaryPage({
   farm,
   lots,
-  inventoryAttention,
+  alerts,
   onNavigate,
   onCycle,
 }: {
   farm: Farm
   lots: Lot[]
-  inventoryAttention: InventoryAttention[]
+  alerts: HomeFarmAlert[]
   onNavigate: (label: string) => void
   onCycle: (cycle: Cycle) => void
 }) {
   const activeLots = lots.filter(
     (lot) => lot.farmId === farm.id && lot.status === "Activo",
   )
-  const alerts = [
-    ...inventoryAttention.map((item) => ({
-      id: `inventory-${item.id}`,
-      title: item.title,
-      detail: `${item.product} · ${item.detail}`,
-      urgency: item.critical ? 1 : 2,
-      module: "Inventario",
-    })),
-    ...(farm.cycles.includes("Plantel reproductivo")
-      ? [
-          {
-            id: "breeding-birth",
-            title: "Parto atrasado",
-            detail: "Una cerda requiere seguimiento hoy.",
-            urgency: 1,
-            module: "Plantel reproductivo",
-          },
-          {
-            id: "breeding-vaccine",
-            title: "Vacuna vencida",
-            detail: "Hay una vacuna pendiente por aplicar.",
-            urgency: 2,
-            module: "Plantel reproductivo",
-          },
-          {
-            id: "breeding-service",
-            title: "Servicio pendiente",
-            detail: "Una cerda en celo requiere atención hoy.",
-            urgency: 3,
-            module: "Plantel reproductivo",
-          },
-        ]
-      : []),
-    ...activeLots
-      .map((lot) => ({ lot, figures: calculateLotFigures(lot) }))
-      .filter(({ lot, figures }) => figures.mortality > lot.mortalityGoal)
-      .map(({ lot, figures }) => ({
-        id: `lot-${lot.id}`,
-        title: "Mortalidad sobre la meta",
-        detail: `${lot.code} · ${formatDecimal(figures.mortality)} % frente a meta de ${formatDecimal(lot.mortalityGoal)} %`,
-        urgency: 1,
-        module: lot.cycle,
-      })),
-  ].sort((a, b) => a.urgency - b.urgency)
   return (
     <div className="connected-tool-page farm-summary-page">
       <header className="page-header connected-page-header">
@@ -12934,7 +13387,10 @@ function FarmSummaryPage({
           {alerts.length ? (
             <div className="summary-alert-list">
               {alerts.map((alert) => (
-                <button key={alert.id} onClick={() => onNavigate(alert.module)}>
+                <button
+                  key={alert.id}
+                  onClick={() => onNavigate(alert.destination)}
+                >
                   <span className={`alert-dot urgency-${alert.urgency}`} />
                   <span>
                     <strong>{alert.title}</strong>
@@ -12975,7 +13431,9 @@ function FarmSummaryPage({
                     />
                     {cycle}
                   </span>
-                  <strong>{countLabel(cycleLots.length, "lote", "lotes")}</strong>
+                  <strong>
+                    {countLabel(cycleLots.length, "lote", "lotes")}
+                  </strong>
                   <small>
                     {cycleLots
                       .reduce(
@@ -13038,7 +13496,7 @@ const farmCalendarEvents: FarmCalendarEvent[] = initialFarms.flatMap(
     {
       id: farm.id * 10 + 1,
       farmId: farm.id,
-      date: `2026-03-${String(18 + index).padStart(2, "0")}`,
+      date: `2026-03-${String(10 + index).padStart(2, "0")}`,
       type: "Vacuna",
       title: "Refuerzo de parvovirus",
       detail: `Aplicación programada para el plantel de ${farm.name}.`,
@@ -13047,7 +13505,7 @@ const farmCalendarEvents: FarmCalendarEvent[] = initialFarms.flatMap(
     {
       id: farm.id * 10 + 2,
       farmId: farm.id,
-      date: `2026-03-${String(20 + index).padStart(2, "0")}`,
+      date: `2026-03-${String(12 + index).padStart(2, "0")}`,
       type: "Parto probable",
       title: `Parto probable · Cerda #${1304 + index}`,
       detail: "Revisar signos de parto y preparar el área de maternidad.",
@@ -13056,7 +13514,7 @@ const farmCalendarEvents: FarmCalendarEvent[] = initialFarms.flatMap(
     {
       id: farm.id * 10 + 3,
       farmId: farm.id,
-      date: `2026-03-${String(16 + index).padStart(2, "0")}`,
+      date: `2026-03-${String(14 + index).padStart(2, "0")}`,
       type: "Pediluvio",
       title: "Control de pediluvio",
       detail: "Renovar solución desinfectante del acceso principal.",
@@ -13261,6 +13719,7 @@ type MovementRecord = {
 }
 
 const movementModules = [
+  "Movimientos",
   "Mortalidad",
   "Sanidad",
   "Compras",
@@ -13350,7 +13809,7 @@ const initialMovements: MovementRecord[] = Array.from(
   (_, index) => {
     const seed = movementSeeds[index % movementSeeds.length]
     const dayOffset = index % 30
-    const date = new Date(2026, 10, 7 - dayOffset, 12)
+    const date = new Date(2026, 2, 16 - dayOffset, 12)
     return {
       id: index + 1,
       date: date.toISOString().slice(0, 10),
@@ -13381,14 +13840,29 @@ const formatShortDate = (value: string) =>
     year: "2-digit",
   })
 
-const shortMonthNames = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+const shortMonthNames = [
+  "ene",
+  "feb",
+  "mar",
+  "abr",
+  "may",
+  "jun",
+  "jul",
+  "ago",
+  "sep",
+  "oct",
+  "nov",
+  "dic",
+]
 
 // "8 oct – 7 nov 2026"; the start year is shown only when it differs.
 const formatDateRange = (start: string, end: string) => {
   const [startYear, startMonth, startDay] = start.split("-").map(Number)
   const [endYear, endMonth, endDay] = end.split("-").map(Number)
   const startLabel = `${startDay} ${shortMonthNames[startMonth - 1]}`
-  return `${startLabel}${startYear === endYear ? "" : ` ${startYear}`} – ${endDay} ${shortMonthNames[endMonth - 1]} ${endYear}`
+  return `${startLabel}${
+    startYear === endYear ? "" : ` ${startYear}`
+  } – ${endDay} ${shortMonthNames[endMonth - 1]} ${endYear}`
 }
 
 function MovementDetailPanel({
@@ -13451,11 +13925,17 @@ function MovementDetailPanel({
   )
 }
 
-function HistoryPage({ farms }: { farms: Farm[] }) {
+function HistoryPage({
+  farms,
+  movements,
+}: {
+  farms: Farm[]
+  movements: MovementRecord[]
+}) {
   const [query, setQuery] = useState("")
   const [farm, setFarm] = useState("Todas las granjas")
-  const [startDate, setStartDate] = useState("2026-10-08")
-  const [endDate, setEndDate] = useState("2026-11-07")
+  const [startDate, setStartDate] = useState("2026-02-15")
+  const [endDate, setEndDate] = useState(TODAY_ISO)
   const [module, setModule] = useState("Todos")
   const [action, setAction] = useState("Todas")
   const [user, setUser] = useState("Todos")
@@ -13473,14 +13953,14 @@ function HistoryPage({ farms }: { farms: Farm[] }) {
   const clearFilters = () => {
     setQuery("")
     setFarm("Todas las granjas")
-    setStartDate("2026-10-08")
-    setEndDate("2026-11-07")
+    setStartDate("2026-02-15")
+    setEndDate(TODAY_ISO)
     setModule("Todos")
     setAction("Todas")
     setUser("Todos")
     setPage(1)
   }
-  const filtered = initialMovements.filter(
+  const filtered = movements.filter(
     (movement) =>
       movement.date >= startDate &&
       movement.date <= endDate &&
@@ -13594,7 +14074,9 @@ function HistoryPage({ farms }: { farms: Farm[] }) {
                 <span>Usuario</span>
                 <select
                   value={user}
-                  onChange={(event) => updateFilter(setUser)(event.target.value)}
+                  onChange={(event) =>
+                    updateFilter(setUser)(event.target.value)
+                  }
                 >
                   <option>Todos</option>
                   {movementUsers.map((item) => (
@@ -13717,7 +14199,7 @@ type UserAccess = {
 
 type SettingsSection = "Granjas y ciclos" | "Programa de alimentación y unidades" | "Sanitario" | "Bandas" | "Reproductiva" | "Mano de obra" | "Metas" | "Responsables y lugares" | "Reportes" | "Usuarios"
 
-const settingsSections: { name: SettingsSection; icon: IconName }[] = [
+const settingsSections: { name: SettingsSection icon: IconName }[] = [
   { name: "Granjas y ciclos", icon: "pig" },
   { name: "Programa de alimentación y unidades", icon: "box" },
   { name: "Sanitario", icon: "syringe" },
@@ -15164,7 +15646,6 @@ function DashboardsPage({
   onNotice: (text: string) => void
   onReports: () => void
 }) {
-  const today = new Date().toISOString().slice(0, 10)
   const [selectedReport, setSelectedReport] =
     useState<ReportCatalogItem | null>(null)
   const [scope, setScope] = useState(initialScope)
@@ -15187,8 +15668,8 @@ function DashboardsPage({
   )
   const [categoryFilters, setCategoryFilters] =
     useState<Record<string, string>>({})
-  const [startDate, setStartDate] = useState(`${today.slice(0, 4)}-01-01`)
-  const [endDate, setEndDate] = useState(today)
+  const [startDate, setStartDate] = useState("2026-01-01")
+  const [endDate, setEndDate] = useState(TODAY_ISO)
   const reportScopes = [
     ...initialFarms.map((farm) => farm.name),
     consolidatedReportScope,
@@ -16093,7 +16574,7 @@ const operationalReportRows = (report: OperationalReport) => {
           "2 ml",
           "Andrés Mejía",
           "PV-24018",
-          "18/11/2026",
+          "15/03/2026",
           "ICA 8421-MV",
           "VetPharma",
         ],
@@ -16110,7 +16591,7 @@ const operationalReportRows = (report: OperationalReport) => {
           "118 ml",
           "Carlos Ríos",
           "CV-9032",
-          "30/09/2026",
+          "14/03/2026",
           "ICA 6147-MV",
           "BioPorc",
         ],
@@ -16127,7 +16608,7 @@ const operationalReportRows = (report: OperationalReport) => {
           "198 ml",
           "Andrés Mejía",
           "MY-1188",
-          "15/10/2026",
+          "16/03/2026",
           "ICA 7732-MV",
           "AgroVet",
         ],
@@ -16382,7 +16863,9 @@ function OperationalReportDialog({
           )}
         </div>
         <div className="report-pagination">
-          <span>{countLabel(filteredRows.length, "registro", "registros")}</span>
+          <span>
+            {countLabel(filteredRows.length, "registro", "registros")}
+          </span>
           <div>
             <button
               disabled={page === 1}
@@ -16589,10 +17072,12 @@ function IcaVerificationDialog({
 
 function ReportsPage({
   farmName,
+  alerts,
   onNotice,
   porciTables,
 }: {
   farmName: string
+  alerts: HomeFarmAlert[]
   onNotice: (text: string) => void
   porciTables: PorciTableDefinition[]
 }) {
@@ -16637,7 +17122,7 @@ function ReportsPage({
     if (expiredIcaItems.has(item.id)) return "Venció el 15/12/2025"
     if (ready.has(item.id))
       return item.id.startsWith("2.")
-        ? "Último registro: 24/07/2026"
+        ? "Último registro: 14/03/2026"
         : "Evidencia actualizada"
     if (verifyIcaItems.has(item.id)) return "Pendiente de verificación en campo"
     return "No se ha adjuntado evidencia"
@@ -16684,29 +17169,31 @@ function ReportsPage({
                 onClick={() => setAlertsOpen(!alertsOpen)}
               >
                 <Icon name="bell" size={19} />
-                <span>1</span>
+                {alerts.length > 0 && <span>{alerts.length}</span>}
               </button>
               {alertsOpen && (
                 <div className="alerts-popover reports-alerts-popover">
                   <div className="popover-heading">
                     <strong>Alertas ICA</strong>
-                    <span>1 requiere atención</span>
+                    <span>{alerts.length} requiere atención</span>
                   </div>
-                  <div className="popover-alert">
-                    <span className="alert-dot urgency-1" />
-                    <div>
-                      <strong>Documento vencido · numeral 4.2</strong>
-                      <p>Actualiza la evidencia de vigencia de productos.</p>
-                      <button
-                        onClick={() => {
-                          setAlertsOpen(false)
-                          setSection("ica")
-                        }}
-                      >
-                        Abrir carpeta ICA
-                      </button>
+                  {alerts.map((alert) => (
+                    <div className="popover-alert" key={alert.id}>
+                      <span className={`alert-dot urgency-${alert.urgency}`} />
+                      <div>
+                        <strong>{alert.title}</strong>
+                        <p>{alert.detail}</p>
+                        <button
+                          onClick={() => {
+                            setAlertsOpen(false)
+                            setSection("ica")
+                          }}
+                        >
+                          Abrir carpeta ICA
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -16807,7 +17294,7 @@ function ReportsPage({
               <div className="ica-progress-actions">
                 <div>
                   <span>Código del expediente</span>
-                  <strong>76509-2026-08-25</strong>
+                  <strong>76509-2026-03-16</strong>
                 </div>
                 <div className="ica-date-range-wrap">
                   <button
@@ -17071,6 +17558,108 @@ function ReportsPage({
   )
 }
 
+const porciTableAlertCountByFarm: Record<number, number> = {
+  1: 2,
+  2: 1,
+  3: 2,
+}
+
+function getFarmAlerts(
+  farm: Farm,
+  lots: Lot[],
+  inventoryAttention: InventoryAttention[],
+  breedingAlertCount: number,
+): HomeFarmAlert[] {
+  const alerts: HomeFarmAlert[] = []
+
+  if (farm.cycles.includes("Plantel reproductivo")) {
+    initialBreedingAlerts.slice(0, breedingAlertCount).forEach((alert) => {
+      alerts.push({
+        id: `plantel-${farm.id}-${alert.id}`,
+        title: alert.title,
+        detail: `${alert.sowNumber} · ${alert.detail}`,
+        urgency: alert.urgency,
+        module: "Plantel reproductivo",
+        destination: "Plantel reproductivo",
+      })
+    })
+  }
+
+  if (farm.cycles.includes("Reproductor")) {
+    alerts.push(
+      {
+        id: `reproductor-vacuna-${farm.id}`,
+        title: "Vacuna pendiente",
+        detail: "Macho reproductor · requiere seguimiento hoy",
+        urgency: 1,
+        module: "Reproductor",
+        destination: "Reproductor",
+      },
+      {
+        id: `reproductor-lote-${farm.id}`,
+        title: "Revisión de lote",
+        detail: "Semen de genética externa · requiere seguimiento",
+        urgency: 2,
+        module: "Reproductor",
+        destination: "Reproductor",
+      },
+    )
+  }
+
+  inventoryAttention.forEach((item) => {
+    alerts.push({
+      id: `inventario-${farm.id}-${item.id}`,
+      title: item.title,
+      detail: `${item.product} · ${item.detail}`,
+      urgency: item.critical ? 1 : 2,
+      module: "Inventario",
+      destination: "Inventario",
+    })
+  })
+
+  lots
+    .filter((lot) => lot.farmId === farm.id && lot.status === "Activo")
+    .map((lot) => ({ lot, figures: calculateLotFigures(lot) }))
+    .filter(({ lot, figures }) => figures.mortality > lot.mortalityGoal)
+    .forEach(({ lot, figures }) => {
+      alerts.push({
+        id: `sanidad-${lot.id}`,
+        title: "Mortalidad sobre la meta",
+        detail: `${lot.code} · ${formatDecimal(figures.mortality)} % frente a meta de ${formatDecimal(lot.mortalityGoal)} %`,
+        urgency: 1,
+        module: "Sanidad del lote",
+        destination: lot.cycle,
+      })
+    })
+
+  Array.from(
+    { length: porciTableAlertCountByFarm[farm.id] ?? 0 },
+    (_, index) => {
+      alerts.push({
+        id: `porcitable-${farm.id}-${index + 1}`,
+        title: "Registro pendiente",
+        detail: `PorciTabla · ${index + 1} registro requiere revisión`,
+        urgency: 3,
+        module: "PorciTabla",
+        destination: "PorciTabla",
+      })
+    },
+  )
+
+  expiredIcaItems.forEach((itemId) => {
+    alerts.push({
+      id: `ica-${farm.id}-${itemId}`,
+      title: `Documento vencido · numeral ${itemId}`,
+      detail: "Actualiza la evidencia de vigencia de productos.",
+      urgency: 1,
+      module: "Carpeta ICA",
+      destination: "Reportes",
+    })
+  })
+
+  return alerts.sort((a, b) => a.urgency - b.urgency)
+}
+
 export default function App() {
   const [farms, setFarms] = useState(initialFarms)
   const [farmQuery, setFarmQuery] = useState("")
@@ -17086,6 +17675,7 @@ export default function App() {
     }
   })
   const [lots, setLots] = useState(initialLots)
+  const [movementHistory, setMovementHistory] = useState(initialMovements)
   const [porciTables, setPorciTables] = useState(initialPorciTables)
   const [modal, setModal] = useState<"add" | "edit" | null>(null)
   const [lotModal, setLotModal] = useState(false)
@@ -17094,9 +17684,11 @@ export default function App() {
   const [editing, setEditing] = useState<Farm | null>(null)
   const [deleting, setDeleting] = useState<Farm | null>(null)
   const [toast, setToast] = useState("")
-  const [breedingAlertCount, setBreedingAlertCount] = useState(
-    initialBreedingAlerts.length,
-  )
+  const [breedingAlertCountByFarm, setBreedingAlertCountByFarm] =
+    useState<Record<number, number>>({
+      1: initialBreedingAlerts.length,
+      3: initialBreedingAlerts.length,
+    })
   const [inventoryAttentionByFarm, setInventoryAttentionByFarm] =
     useState<Record<number, InventoryAttention[]>>({
       1: initialInventoryAttention,
@@ -17136,9 +17728,8 @@ export default function App() {
     },
   ])
   const [settingsDirty, setSettingsDirty] = useState(false)
-  const [pendingNavigation, setPendingNavigation] = useState<
-    (() => void) | null
-  >(null)
+  const [pendingNavigation, setPendingNavigation] =
+    useState<(() => void) | null>(null)
   const skipSettingsGuard = useRef(false)
 
   useEffect(() => {
@@ -17166,10 +17757,26 @@ export default function App() {
         .toLocaleString("es-CO"),
     [farms],
   )
-  const totalAlerts = farms.reduce((sum, farm) => sum + farm.alerts, 0)
+  const alertsByFarm = useMemo(
+    () =>
+      Object.fromEntries(
+        farms.map((farm) => [
+          farm.id,
+          getFarmAlerts(
+            farm,
+            lots,
+            inventoryAttentionByFarm[farm.id] ?? [],
+            breedingAlertCountByFarm[farm.id] ?? 0,
+          ),
+        ]),
+      ) as Record<number, HomeFarmAlert[]>,
+    [breedingAlertCountByFarm, farms, inventoryAttentionByFarm, lots],
+  )
+  const totalAlerts = farms.reduce(
+    (sum, farm) => sum + (alertsByFarm[farm.id]?.length ?? 0),
+    0,
+  )
   const totalLots = farms.reduce((sum, farm) => sum + farm.lots, 0)
-  const mostUrgentAlert =
-    farms.find((farm) => farm.alerts > 0)?.urgent ?? "Todo está al día"
   const visibleFarms = useMemo(() => {
     const normalizedQuery = farmQuery
       .trim()
@@ -17194,17 +17801,23 @@ export default function App() {
   const consolidatedMortality = averageReportValue(
     Object.values(reportDataByFarm).map((data) => data.mortalityRate),
   )
+  const selectedFarmAlerts = alertsByFarm[selectedFarm.id] ?? []
+  const alertCountByDestination =
+    selectedFarmAlerts.reduce<Record<string, number>>((counts, alert) => {
+      counts[alert.destination] = (counts[alert.destination] ?? 0) + 1
+      return counts
+    }, {})
   const alertCounts: Record<string, number> = {
-    "Plantel reproductivo": selectedFarm.cycles.includes("Plantel reproductivo")
-      ? breedingAlertCount
-      : 0,
-    Inventario: (inventoryAttentionByFarm[selectedFarm.id] ?? []).length,
-    PorciTabla:
-      ({ 1: 2, 2: 1, 3: 2 } as Record<number, number>)[selectedFarm.id] ?? 0,
+    "Plantel reproductivo":
+      alertCountByDestination["Plantel reproductivo"] ?? 0,
+    Reproductor: alertCountByDestination.Reproductor ?? 0,
+    Precebo: alertCountByDestination.Precebo ?? 0,
+    Levante: alertCountByDestination.Levante ?? 0,
+    Inventario: alertCountByDestination.Inventario ?? 0,
+    PorciTabla: alertCountByDestination.PorciTabla ?? 0,
     Tableros: 0,
-    Reportes: expiredIcaItems.size,
-    Calendario:
-      ({ 1: 2, 2: 1, 3: 2 } as Record<number, number>)[selectedFarm.id] ?? 0,
+    Reportes: alertCountByDestination.Reportes ?? 0,
+    Calendario: 0,
   }
   const saveFarm = (draft: FarmDraft) => {
     if (editing) {
@@ -17377,8 +17990,29 @@ export default function App() {
       current?.id === updated.id ? updated : current,
     )
   }
-  const migrateLotToLevante = (source: Lot, migrationDate: string) => {
-    const displayDate = formatDate(new Date(`${migrationDate}T12:00:00`))
+  const migrateLotToLevante = (source: Lot, draft: MigrationDraft) => {
+    const displayDate = formatDate(new Date(`${draft.date}T12:00:00`))
+    const animals = draft.females + draft.males
+    const existingDestination =
+      draft.destination === "existing"
+        ? lots.find((lot) => lot.id === draft.destinationLotId)
+        : undefined
+    const destinationCode =
+      existingDestination?.code ?? draft.newLotCode?.trim() ?? ""
+    const farmName =
+      farms.find((farm) => farm.id === source.farmId)?.name ?? selectedFarm.name
+    const sourceFigures = calculateLotFigures(
+      lots.find((lot) => lot.id === source.id) ?? source,
+    )
+    if (
+      animals <= 0 ||
+      animals > sourceFigures.currentAnimals ||
+      draft.females > sourceFigures.currentFemales ||
+      draft.males > sourceFigures.currentMales
+    ) {
+      setToast("No hay suficientes animales disponibles")
+      return
+    }
     setLots((current) => {
       const currentSource =
         current.find((lot) => lot.id === source.id) ?? source
@@ -17386,117 +18020,243 @@ export default function App() {
       if (
         currentSource.cycle !== "Precebo" ||
         currentSource.status !== "Activo" ||
-        figures.currentAnimals === 0
+        figures.currentAnimals === 0 ||
+        animals <= 0 ||
+        animals > figures.currentAnimals ||
+        draft.females > figures.currentFemales ||
+        draft.males > figures.currentMales
       ) {
         return current
-      }
-      const purchasedFemales = currentSource.purchaseRecords
-        .filter(
-          (record) => record.purchaseType === "Animales" && !record.annulled,
-        )
-        .reduce((sum, record) => sum + record.females, 0)
-      const purchasedMales = currentSource.purchaseRecords
-        .filter(
-          (record) => record.purchaseType === "Animales" && !record.annulled,
-        )
-        .reduce((sum, record) => sum + record.males, 0)
-      const soldFemales = currentSource.saleRecords
-        .filter((record) => !record.annulled)
-        .reduce((sum, record) => sum + record.females, 0)
-      const soldMales = currentSource.saleRecords
-        .filter((record) => !record.annulled)
-        .reduce((sum, record) => sum + record.males, 0)
-      const deadFemales = currentSource.mortalityRecords
-        .filter((record) => !record.annulled && record.sex === "Hembra")
-        .reduce((sum, record) => sum + record.quantity, 0)
-      const deadMales = currentSource.mortalityRecords
-        .filter((record) => !record.annulled && record.sex === "Macho")
-        .reduce((sum, record) => sum + record.quantity, 0)
-      const females = Math.max(
-        0,
-        currentSource.females + purchasedFemales - soldFemales - deadFemales,
-      )
-      const males = Math.max(
-        0,
-        currentSource.males + purchasedMales - soldMales - deadMales,
-      )
-      const baseCode = currentSource.code
-        .replace(/^PC-/i, "LV-")
-        .replace(/^PR-/i, "LV-")
-      let destinationCode =
-        baseCode === currentSource.code ? `${currentSource.code}-LV` : baseCode
-      let suffix = 2
-      while (
-        current.some(
-          (lot) =>
-            lot.farmId === currentSource.farmId &&
-            lot.code.toLowerCase() === destinationCode.toLowerCase(),
-        )
-      ) {
-        destinationCode = `${baseCode}-${suffix}`
-        suffix += 1
       }
       const transferId = Date.now()
       const sourceTransfer: LotTransfer = {
         id: transferId,
         date: displayDate,
         direction: "Salida",
+        kind: "Migración",
         otherLot: destinationCode,
-        animals: figures.currentAnimals,
-        averageWeight: currentSource.averageWeight,
+        animals,
+        females: draft.females,
+        males: draft.males,
+        averageWeight: draft.averageWeight,
+        totalWeight: draft.totalWeight,
         responsible: CONNECTED_USER,
+        reason: draft.notes || "Migración a Levante",
+        notes: draft.notes,
       }
-      const destination: Lot = {
+      const destinationTransfer: LotTransfer = {
+        ...sourceTransfer,
         id: transferId + 1,
+        direction: "Entrada",
+        otherLot: currentSource.code,
+      }
+      const remainingAnimals = figures.currentAnimals - animals
+      const updatedSource: Lot = {
+        ...currentSource,
+        status: remainingAnimals === 0 ? "Finalizado" : "Activo",
+        closedDate: remainingAnimals === 0 ? draft.date : undefined,
+        transferRecords: [
+          sourceTransfer,
+          ...(currentSource.transferRecords ?? []),
+        ],
+      }
+      const currentDestination =
+        draft.destination === "existing"
+          ? current.find((lot) => lot.id === draft.destinationLotId)
+          : undefined
+      if (currentDestination) {
+        const destinationFigures = calculateLotFigures(currentDestination)
+        const combinedAnimals = destinationFigures.currentAnimals + animals
+        const combinedWeight =
+          destinationFigures.currentAnimals * currentDestination.averageWeight +
+          draft.totalWeight
+        const updatedDestination: Lot = {
+          ...currentDestination,
+          females: currentDestination.females + draft.females,
+          males: currentDestination.males + draft.males,
+          initialAnimals: currentDestination.initialAnimals + animals,
+          averageWeight:
+            combinedAnimals > 0 ? combinedWeight / combinedAnimals : 0,
+          initialTotalWeight:
+            (currentDestination.initialTotalWeight ??
+              currentDestination.initialAnimals *
+                currentDestination.averageWeight) + draft.totalWeight,
+          transferRecords: [
+            destinationTransfer,
+            ...(currentDestination.transferRecords ?? []),
+          ],
+        }
+        return current.map((lot) =>
+          lot.id === currentSource.id
+            ? updatedSource
+            : lot.id === currentDestination.id
+              ? updatedDestination
+              : lot,
+        )
+      }
+      const newDestination: Lot = {
+        id: transferId + 2,
         farmId: currentSource.farmId,
         cycle: "Levante",
         code: destinationCode,
         status: "Activo",
         day: 1,
-        females,
-        males,
-        initialAnimals: figures.currentAnimals,
-        averageWeight: currentSource.averageWeight,
+        females: draft.females,
+        males: draft.males,
+        initialAnimals: animals,
+        averageWeight: draft.averageWeight,
         mortalityGoal: 2,
         gpd: 0,
         mortalityRecords: [],
         purchaseRecords: [],
         saleRecords: [],
         consumptionRecords: [],
-        transferRecords: [
-          {
-            ...sourceTransfer,
-            id: transferId + 2,
-            direction: "Entrada",
-            otherLot: currentSource.code,
-          },
-        ],
-        entryDate: migrationDate,
-        initialTotalWeight:
-          figures.currentAnimals * currentSource.averageWeight,
-        targetWeight: 110,
+        transferRecords: [destinationTransfer],
+        entryDate: draft.date,
+        initialTotalWeight: draft.totalWeight,
+        targetWeight: draft.targetWeight,
         feedBrand: currentSource.feedBrand,
         origin: `Migrado desde ${currentSource.code}`,
-        notes: currentSource.notes,
+        notes: draft.notes,
         responsible: CONNECTED_USER,
       }
-      const closedSource: Lot = {
-        ...currentSource,
-        status: "Finalizado",
-        closedDate: migrationDate,
-        transferRecords: [
-          sourceTransfer,
-          ...(currentSource.transferRecords ?? []),
-        ],
-      }
       return [
-        destination,
+        newDestination,
         ...current.map((lot) =>
-          lot.id === currentSource.id ? closedSource : lot,
+          lot.id === currentSource.id ? updatedSource : lot,
         ),
       ]
     })
-    setToast("Lote migrado a Levante")
+    setMovementHistory((current) => [
+      {
+        id: Date.now(),
+        date: draft.date,
+        user: CONNECTED_USER,
+        module: "Movimientos",
+        action: "Migración",
+        tone: "out",
+        record: `${source.code} → ${destinationCode}`,
+        responsible: `Responsable: ${CONNECTED_USER}`,
+        quantity: countLabel(animals, "animal", "animales"),
+        lot: `${source.code} / ${destinationCode}`,
+        farm: farmName,
+      },
+      ...current,
+    ])
+    setToast(
+      `${countLabel(animals, "animal migrado", "animales migrados")} a ${destinationCode}`,
+    )
+  }
+  const registerLotTransfer = (source: Lot, draft: LotTransferDraft) => {
+    const currentSource = lots.find((lot) => lot.id === source.id)
+    const destination = lots.find(
+      (lot) =>
+        lot.id === draft.destinationLotId &&
+        lot.id !== source.id &&
+        lot.farmId === source.farmId &&
+        lot.cycle === source.cycle &&
+        lot.status === "Activo",
+    )
+    if (!currentSource || !destination || currentSource.status !== "Activo") {
+      setToast("El lote destino ya no está disponible")
+      return
+    }
+    const sourceFigures = calculateLotFigures(currentSource)
+    const destinationFigures = calculateLotFigures(destination)
+    const animals = draft.females + draft.males
+    if (
+      animals <= 0 ||
+      animals > sourceFigures.currentAnimals ||
+      draft.females > sourceFigures.currentFemales ||
+      draft.males > sourceFigures.currentMales
+    ) {
+      setToast("No hay suficientes animales disponibles")
+      return
+    }
+
+    const transferId = Date.now()
+    const displayDate = formatDate(new Date(`${draft.date}T12:00:00`))
+    const averageWeight = currentSource.averageWeight
+    const totalWeight = animals * averageWeight
+    const sharedTransfer = {
+      date: displayDate,
+      kind: "Traslado" as const,
+      animals,
+      females: draft.females,
+      males: draft.males,
+      averageWeight,
+      totalWeight,
+      responsible: CONNECTED_USER,
+      reason: draft.reason,
+    }
+    const sourceTransfer: LotTransfer = {
+      ...sharedTransfer,
+      id: transferId,
+      direction: "Salida",
+      otherLot: destination.code,
+    }
+    const destinationTransfer: LotTransfer = {
+      ...sharedTransfer,
+      id: transferId + 1,
+      direction: "Entrada",
+      otherLot: currentSource.code,
+    }
+    const updatedSource: Lot = {
+      ...currentSource,
+      transferRecords: [
+        sourceTransfer,
+        ...(currentSource.transferRecords ?? []),
+      ],
+    }
+    const combinedAnimals = destinationFigures.currentAnimals + animals
+    const combinedWeight =
+      destinationFigures.currentAnimals * destination.averageWeight +
+      totalWeight
+    const updatedDestination: Lot = {
+      ...destination,
+      females: destination.females + draft.females,
+      males: destination.males + draft.males,
+      initialAnimals: destination.initialAnimals + animals,
+      averageWeight: combinedAnimals > 0 ? combinedWeight / combinedAnimals : 0,
+      initialTotalWeight:
+        (destination.initialTotalWeight ??
+          destination.initialAnimals * destination.averageWeight) + totalWeight,
+      transferRecords: [
+        destinationTransfer,
+        ...(destination.transferRecords ?? []),
+      ],
+    }
+    setLots((current) =>
+      current.map((lot) =>
+        lot.id === updatedSource.id
+          ? updatedSource
+          : lot.id === updatedDestination.id
+            ? updatedDestination
+            : lot,
+      ),
+    )
+    setSelectedLot(updatedSource)
+    const farmName =
+      farms.find((farm) => farm.id === source.farmId)?.name ?? selectedFarm.name
+    setMovementHistory((current) => [
+      {
+        id: transferId,
+        date: draft.date,
+        user: CONNECTED_USER,
+        module: "Movimientos",
+        action: "Traslado",
+        tone: "out",
+        record: `${currentSource.code} → ${destination.code} · ${draft.reason}`,
+        responsible: `Responsable: ${CONNECTED_USER}`,
+        quantity: `${animals} animales · ${draft.females} H / ${draft.males} M`,
+        lot: `${currentSource.code} / ${destination.code}`,
+        farm: farmName,
+      },
+      ...current,
+    ])
+    setToast(
+      `${countLabel(animals, "animal trasladado", "animales trasladados")} a ${destination.code}`,
+    )
   }
   const confirmDelete = () => {
     if (!deleting) return
@@ -17510,22 +18270,6 @@ export default function App() {
     setInventoryAttentionByFarm((current) => ({
       ...current,
       [selectedFarm.id]: items,
-    }))
-    setFarms((current) =>
-      current.map((farm) =>
-        farm.id === selectedFarm.id
-          ? {
-              ...farm,
-              alerts: items.length,
-              urgent: items[0]?.title ?? "Todo está al día",
-            }
-          : farm,
-      ),
-    )
-    setSelectedFarm((current) => ({
-      ...current,
-      alerts: items.length,
-      urgent: items[0]?.title ?? "Todo está al día",
     }))
   }
   const activeNavigation =
@@ -17690,6 +18434,7 @@ export default function App() {
                   <FarmCard
                     key={farm.id}
                     farm={farm}
+                    alerts={alertsByFarm[farm.id] ?? []}
                     favorite={favoriteFarmIds.includes(farm.id)}
                     onEdit={() => openEdit(farm)}
                     onFavorite={() =>
@@ -17740,7 +18485,7 @@ export default function App() {
           <FarmSummaryPage
             farm={selectedFarm}
             lots={lots}
-            inventoryAttention={inventoryAttentionByFarm[selectedFarm.id] ?? []}
+            alerts={selectedFarmAlerts}
             onNavigate={navigate}
             onCycle={(cycle) => openCycle(selectedFarm, cycle)}
           />
@@ -17751,12 +18496,21 @@ export default function App() {
             key={selectedFarm.id}
             farmName={selectedFarm.name}
             onNotice={setToast}
-            onAlertCountChange={setBreedingAlertCount}
+            onAlertCountChange={(count) =>
+              setBreedingAlertCountByFarm((current) =>
+                current[selectedFarm.id] === count
+                  ? current
+                  : { ...current, [selectedFarm.id]: count },
+              )
+            }
           />
         ) : page === "reproducer" ? (
           <ReproducerPage
             key={selectedFarm.id}
             farmName={selectedFarm.name}
+            alerts={selectedFarmAlerts.filter(
+              (alert) => alert.module === "Reproductor",
+            )}
             onNotice={setToast}
           />
         ) : page === "inventory" ? (
@@ -17787,13 +18541,16 @@ export default function App() {
         ) : page === "reports" ? (
           <ReportsPage
             farmName={selectedFarm.name}
+            alerts={selectedFarmAlerts.filter(
+              (alert) => alert.module === "Carpeta ICA",
+            )}
             onNotice={setToast}
             porciTables={porciTables}
           />
         ) : page === "calendar" ? (
           <CalendarPage farm={selectedFarm} onNotice={setToast} />
         ) : page === "history" ? (
-          <HistoryPage farms={farms} />
+          <HistoryPage farms={farms} movements={movementHistory} />
         ) : page === "settings" ? (
           <SettingsPage
             key={settingsSection}
@@ -17809,10 +18566,18 @@ export default function App() {
           <LotDetail
             lot={selectedLot}
             farmName={selectedFarm.name}
+            destinationLots={lots.filter(
+              (lot) =>
+                lot.id !== selectedLot.id &&
+                lot.farmId === selectedLot.farmId &&
+                lot.cycle === selectedLot.cycle &&
+                lot.status === "Activo",
+            )}
             onBack={() => setPage("cycle")}
             onUpdate={(updated) => {
               updateLot(updated)
             }}
+            onTransfer={registerLotTransfer}
             onDelete={() => {
               setLots(lots.filter((lot) => lot.id !== selectedLot.id))
               setSelectedLot(null)
