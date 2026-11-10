@@ -16051,7 +16051,7 @@ function DashboardsPage({
           <DatePicker
             value={endDate}
             min={startDate}
-            max={today}
+            max={TODAY_ISO}
             onChange={setEndDate}
             label="Seleccionar fecha final"
           />
