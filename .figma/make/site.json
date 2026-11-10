@@ -1,4 +1,6 @@
 {
+  "title": "PorciTrack",
+  "language": "es-CO",
   "description": "Gestiona granjas porcinas en Colombia desde un solo lugar: consulta alertas, animales y ciclos, y accede a herramientas clave para administradores y gerentes.",
   "robots": {
     "index": false

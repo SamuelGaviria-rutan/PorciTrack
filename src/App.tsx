@@ -306,12 +306,6 @@ const homeCycleIcons: Record<Cycle, IconName> = {
   Precebo: "sprout",
   Levante: "trend",
 }
-const homeCycleShortLabels: Record<Cycle, string> = {
-  "Plantel reproductivo": "P-R",
-  Reproductor: "Rep.",
-  Precebo: "Precebo",
-  Levante: "L-E",
-}
 type Farm = {
   id: number
   name: string
@@ -715,7 +709,7 @@ function Logo({ compact = false }: { compact?: boolean }) {
 function Sidebar({
   farms,
   selectedFarm,
-  isHome,
+  farmContext,
   accountOpen,
   setAccountOpen,
   active,
@@ -729,7 +723,7 @@ function Sidebar({
 }: {
   farms: Farm[]
   selectedFarm: Farm
-  isHome: boolean
+  farmContext: boolean
   accountOpen: boolean
   setAccountOpen: (value: boolean) => void
   active: string
@@ -742,12 +736,19 @@ function Sidebar({
   onInvite: () => void
 }) {
   const [farmMenuOpen, setFarmMenuOpen] = useState(false)
+  const accountRef = useDismissibleMenu(accountOpen, () =>
+    setAccountOpen(false),
+  )
   const cycles = cycleOrder
     .filter((cycle) => selectedFarm.cycles.includes(cycle))
     .map(
       (cycle) =>
         navigation.find((item) => item.label === cycle) as NavigationItem,
     )
+  const openFromAccount = (action: () => void) => {
+    setAccountOpen(false)
+    action()
+  }
   return (
     <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
       <button
@@ -762,9 +763,21 @@ function Sidebar({
         <Logo compact={collapsed} />
       </button>
       <div className="sidebar-scroll">
+        {farmContext && (
+          <button
+            className="all-farms-link"
+            onClick={() => {
+              setFarmMenuOpen(false)
+              onNavigate("Inicio")
+            }}
+          >
+            <Icon name="arrow" size={20} />
+            <span>Todas las granjas</span>
+          </button>
+        )}
         <div className="farm-selector-wrap">
           <button
-            className={`farm-selector ${isHome ? "choose" : ""}`}
+            className={`farm-selector ${farmContext ? "compact" : "choose"}`}
             onClick={() => {
               if (collapsed) setCollapsed(false)
               else if (farms.length > 1) setFarmMenuOpen(!farmMenuOpen)
@@ -777,8 +790,10 @@ function Sidebar({
             </span>
             <span className="farm-selector-copy">
               <small className="farm-selector-label">Granja</small>
-              <strong>{isHome ? "Elige una granja" : selectedFarm.name}</strong>
-              {!isHome && <small>{selectedFarm.municipality}</small>}
+              <strong title={farmContext ? selectedFarm.name : undefined}>
+                {farmContext ? selectedFarm.name : "Elige una granja"}
+              </strong>
+              {farmContext && <small>{selectedFarm.municipality}</small>}
             </span>
             {farms.length > 1 && <Icon name="chevron" size={16} />}
           </button>
@@ -786,7 +801,9 @@ function Sidebar({
             <div className="farm-switcher-menu">
               {farms.map((farm) => (
                 <button
-                  className={farm.id === selectedFarm.id ? "selected" : ""}
+                  className={
+                    farmContext && farm.id === selectedFarm.id ? "selected" : ""
+                  }
                   key={farm.id}
                   onClick={() => {
                     onSelectFarm(farm)
@@ -797,7 +814,7 @@ function Sidebar({
                     <strong>{farm.name}</strong>
                     <small>{farm.municipality}</small>
                   </span>
-                  {farm.id === selectedFarm.id && (
+                  {farmContext && farm.id === selectedFarm.id && (
                     <Icon name="check" size={16} />
                   )}
                 </button>
@@ -806,7 +823,21 @@ function Sidebar({
           )}
         </div>
         <div className="sidebar-divider" />
-        {!isHome && (
+        {!farmContext ? (
+          <nav className="context-navigation" aria-label="Navegación principal">
+            <div className="sidebar-nav-group">
+              <span className="sidebar-group-label">General</span>
+              <button
+                className={`nav-item ${active === "Inicio" ? "active" : ""}`}
+                onClick={() => onNavigate("Inicio")}
+                title={collapsed ? "Inicio" : undefined}
+              >
+                <Icon name="home" size={20} />
+                <span>Inicio</span>
+              </button>
+            </div>
+          </nav>
+        ) : (
           <nav className="context-navigation" aria-label="Navegación principal">
             <div className="sidebar-nav-group">
               <span className="sidebar-group-label">Granja</span>
@@ -815,7 +846,7 @@ function Sidebar({
                 onClick={() => onNavigate("Resumen")}
                 title={collapsed ? "Resumen" : undefined}
               >
-                <Icon name="chart" size={22} />
+                <Icon name="chart" size={20} />
                 <span>Resumen</span>
               </button>
             </div>
@@ -830,7 +861,7 @@ function Sidebar({
                   onClick={() => onNavigate(item.label)}
                   title={collapsed ? item.label : undefined}
                 >
-                  <Icon name={item.icon} size={22} />
+                  <Icon name={item.icon} size={20} />
                   <span>{item.label}</span>
                   {(alertCounts[item.label] ?? 0) > 0 && (
                     <b className="nav-alert-count">{alertCounts[item.label]}</b>
@@ -849,7 +880,7 @@ function Sidebar({
                   onClick={() => onNavigate(item.label)}
                   title={collapsed ? item.label : undefined}
                 >
-                  <Icon name={item.icon} size={22} />
+                  <Icon name={item.icon} size={20} />
                   <span>{item.label}</span>
                   {(alertCounts[item.label] ?? 0) > 0 && (
                     <b className="nav-alert-count">{alertCounts[item.label]}</b>
@@ -862,7 +893,7 @@ function Sidebar({
       </div>
       <div className="sidebar-footer">
         <div className="sidebar-footer-icons">
-          <div className="account-wrap">
+          <div className="account-wrap" ref={accountRef}>
             {accountOpen && (
               <div className="account-menu">
                 <div className="account-menu-profile">
@@ -875,41 +906,34 @@ function Sidebar({
                 </div>
                 <div className="menu-divider" />
                 <button
-                  onClick={() => {
-                    setAccountOpen(false)
-                    onNavigate("Configuración")
-                  }}
-                >
-                  <Icon name="settings" size={18} /> Configuración
-                </button>
-                <button
-                  onClick={() => {
-                    setAccountOpen(false)
-                    onNavigate("Historial")
-                  }}
+                  className={active === "Historial" ? "active" : ""}
+                  onClick={() => openFromAccount(() => onNavigate("Historial"))}
                 >
                   <Icon name="clipboard" size={18} /> Historial
                 </button>
                 <button
-                  onClick={() => {
-                    setAccountOpen(false)
-                    onInvite()
-                  }}
+                  className={active === "Configuración" ? "active" : ""}
+                  onClick={() =>
+                    openFromAccount(() => onNavigate("Configuración"))
+                  }
                 >
+                  <Icon name="settings" size={18} /> Configuración
+                </button>
+                <button onClick={() => openFromAccount(onInvite)}>
                   <Icon name="userPlus" size={18} /> Invitar usuario
                 </button>
-                <button
-                  onClick={() => {
-                    setAccountOpen(false)
-                    onLogout()
-                  }}
-                >
+                <div className="menu-divider" />
+                <button onClick={() => openFromAccount(onLogout)}>
                   <Icon name="logout" size={18} /> Cerrar sesión
                 </button>
               </div>
             )}
             <button
-              className="account"
+              className={`account ${
+                active === "Historial" || active === "Configuración"
+                  ? "active"
+                  : ""
+              }`}
               onClick={() => setAccountOpen(!accountOpen)}
               aria-expanded={accountOpen}
               aria-label="Abrir menú de cuenta"
@@ -943,7 +967,7 @@ function Sidebar({
 function MobileNavigation({
   farms,
   selectedFarm,
-  isHome,
+  farmContext,
   open,
   setOpen,
   active,
@@ -955,7 +979,7 @@ function MobileNavigation({
 }: {
   farms: Farm[]
   selectedFarm: Farm
-  isHome: boolean
+  farmContext: boolean
   open: boolean
   setOpen: (value: boolean) => void
   active: string
@@ -977,8 +1001,12 @@ function MobileNavigation({
     (item) => item.label === "Resumen",
   ) as NavigationItem
   const mobileItems = (
-    isHome ? [navigation[0]] : [summaryItem, ...cycles, ...toolItems]
+    farmContext ? [summaryItem, ...cycles, ...toolItems] : [navigation[0]]
   ).slice(0, 4)
+  const closeDrawer = () => {
+    setMobileAccountOpen(false)
+    setOpen(false)
+  }
   return (
     <>
       <div className="mobile-top">
@@ -1004,10 +1032,10 @@ function MobileNavigation({
       {open && (
         <div className="mobile-drawer">
           <button
-            className={`mobile-all-farms ${isHome ? "active" : ""}`}
+            className={`mobile-all-farms ${active === "Inicio" ? "active" : ""}`}
             onClick={() => {
               onNavigate("Inicio")
-              setOpen(false)
+              closeDrawer()
             }}
           >
             <Icon name="home" size={18} />
@@ -1015,7 +1043,7 @@ function MobileNavigation({
           </button>
           <div className="mobile-farm-block">
             <button
-              className={`farm-selector ${isHome ? "choose" : ""}`}
+              className={`farm-selector ${farmContext ? "" : "choose"}`}
               onClick={() => farms.length > 1 && setFarmMenuOpen(!farmMenuOpen)}
               aria-expanded={farmMenuOpen}
             >
@@ -1025,9 +1053,9 @@ function MobileNavigation({
               <span className="farm-selector-copy">
                 <small className="farm-selector-label">Granja</small>
                 <strong>
-                  {isHome ? "Elige una granja" : selectedFarm.name}
+                  {farmContext ? selectedFarm.name : "Elige una granja"}
                 </strong>
-                {!isHome && <small>{selectedFarm.municipality}</small>}
+                {farmContext && <small>{selectedFarm.municipality}</small>}
               </span>
               {farms.length > 1 && <Icon name="chevron" size={16} />}
             </button>
@@ -1039,14 +1067,14 @@ function MobileNavigation({
                     onClick={() => {
                       onSelectFarm(farm)
                       setFarmMenuOpen(false)
-                      setOpen(false)
+                      closeDrawer()
                     }}
                   >
                     <span>
                       <strong>{farm.name}</strong>
                       <small>{farm.municipality}</small>
                     </span>
-                    {farm.id === selectedFarm.id && (
+                    {farmContext && farm.id === selectedFarm.id && (
                       <Icon name="check" size={16} />
                     )}
                   </button>
@@ -1054,14 +1082,14 @@ function MobileNavigation({
               </div>
             )}
           </div>
-          {!isHome && (
+          {farmContext && (
             <nav aria-label="Menú móvil">
               <span className="sidebar-group-label">Granja</span>
               <button
                 className={active === "Resumen" ? "active" : ""}
                 onClick={() => {
                   onNavigate("Resumen")
-                  setOpen(false)
+                  closeDrawer()
                 }}
               >
                 <Icon name="chart" size={19} />
@@ -1074,7 +1102,7 @@ function MobileNavigation({
                   key={item.label}
                   onClick={() => {
                     onNavigate(item.label)
-                    setOpen(false)
+                    closeDrawer()
                   }}
                 >
                   <Icon name={item.icon} size={19} />
@@ -1091,7 +1119,7 @@ function MobileNavigation({
                   key={item.label}
                   onClick={() => {
                     onNavigate(item.label)
-                    setOpen(false)
+                    closeDrawer()
                   }}
                 >
                   <Icon name={item.icon} size={19} />
@@ -1116,15 +1144,23 @@ function MobileNavigation({
           </button>
           {mobileAccountOpen && (
             <div className="mobile-account-menu">
-              <strong>Andrés Mejía</strong>
               <small>andres.mejia@granja.co</small>
-              <small>Rol: Operario de granja</small>
               <div className="menu-divider" />
               <button
+                className={active === "Historial" ? "active" : ""}
+                onClick={() => {
+                  onNavigate("Historial")
+                  closeDrawer()
+                }}
+              >
+                <Icon name="clipboard" size={18} />
+                Historial
+              </button>
+              <button
+                className={active === "Configuración" ? "active" : ""}
                 onClick={() => {
                   onNavigate("Configuración")
-                  setMobileAccountOpen(false)
-                  setOpen(false)
+                  closeDrawer()
                 }}
               >
                 <Icon name="settings" size={18} />
@@ -1132,34 +1168,25 @@ function MobileNavigation({
               </button>
               <button
                 onClick={() => {
-                  onNavigate("Historial")
-                  setMobileAccountOpen(false)
-                  setOpen(false)
-                }}
-              >
-                <Icon name="clipboard" size={18} />
-                Historial
-              </button>
-              <button
-                onClick={() => {
                   onInvite()
-                  setMobileAccountOpen(false)
-                  setOpen(false)
+                  closeDrawer()
                 }}
               >
                 <Icon name="userPlus" size={18} />
                 Invitar usuario
               </button>
-              <button onClick={onLogout}>
+              <div className="menu-divider" />
+              <button
+                onClick={() => {
+                  closeDrawer()
+                  onLogout()
+                }}
+              >
                 <Icon name="logout" size={18} />
                 Cerrar sesión
               </button>
             </div>
           )}
-          <button className="mobile-logout" onClick={onLogout}>
-            <Icon name="logout" size={18} />
-            Cerrar sesión
-          </button>
         </div>
       )}
       <nav className="bottom-nav" aria-label="Navegación móvil">
@@ -1448,9 +1475,6 @@ function FarmCard({
                 <Icon name={homeCycleIcons[cycle]} size={12} strokeWidth={2} />
               </span>
               <span className="cycle-label">{cycle}</span>
-              <span className="cycle-short-label" aria-hidden="true">
-                {homeCycleShortLabels[cycle]}
-              </span>
               <span className="cycle-arrow" aria-hidden="true">
                 <Icon name="arrow" size={10} strokeWidth={2.2} />
               </span>
@@ -1469,21 +1493,6 @@ function FarmCard({
         </div>
       </div>
     </article>
-  )
-}
-
-function Skeletons() {
-  return (
-    <div className="farm-grid">
-      {[1, 2, 3].map((item) => (
-        <div className="farm-card skeleton-card" key={item}>
-          <div className="skeleton w-40" />
-          <div className="skeleton w-28" />
-          <div className="skeleton w-full" />
-          <div className="skeleton w-3-4" />
-        </div>
-      ))}
-    </div>
   )
 }
 
@@ -1817,6 +1826,9 @@ function DeleteDialog({
   )
 }
 
+const countLabel = (count: number, singular: string, plural: string) =>
+  `${count} ${count === 1 ? singular : plural}`
+
 const formatDecimal = (value: number, decimals = 1) =>
   value.toLocaleString("es-CO", {
     minimumFractionDigits: decimals,
@@ -1825,6 +1837,8 @@ const formatDecimal = (value: number, decimals = 1) =>
 
 const TODAY_ISO = "2026-03-16"
 const CONNECTED_USER = "Andrés Mejía"
+// Tablet widths start with the icon-only sidebar so content keeps enough room.
+const compactSidebarQuery = "(min-width: 761px) and (max-width: 900px)"
 
 const focusFirstError = (form: HTMLFormElement) => {
   window.setTimeout(() => {
@@ -2367,24 +2381,6 @@ function LotCard({
   )
 }
 
-function LotSkeletons() {
-  return (
-    <div className="lot-skeletons">
-      {[1, 2, 3].map((item) => (
-        <div className="lot-card lot-skeleton" key={item}>
-          <div className="skeleton w-40" />
-          <div className="skeleton w-28" />
-          <div className="skeleton-metrics">
-            {[1, 2, 3].map((metric) => (
-              <div className="skeleton metric-skeleton" key={metric} />
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 function LotsTable({
   lots,
   onOpenLot,
@@ -2432,7 +2428,7 @@ function LotsTable({
                     {lot.status}
                   </span>
                 </td>
-                <td>{metrics.day} días</td>
+                <td>{countLabel(metrics.day, "día", "días")}</td>
                 <td>
                   {lot.females} / {lot.males}
                 </td>
@@ -2490,7 +2486,6 @@ function LotsEmpty({
 function LotsList({
   cycle,
   lots,
-  loading,
   onCreate,
   onUpdate,
   onDelete,
@@ -2500,7 +2495,6 @@ function LotsList({
 }: {
   cycle: ProductionCycle
   lots: Lot[]
-  loading: boolean
   onCreate: () => void
   onUpdate: (lot: Lot) => void
   onDelete: (lot: Lot) => void
@@ -2535,14 +2529,15 @@ function LotsList({
       onOpenLot(lot)
     }
   }
-  if (loading) return <LotSkeletons />
   if (!cycleLots.length) return <LotsEmpty cycle={cycle} onCreate={onCreate} />
   return (
     <>
       <div className="lots-content">
         <div className="list-toolbar">
           <p>
-            <strong>{cycleLots.length}</strong> lotes registrados en {cycle}
+            <strong>{cycleLots.length}</strong>{" "}
+            {cycleLots.length === 1 ? "lote registrado" : "lotes registrados"} en{" "}
+            {cycle}
           </p>
           <div className="view-toggle" aria-label="Cambiar vista">
             <button
@@ -3526,7 +3521,7 @@ function MortalityTab({
         <div className="records-heading">
           <div>
             <h2>Historial de mortalidad</h2>
-            <p>{records.length} registros en este lote</p>
+            <p>{countLabel(records.length, "registro", "registros")} en este lote</p>
           </div>
         </div>
         <div className="table-wrap borderless">
@@ -4004,7 +3999,13 @@ function HealthTab({
           <div className="records-heading">
             <div>
               <h2>Historial sanitario</h2>
-              <p>{history.length} registros aplicados u omitidos</p>
+              <p>
+                {countLabel(
+                  history.length,
+                  "registro aplicado u omitido",
+                  "registros aplicados u omitidos",
+                )}
+              </p>
             </div>
           </div>
           <div className="health-history-list">
@@ -4878,12 +4879,12 @@ function PurchasesTab({
         <div>
           <span>Total comprado</span>
           <strong>$ {total.toLocaleString("es-CO")}</strong>
-          <p>{records.length} compras en este lote</p>
+          <p>{countLabel(records.length, "compra", "compras")} en este lote</p>
         </div>
         <div>
           <span>Concentrado</span>
           <strong>{formatDecimal(foodQuantity)} kg</strong>
-          <p>{food.length} compras</p>
+          <p>{countLabel(food.length, "compra", "compras")}</p>
         </div>
         <div>
           <span>Otros insumos</span>
@@ -4893,7 +4894,7 @@ function PurchasesTab({
               .reduce((sum, record) => sum + (record.value ?? 0), 0)
               .toLocaleString("es-CO")}
           </strong>
-          <p>{other.length} compras</p>
+          <p>{countLabel(other.length, "compra", "compras")}</p>
         </div>
       </div>
       <section className="records-card">
@@ -4927,7 +4928,7 @@ function PurchasesTab({
                   <td>
                     {record.purchaseType === "Animales" ? (
                       <>
-                        {record.females + record.males} animales ·{" "}
+                        {countLabel(record.females + record.males, "animal", "animales")} ·{" "}
                         {formatDecimal(record.totalWeight)} kg
                       </>
                     ) : (
@@ -5083,7 +5084,9 @@ function SalesTab({
                 >
                   <td>{record.date}</td>
                   <td>{record.party}</td>
-                  <td>{record.females + record.males} animales</td>
+                  <td>
+                    {countLabel(record.females + record.males, "animal", "animales")}
+                  </td>
                   <td>{formatDecimal(record.totalWeight)} kg</td>
                   <td>
                     {record.value
@@ -6102,20 +6105,6 @@ const initialBreedingAlerts: BreedingAlert[] = [
   },
 ]
 
-function BreedingSkeletons() {
-  return (
-    <div className="sow-grid">
-      {[1, 2, 3, 4, 5, 6].map((item) => (
-        <div className="sow-card sow-skeleton" key={item}>
-          <div className="skeleton w-40" />
-          <div className="skeleton w-28" />
-          <div className="skeleton metric-skeleton" />
-        </div>
-      ))}
-    </div>
-  )
-}
-
 function TermInfo({
   abbreviation,
   meaning,
@@ -6342,7 +6331,11 @@ function AttendToday({
           </span>
           <div>
             <h2>Atender hoy</h2>
-            <p>{alerts.length} acciones requieren tu atención</p>
+            <p>
+              {alerts.length === 1
+                ? "1 acción requiere tu atención"
+                : `${alerts.length} acciones requieren tu atención`}
+            </p>
           </div>
         </div>
         <span className="status warning">Prioridad del día</span>
@@ -6437,24 +6430,29 @@ function SowCard({
   alert?: BreedingAlert
 }) {
   const delayed = sow.attention === "overdue"
+  // Each segment stays on one line; the row wraps between segments when space is tight.
   const keyData =
     sow.stage === "Gestación" ? (
       <>
-        {sow.daysInStatus} días ·{" "}
-        <TermInfo abbreviation="FPP" meaning="fecha probable de parto" />{" "}
-        <span className={delayed ? "overdue-date" : ""}>
-          {sow.probableFarrowing}
+        <span>{countLabel(sow.daysInStatus, "día", "días")} ·</span>{" "}
+        <span>
+          <TermInfo abbreviation="FPP" meaning="fecha probable de parto" />{" "}
+          <span className={delayed ? "overdue-date" : ""}>
+            {sow.probableFarrowing}
+          </span>
         </span>
       </>
     ) : sow.stage === "Lactancia" ? (
       <>
-        {sow.daysInStatus} días · {sow.piglets ?? 0} lechones
+        <span>{countLabel(sow.daysInStatus, "día", "días")} ·</span>{" "}
+        <span>{sow.piglets ?? 0} lechones</span>
       </>
     ) : sow.stage === "Vacía" ? (
-      <>{sow.daysInStatus} días vacía</>
+      <span>{countLabel(sow.daysInStatus, "día", "días")} vacía</span>
     ) : (
       <>
-        {sow.daysInStatus} días · {sow.weightKg ?? 0} kg
+        <span>{countLabel(sow.daysInStatus, "día", "días")} ·</span>{" "}
+        <span>{sow.weightKg ?? 0} kg</span>
       </>
     )
   return (
@@ -7564,7 +7562,7 @@ function SowPanel({
               {sow.stage}
             </span>
             <span>
-              Banda {sow.band} · {sow.daysInStatus} días
+              Banda {sow.band} · {countLabel(sow.daysInStatus, "día", "días")}
             </span>
           </div>
           <div className="panel-kpis">
@@ -7805,7 +7803,6 @@ function BreedingPage({
     }))
     return [...activeSows, ...inactiveSows]
   })
-  const [loading, setLoading] = useState(true)
   const [stage, setStage] = useState<SowStage>("Gestación")
   const [recordStatus, setRecordStatus] = useState<SowRecordStatus>("Activas")
   const [band, setBand] = useState("Todas")
@@ -7835,11 +7832,6 @@ function BreedingPage({
     sow: Sow | null
   } | null>(null)
   const [withdrawingSow, setWithdrawingSow] = useState<Sow | null>(null)
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setLoading(false), 700)
-    return () => window.clearTimeout(timer)
-  }, [])
 
   const activeAlerts = alerts.filter((alert) =>
     sows.some(
@@ -8036,9 +8028,7 @@ function BreedingPage({
               </button>
             </div>
           )}
-          {loading ? (
-            <BreedingSkeletons />
-          ) : recordStatus !== "Activas" ? (
+          {recordStatus !== "Activas" ? (
             <SowTable sows={filtered} onView={setPanelSow} inactive />
           ) : tableView ? (
             <SowTable sows={filtered} onView={setPanelSow} />
@@ -8985,8 +8975,8 @@ function ReproducerDetail({
                   <thead>
                     <tr>
                       <th>Indicador</th>
-                      <th>Periodo actual</th>
-                      <th>Periodo anterior</th>
+                      <th>Período actual</th>
+                      <th>Período anterior</th>
                       <th>Variación</th>
                     </tr>
                   </thead>
@@ -10296,7 +10286,11 @@ function InventoryAttentionSection({
           </span>
           <div>
             <h2>Requiere atención</h2>
-            <p>{items.length} productos necesitan una acción</p>
+            <p>
+              {items.length === 1
+                ? "1 producto necesita una acción"
+                : `${items.length} productos necesitan una acción`}
+            </p>
           </div>
         </div>
       </div>
@@ -10614,7 +10608,7 @@ function MedicineInventoryTable({
                     )}
                   </div>
                 </td>
-                <td>{item.stock} ítems</td>
+                <td>{countLabel(item.stock, "ítem", "ítems")}</td>
                 <td>
                   <span
                     className={
@@ -12601,7 +12595,9 @@ function PorciTablePage({
             <div className="porci-table-title">
               <div>
                 <h2>{selectedTable.name}</h2>
-                <p>{filtered.length} registros visibles</p>
+                <p>
+                  {countLabel(filtered.length, "registro visible", "registros visibles")}
+                </p>
               </div>
               <div className="porci-table-tools">
                 {selectedTable.id === "pediluvios" && (
@@ -12979,7 +12975,7 @@ function FarmSummaryPage({
                     />
                     {cycle}
                   </span>
-                  <strong>{cycleLots.length} lotes</strong>
+                  <strong>{countLabel(cycleLots.length, "lote", "lotes")}</strong>
                   <small>
                     {cycleLots
                       .reduce(
@@ -13385,6 +13381,16 @@ const formatShortDate = (value: string) =>
     year: "2-digit",
   })
 
+const shortMonthNames = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+
+// "8 oct – 7 nov 2026"; the start year is shown only when it differs.
+const formatDateRange = (start: string, end: string) => {
+  const [startYear, startMonth, startDay] = start.split("-").map(Number)
+  const [endYear, endMonth, endDay] = end.split("-").map(Number)
+  const startLabel = `${startDay} ${shortMonthNames[startMonth - 1]}`
+  return `${startLabel}${startYear === endYear ? "" : ` ${startYear}`} – ${endDay} ${shortMonthNames[endMonth - 1]} ${endYear}`
+}
+
 function MovementDetailPanel({
   movement,
   onClose,
@@ -13430,7 +13436,10 @@ function MovementDetailPanel({
               <strong>{value}</strong>
             </div>
           ))}
-          <p>Registrado el 07/11/2026 a las 00:10 por demo</p>
+          <p>
+            Registrado el {formatDate(new Date(`${movement.date}T12:00:00`))}{" "}
+            por {movement.user}
+          </p>
         </div>
         <div className="panel-actions">
           <button className="button secondary" onClick={onClose}>
@@ -13443,7 +13452,6 @@ function MovementDetailPanel({
 }
 
 function HistoryPage({ farms }: { farms: Farm[] }) {
-  const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState("")
   const [farm, setFarm] = useState("Todas las granjas")
   const [startDate, setStartDate] = useState("2026-10-08")
@@ -13455,11 +13463,13 @@ function HistoryPage({ farms }: { farms: Farm[] }) {
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState<MovementRecord | null>(null)
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => setLoading(false), 650)
-    return () => window.clearTimeout(timer)
-  }, [])
-
+  // Any filter change returns to the first page so results are never hidden.
+  const updateFilter =
+    <T,>(setter: (value: T) => void) =>
+    (value: T) => {
+      setter(value)
+      setPage(1)
+    }
   const clearFilters = () => {
     setQuery("")
     setFarm("Todas las granjas")
@@ -13514,7 +13524,7 @@ function HistoryPage({ farms }: { farms: Farm[] }) {
             <span>Granja</span>
             <select
               value={farm}
-              onChange={(event) => setFarm(event.target.value)}
+              onChange={(event) => updateFilter(setFarm)(event.target.value)}
             >
               <option>Todas las granjas</option>
               {farms.map((item) => (
@@ -13527,7 +13537,7 @@ function HistoryPage({ farms }: { farms: Farm[] }) {
             <DatePicker
               value={startDate}
               max={endDate}
-              onChange={setStartDate}
+              onChange={updateFilter(setStartDate)}
               label="Fecha inicial"
             />
           </label>
@@ -13536,7 +13546,7 @@ function HistoryPage({ farms }: { farms: Farm[] }) {
             <DatePicker
               value={endDate}
               min={startDate}
-              onChange={setEndDate}
+              onChange={updateFilter(setEndDate)}
               label="Fecha final"
             />
           </label>
@@ -13544,7 +13554,7 @@ function HistoryPage({ farms }: { farms: Farm[] }) {
             <span>Módulo</span>
             <select
               value={module}
-              onChange={(event) => setModule(event.target.value)}
+              onChange={(event) => updateFilter(setModule)(event.target.value)}
             >
               <option>Todos</option>
               {movementModules.map((item) => (
@@ -13570,7 +13580,9 @@ function HistoryPage({ farms }: { farms: Farm[] }) {
                 <span>Acción</span>
                 <select
                   value={action}
-                  onChange={(event) => setAction(event.target.value)}
+                  onChange={(event) =>
+                    updateFilter(setAction)(event.target.value)
+                  }
                 >
                   <option value="Todas">Todas</option>
                   <option value="in">Entradas</option>
@@ -13582,7 +13594,7 @@ function HistoryPage({ farms }: { farms: Farm[] }) {
                 <span>Usuario</span>
                 <select
                   value={user}
-                  onChange={(event) => setUser(event.target.value)}
+                  onChange={(event) => updateFilter(setUser)(event.target.value)}
                 >
                   <option>Todos</option>
                   {movementUsers.map((item) => (
@@ -13594,7 +13606,10 @@ function HistoryPage({ farms }: { farms: Farm[] }) {
           )}
         </section>
         <div className="history-table-heading">
-          <strong>{filtered.length} registros · 8 oct – 7 nov 2026</strong>
+          <strong>
+            {filtered.length} {filtered.length === 1 ? "registro" : "registros"}{" "}
+            · {formatDateRange(startDate, endDate)}
+          </strong>
           <div>
             <button
               aria-label="Página anterior"
@@ -13615,13 +13630,7 @@ function HistoryPage({ farms }: { farms: Farm[] }) {
             </button>
           </div>
         </div>
-        {loading ? (
-          <div className="history-skeletons">
-            {Array.from({ length: 8 }, (_, index) => (
-              <div className="skeleton" key={index} />
-            ))}
-          </div>
-        ) : visible.length ? (
+        {visible.length ? (
           <div className="table-wrap history-table">
             <table>
               <thead>
@@ -13708,7 +13717,7 @@ type UserAccess = {
 
 type SettingsSection = "Granjas y ciclos" | "Programa de alimentación y unidades" | "Sanitario" | "Bandas" | "Reproductiva" | "Mano de obra" | "Metas" | "Responsables y lugares" | "Reportes" | "Usuarios"
 
-const settingsSections: { name: SettingsSection icon: IconName }[] = [
+const settingsSections: { name: SettingsSection; icon: IconName }[] = [
   { name: "Granjas y ciclos", icon: "pig" },
   { name: "Programa de alimentación y unidades", icon: "box" },
   { name: "Sanitario", icon: "syringe" },
@@ -14558,7 +14567,7 @@ const reportCatalog: ReportCatalogCategory[] = [
       {
         id: "resultados-maternidad",
         name: "Resultados de maternidad",
-        description: "Partos, nacimientos y destete por periodo",
+        description: "Partos, nacimientos y destete por período",
         subcategory: "Maternidad",
       },
       {
@@ -16373,7 +16382,7 @@ function OperationalReportDialog({
           )}
         </div>
         <div className="report-pagination">
-          <span>{filteredRows.length} registros</span>
+          <span>{countLabel(filteredRows.length, "registro", "registros")}</span>
           <div>
             <button
               disabled={page === 1}
@@ -16788,7 +16797,9 @@ function ReportsPage({
                     {ready.size} de 61 listos · {progress} %
                   </strong>
                 </div>
-                <span className="status warning">{pending} pendientes</span>
+                <span className="status warning">
+                  {countLabel(pending, "pendiente", "pendientes")}
+                </span>
               </div>
               <div className="ica-progress-track">
                 <span style={{ width: `${progress}%` }} />
@@ -17076,8 +17087,6 @@ export default function App() {
   })
   const [lots, setLots] = useState(initialLots)
   const [porciTables, setPorciTables] = useState(initialPorciTables)
-  const [loading, setLoading] = useState(true)
-  const [cycleLoading, setCycleLoading] = useState(false)
   const [modal, setModal] = useState<"add" | "edit" | null>(null)
   const [lotModal, setLotModal] = useState(false)
   const [voiceOpen, setVoiceOpen] = useState(false)
@@ -17111,7 +17120,9 @@ export default function App() {
   const [selectedLot, setSelectedLot] = useState<Lot | null>(null)
   const [accountOpen, setAccountOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => window.matchMedia(compactSidebarQuery).matches,
+  )
   const [settingsSection, setSettingsSection] =
     useState<SettingsSection>("Granjas y ciclos")
   const [users, setUsers] = useState<UserAccess[]>([
@@ -17125,20 +17136,22 @@ export default function App() {
     },
   ])
   const [settingsDirty, setSettingsDirty] = useState(false)
-  const [pendingNavigation, setPendingNavigation] = useState<string | null>(
-    null,
-  )
+  const [pendingNavigation, setPendingNavigation] = useState<
+    (() => void) | null
+  >(null)
   const skipSettingsGuard = useRef(false)
 
-  useEffect(() => {
-    const timer = window.setTimeout(() => setLoading(false), 850)
-    return () => window.clearTimeout(timer)
-  }, [])
   useEffect(() => {
     if (!toast) return
     const timer = window.setTimeout(() => setToast(""), 3000)
     return () => window.clearTimeout(timer)
   }, [toast])
+  useEffect(() => {
+    const query = window.matchMedia(compactSidebarQuery)
+    const syncSidebar = () => setSidebarCollapsed(query.matches)
+    query.addEventListener("change", syncSidebar)
+    return () => query.removeEventListener("change", syncSidebar)
+  }, [])
   useEffect(() => {
     window.localStorage.setItem(
       "porcitrack-favorite-farms",
@@ -17241,18 +17254,21 @@ export default function App() {
     if (cycle === "Precebo" || cycle === "Levante") {
       setActiveCycle(cycle)
       setPage("cycle")
-      setCycleLoading(true)
-      window.setTimeout(() => setCycleLoading(false), 650)
       window.scrollTo({ top: 0, behavior: "smooth" })
     }
   }
-  const navigate = (label: string) => {
-    if (page === "settings" && label === "Configuración") return
+  // Leaving Configuración with unsaved changes asks for confirmation first.
+  const guardSettings = (retry: () => void) => {
     if (page === "settings" && settingsDirty && !skipSettingsGuard.current) {
-      setPendingNavigation(label)
-      return
+      setPendingNavigation(() => retry)
+      return true
     }
     skipSettingsGuard.current = false
+    return false
+  }
+  const navigate = (label: string) => {
+    if (page === "settings" && label === "Configuración") return
+    if (guardSettings(() => navigate(label))) return
     if (label === "Inicio") {
       setPage("home")
       setSelectedLot(null)
@@ -17292,10 +17308,9 @@ export default function App() {
       setActiveCycle(label)
       setPage("cycle")
       setSelectedLot(null)
-      setCycleLoading(true)
-      window.setTimeout(() => setCycleLoading(false), 650)
     }
     setMobileOpen(false)
+    window.scrollTo({ top: 0 })
   }
   const openTool = (farm: Farm, tool: string) => {
     setSelectedFarm(farm)
@@ -17313,6 +17328,7 @@ export default function App() {
     navigate(tool)
   }
   const changeFarm = (farm: Farm) => {
+    if (guardSettings(() => changeFarm(farm))) return
     setSelectedFarm(farm)
     setSelectedLot(null)
     setPage("farmSummary")
@@ -17540,20 +17556,46 @@ export default function App() {
     if (page === "lot") {
       setSelectedLot(null)
       setPage("cycle")
-    } else if (page === "farmSummary" || page === "history") {
+    } else if (
+      page === "farmSummary" ||
+      page === "history" ||
+      page === "settings"
+    ) {
       navigate("Inicio")
     } else {
       navigate("Resumen")
     }
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
+  // Historial and Configuración are account-wide, so they keep the general sidebar.
+  const farmContext =
+    page !== "home" && page !== "history" && page !== "settings"
+  const lotsList = (
+    <LotsList
+      cycle={activeCycle}
+      lots={lots.filter((lot) => lot.farmId === selectedFarm.id)}
+      onCreate={() => setLotModal(true)}
+      onUpdate={updateLot}
+      onDelete={(deleted) =>
+        setLots(lots.filter((lot) => lot.id !== deleted.id))
+      }
+      onNotice={setToast}
+      onMigrate={migrateLotToLevante}
+      onOpenLot={(lot) => {
+        setSelectedLot(lot)
+        setActiveCycle(lot.cycle)
+        setPage("lot")
+        window.scrollTo({ top: 0, behavior: "smooth" })
+      }}
+    />
+  )
 
   return (
     <div className={`app-shell ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
       <Sidebar
         farms={farms}
         selectedFarm={selectedFarm}
-        isHome={page === "home"}
+        farmContext={farmContext}
         accountOpen={accountOpen}
         setAccountOpen={setAccountOpen}
         active={activeNavigation}
@@ -17568,7 +17610,7 @@ export default function App() {
       <MobileNavigation
         farms={farms}
         selectedFarm={selectedFarm}
-        isHome={page === "home"}
+        farmContext={farmContext}
         open={mobileOpen}
         setOpen={setMobileOpen}
         active={activeNavigation}
@@ -17613,17 +17655,16 @@ export default function App() {
         )}
         {page === "home" ? (
           <>
-            {!loading && farms.length > 0 && (
+            {farms.length > 0 && (
               <section className="home-summary">
                 <div className="home-summary-heading">
                   <strong>Resumen general</strong>{" "}
-                  <span>· {farms.length} granjas</span>
+                  <span>· {countLabel(farms.length, "granja", "granjas")}</span>
                 </div>
                 <div className="home-summary-metrics">
                   <div className={totalAlerts ? "summary-alert" : ""}>
                     <span>Alertas pendientes</span>
                     <strong>{totalAlerts}</strong>
-                    <small>{mostUrgentAlert}</small>
                   </div>
                   <div>
                     <span>Lotes activos</span>
@@ -17643,9 +17684,7 @@ export default function App() {
                 </div>
               </section>
             )}
-            {loading ? (
-              <Skeletons />
-            ) : farms.length && visibleFarms.length ? (
+            {farms.length && visibleFarms.length ? (
               <div className="farm-grid">
                 {visibleFarms.map((farm) => (
                   <FarmCard
@@ -17706,24 +17745,7 @@ export default function App() {
             onCycle={(cycle) => openCycle(selectedFarm, cycle)}
           />
         ) : page === "cycle" ? (
-          <LotsList
-            cycle={activeCycle}
-            lots={lots.filter((lot) => lot.farmId === selectedFarm.id)}
-            loading={cycleLoading}
-            onCreate={() => setLotModal(true)}
-            onUpdate={updateLot}
-            onDelete={(deleted) =>
-              setLots(lots.filter((lot) => lot.id !== deleted.id))
-            }
-            onNotice={setToast}
-            onMigrate={migrateLotToLevante}
-            onOpenLot={(lot) => {
-              setSelectedLot(lot)
-              setActiveCycle(lot.cycle)
-              setPage("lot")
-              window.scrollTo({ top: 0, behavior: "smooth" })
-            }}
-          />
+          lotsList
         ) : page === "breeding" ? (
           <BreedingPage
             key={selectedFarm.id}
@@ -17803,16 +17825,7 @@ export default function App() {
               .map((lot) => lot.code)}
           />
         ) : (
-          <LotsList
-            cycle={activeCycle}
-            lots={lots.filter((lot) => lot.farmId === selectedFarm.id)}
-            loading={false}
-            onCreate={() => setLotModal(true)}
-            onUpdate={() => {}}
-            onDelete={() => {}}
-            onNotice={setToast}
-            onOpenLot={() => {}}
-          />
+          lotsList
         )}
       </main>
       {modal && (
@@ -17876,11 +17889,11 @@ export default function App() {
       {pendingNavigation && (
         <DiscardChangesDialog
           onDiscard={() => {
-            const destination = pendingNavigation
+            const proceed = pendingNavigation
             setSettingsDirty(false)
             setPendingNavigation(null)
             skipSettingsGuard.current = true
-            navigate(destination)
+            proceed()
           }}
           onKeepEditing={() => setPendingNavigation(null)}
         />
