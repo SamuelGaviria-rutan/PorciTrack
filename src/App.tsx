@@ -10,7 +10,7 @@ import {
 import { createPortal } from "react-dom"
 import porcitrackLogo from "./assets/porcitrack-logo.svg"
 
-type IconName = "home" | "sow" | "boar" | "piglet" | "growth" | "box" | "table" | "chart" | "calendar" | "settings" | "mic" | "plus" | "edit" | "pin" | "alert" | "pig" | "trend" | "chevron" | "logout" | "menu" | "x" | "check" | "trash" | "arrow" | "dots" | "list" | "grid" | "weight" | "clock" | "info" | "syringe" | "bell" | "download" | "search" | "heart" | "baby" | "droplet" | "filter" | "sort" | "star" | "building" | "clipboard" | "document" | "userPlus" | "profile"
+type IconName = "home" | "sow" | "boar" | "piglet" | "pigFace" | "growth" | "crown" | "sprout" | "box" | "table" | "chart" | "calendar" | "settings" | "mic" | "plus" | "edit" | "pin" | "alert" | "pig" | "trend" | "chevron" | "logout" | "menu" | "x" | "check" | "trash" | "arrow" | "dots" | "list" | "grid" | "weight" | "clock" | "info" | "syringe" | "bell" | "download" | "search" | "heart" | "baby" | "droplet" | "filter" | "sort" | "star" | "building" | "clipboard" | "document" | "userPlus" | "profile"
 
 function Icon({
   name,
@@ -42,14 +42,37 @@ function Icon({
     ),
     piglet: (
       <>
-        <path d="M6 9c2-3 9-3 12 0v7c-2 3-10 3-12 0Z" />
-        <path d="m7 9-3-3v6m13-3 3-3v6M9 14h.01M15 14h.01M10 18h4" />
+        <path d="M6.5 10 4 7v5M17.5 10 20 7v5" />
+        <path d="M6 10c0-3 2.7-5 6-5s6 2 6 5v5c0 3-2.7 5-6 5s-6-2-6-5Z" />
+        <path d="M9.5 11h.01M14.5 11h.01" />
+        <path d="M9 15c0-1.1 1.3-2 3-2s3 .9 3 2-1.3 2-3 2-3-.9-3-2Z" />
+      </>
+    ),
+    pigFace: (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <path d="m8.5 9-2-1v3m9-2 2-1v3" />
+        <path d="M8 11c0-2.2 1.8-4 4-4s4 1.8 4 4v3c0 2.2-1.8 4-4 4s-4-1.8-4-4Z" />
+        <path d="M10 11h.01M14 11h.01M10 15h4" />
       </>
     ),
     growth: (
       <>
         <path d="M4 18V9m6 9V5m6 13v-7m4 7V3" />
         <path d="M2 21h20" />
+      </>
+    ),
+    crown: (
+      <>
+        <path d="m3 7 4.5 4L12 4l4.5 7L21 7l-2 10H5Z" />
+        <path d="M5 20h14" />
+      </>
+    ),
+    sprout: (
+      <>
+        <path d="M12 21v-9" />
+        <path d="M12 14c-4.5 0-7-2.5-7-7 4.5 0 7 2.5 7 7Z" />
+        <path d="M12 11c0-4.5 2.5-7 7-7 0 4.5-2.5 7-7 7Z" />
       </>
     ),
     box: (
@@ -277,6 +300,18 @@ const cycleOrder = [
   "Levante",
 ] as const
 type Cycle = typeof cycleOrder[number]
+const homeCycleIcons: Record<Cycle, IconName> = {
+  "Plantel reproductivo": "pigFace",
+  Reproductor: "crown",
+  Precebo: "sprout",
+  Levante: "trend",
+}
+const homeCycleShortLabels: Record<Cycle, string> = {
+  "Plantel reproductivo": "P-R",
+  Reproductor: "Rep.",
+  Precebo: "Precebo",
+  Levante: "L-E",
+}
 type Farm = {
   id: number
   name: string
@@ -771,40 +806,6 @@ function Sidebar({
           )}
         </div>
         <div className="sidebar-divider" />
-        <nav className="account-navigation" aria-label="Navegación de cuenta">
-          <button
-            className={`nav-item ${active === "Inicio" ? "active" : ""}`}
-            onClick={() => onNavigate("Inicio")}
-            title={collapsed ? "Inicio" : undefined}
-          >
-            <Icon name="grid" size={22} />
-            <span>Inicio</span>
-          </button>
-          <button
-            className={`nav-item ${active === "Historial" ? "active" : ""}`}
-            onClick={() => onNavigate("Historial")}
-            title={collapsed ? "Historial" : undefined}
-          >
-            <Icon name="clipboard" size={22} />
-            <span>Historial</span>
-          </button>
-          <button
-            className={`nav-item ${active === "Configuración" ? "active" : ""}`}
-            onClick={() => onNavigate("Configuración")}
-            title={collapsed ? "Configuración" : undefined}
-          >
-            <Icon name="settings" size={22} />
-            <span>Configuración</span>
-          </button>
-          <button
-            className="nav-item"
-            onClick={onInvite}
-            title={collapsed ? "Invitar usuario" : undefined}
-          >
-            <Icon name="userPlus" size={22} />
-            <span>Invitar usuario</span>
-          </button>
-        </nav>
         {!isHome && (
           <nav className="context-navigation" aria-label="Navegación principal">
             <div className="sidebar-nav-group">
@@ -879,7 +880,23 @@ function Sidebar({
                     onNavigate("Configuración")
                   }}
                 >
-                  <Icon name="profile" size={18} /> Perfil
+                  <Icon name="settings" size={18} /> Configuración
+                </button>
+                <button
+                  onClick={() => {
+                    setAccountOpen(false)
+                    onNavigate("Historial")
+                  }}
+                >
+                  <Icon name="clipboard" size={18} /> Historial
+                </button>
+                <button
+                  onClick={() => {
+                    setAccountOpen(false)
+                    onInvite()
+                  }}
+                >
+                  <Icon name="userPlus" size={18} /> Invitar usuario
                 </button>
                 <button
                   onClick={() => {
@@ -986,35 +1003,6 @@ function MobileNavigation({
       </div>
       {open && (
         <div className="mobile-drawer">
-          <nav className="mobile-account-navigation" aria-label="Cuenta">
-            {[
-              { label: "Inicio", icon: "grid" as IconName },
-              { label: "Historial", icon: "clipboard" as IconName },
-              { label: "Configuración", icon: "settings" as IconName },
-            ].map((item) => (
-              <button
-                className={active === item.label ? "active" : ""}
-                key={item.label}
-                onClick={() => {
-                  onNavigate(item.label)
-                  setOpen(false)
-                }}
-              >
-                <Icon name={item.icon} size={22} />
-                {item.label}
-              </button>
-            ))}
-            <button
-              onClick={() => {
-                onInvite()
-                setOpen(false)
-              }}
-            >
-              <Icon name="userPlus" size={22} />
-              Invitar usuario
-            </button>
-          </nav>
-          <div className="sidebar-divider" />
           <button
             className={`mobile-all-farms ${isHome ? "active" : ""}`}
             onClick={() => {
@@ -1132,9 +1120,35 @@ function MobileNavigation({
               <small>andres.mejia@granja.co</small>
               <small>Rol: Operario de granja</small>
               <div className="menu-divider" />
-              <button onClick={() => onNavigate("Configuración")}>
-                <Icon name="profile" size={18} />
-                Perfil
+              <button
+                onClick={() => {
+                  onNavigate("Configuración")
+                  setMobileAccountOpen(false)
+                  setOpen(false)
+                }}
+              >
+                <Icon name="settings" size={18} />
+                Configuración
+              </button>
+              <button
+                onClick={() => {
+                  onNavigate("Historial")
+                  setMobileAccountOpen(false)
+                  setOpen(false)
+                }}
+              >
+                <Icon name="clipboard" size={18} />
+                Historial
+              </button>
+              <button
+                onClick={() => {
+                  onInvite()
+                  setMobileAccountOpen(false)
+                  setOpen(false)
+                }}
+              >
+                <Icon name="userPlus" size={18} />
+                Invitar usuario
               </button>
               <button onClick={onLogout}>
                 <Icon name="logout" size={18} />
@@ -1172,9 +1186,11 @@ type HeaderProps = {
   page: "home" | "cycle"
   cycle: ProductionCycle
   farmName: string
+  farmQuery: string
   onAdd: () => void
   onConsolidated: () => void
   onCreateLot: () => void
+  onFarmQueryChange: (query: string) => void
   onVoice: () => void
 }
 
@@ -1182,9 +1198,11 @@ function Header({
   page,
   cycle,
   farmName,
+  farmQuery,
   onAdd,
   onConsolidated,
   onCreateLot,
+  onFarmQueryChange,
   onVoice,
 }: HeaderProps) {
   return (
@@ -1206,6 +1224,16 @@ function Header({
       </div>
       {page === "home" && (
         <div className="header-actions home-header-actions">
+          <label className="search-field home-farm-search">
+            <Icon name="search" size={18} />
+            <input
+              type="search"
+              value={farmQuery}
+              onChange={(event) => onFarmQueryChange(event.target.value)}
+              placeholder="Buscar granja por nombre"
+              aria-label="Buscar granja por nombre"
+            />
+          </label>
           <button className="button secondary voice" onClick={onVoice}>
             <Icon name="mic" size={19} />
             Registro por voz
@@ -1303,14 +1331,18 @@ function StatusBadge({
 
 function FarmCard({
   farm,
+  favorite,
   onEdit,
+  onFavorite,
   onSummary,
   onCycle,
   onTool,
   onResolveAlert,
 }: {
   farm: Farm
+  favorite: boolean
   onEdit: () => void
+  onFavorite: () => void
   onSummary: () => void
   onCycle: (cycle: Cycle) => void
   onTool: (tool: string) => void
@@ -1339,7 +1371,6 @@ function FarmCard({
               className="edit-button"
               onClick={onEdit}
               aria-label={`Editar ${farm.name}`}
-              title="Editar granja"
             >
               <Icon name="edit" size={17} />
             </button>
@@ -1353,65 +1384,85 @@ function FarmCard({
             <Icon name="arrow" size={15} />
           </button>
         </div>
-        <div className="farm-alert-wrap" ref={alertWrapRef}>
-          <StatusBadge
-            alerts={farm.alerts}
-            open={alertsOpen}
-            onClick={() => setAlertsOpen(!alertsOpen)}
-          />
-          {alertsOpen && (
-            <div className="alerts-popover farm-alerts-popover">
-              <div className="popover-heading">
-                <strong>Alertas</strong>
-                <span>Ordenadas por urgencia</span>
-              </div>
-              {alerts
-                .slice()
-                .sort((a, b) => a.urgency - b.urgency)
-                .map((alert) => (
-                  <div className="popover-alert" key={alert.id}>
-                    <span className={`alert-dot urgency-${alert.urgency}`} />
-                    <div>
-                      <strong>{alert.title}</strong>
-                      <p>{alert.detail}</p>
-                      <button
-                        onClick={() => {
-                          setAlertsOpen(false)
-                          onResolveAlert(alert.module)
-                        }}
-                      >
-                        Resolver ahora
-                      </button>
+        <div className="farm-heading-actions">
+          <button
+            className={`favorite-button ${favorite ? "active" : ""}`}
+            onClick={onFavorite}
+            aria-pressed={favorite}
+            aria-label={
+              favorite
+                ? `Quitar ${farm.name} de favoritos`
+                : `Marcar ${farm.name} como favorita`
+            }
+            title={favorite ? "Quitar de favoritos" : "Marcar como favorita"}
+          >
+            <Icon name="star" size={19} />
+          </button>
+          <div className="farm-alert-wrap" ref={alertWrapRef}>
+            <StatusBadge
+              alerts={farm.alerts}
+              open={alertsOpen}
+              onClick={() => setAlertsOpen(!alertsOpen)}
+            />
+            {alertsOpen && (
+              <div className="alerts-popover farm-alerts-popover">
+                <div className="popover-heading">
+                  <strong>Alertas</strong>
+                  <span>Ordenadas por urgencia</span>
+                </div>
+                {alerts
+                  .slice()
+                  .sort((a, b) => a.urgency - b.urgency)
+                  .map((alert) => (
+                    <div className="popover-alert" key={alert.id}>
+                      <span className={`alert-dot urgency-${alert.urgency}`} />
+                      <div>
+                        <strong>{alert.title}</strong>
+                        <p>{alert.detail}</p>
+                        <button
+                          onClick={() => {
+                            setAlertsOpen(false)
+                            onResolveAlert(alert.module)
+                          }}
+                        >
+                          Resolver ahora
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-            </div>
-          )}
+                  ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-      <div className="farm-section">
+      <div className="farm-section cycles-section">
         <span className="section-label">Ciclos activos</span>
         <div className="cycle-list">
           {cardCycles.map((cycle) => (
-            <button key={cycle} onClick={() => onCycle(cycle)}>
-              <Icon
-                name={
-                  navigation.find((item) => item.label === cycle)?.icon ?? "pig"
-                }
-                size={16}
-              />
-              {cycle}
-              <Icon name="arrow" size={15} />
+            <button
+              key={cycle}
+              onClick={() => onCycle(cycle)}
+              aria-label={`Abrir ${cycle}`}
+            >
+              <span className="cycle-icon">
+                <Icon name={homeCycleIcons[cycle]} size={12} strokeWidth={2} />
+              </span>
+              <span className="cycle-label">{cycle}</span>
+              <span className="cycle-short-label" aria-hidden="true">
+                {homeCycleShortLabels[cycle]}
+              </span>
+              <span className="cycle-arrow" aria-hidden="true">
+                <Icon name="arrow" size={10} strokeWidth={2.2} />
+              </span>
             </button>
           ))}
         </div>
       </div>
       <div className="farm-section tools-section">
-        <span className="section-label">Herramientas</span>
         <div className="tool-list">
           {toolItems.map((item) => (
             <button key={item.label} onClick={() => onTool(item.label)}>
-              <Icon name={item.icon} size={17} />
+              <Icon name={item.icon} size={22} />
               {item.label}
             </button>
           ))}
@@ -3107,14 +3158,7 @@ function CreateLotModal({
   )
 }
 
-type LotTab =
-  | "Resumen"
-  | "Mortalidad"
-  | "Sanidad"
-  | "Consumo"
-  | "Compras"
-  | "Ventas"
-  | "Movimientos"
+type LotTab = "Resumen" | "Mortalidad" | "Sanidad" | "Consumo" | "Compras" | "Ventas" | "Movimientos"
 type TabAction = {
   label: string
   run: () => void
@@ -5131,11 +5175,7 @@ function SalesTab({
   )
 }
 
-function ConsumptionTab({
-  records,
-}: {
-  records: LotConsumption[]
-}) {
+function ConsumptionTab({ records }: { records: LotConsumption[] }) {
   const total = records.reduce((sum, record) => sum + record.quantity, 0)
   return (
     <div className="tab-panel">
@@ -5179,7 +5219,9 @@ function ConsumptionTab({
                 {records.map((record) => (
                   <tr key={record.id}>
                     <td>{record.date}</td>
-                    <td><strong>{record.feed}</strong></td>
+                    <td>
+                      <strong>{record.feed}</strong>
+                    </td>
                     <td>{formatDecimal(record.quantity)} kg</td>
                     <td>{record.responsible}</td>
                     <td>{record.notes || "—"}</td>
@@ -5217,7 +5259,12 @@ function ConsumptionModal({
   const submit = (event: FormEvent) => {
     event.preventDefault()
     setSubmitted(true)
-    if (!form.date || !form.feed.trim() || quantity <= 0 || !form.responsible.trim()) {
+    if (
+      !form.date ||
+      !form.feed.trim() ||
+      quantity <= 0 ||
+      !form.responsible.trim()
+    ) {
       focusFirstError(event.currentTarget as HTMLFormElement)
       return
     }
@@ -5235,8 +5282,12 @@ function ConsumptionModal({
       <form onSubmit={submit}>
         <div className="form-content">
           <div className="form-grid">
-            <label className={`field ${submitted && !form.date ? "has-error" : ""}`}>
-              <span>Fecha <em>* obligatorio</em></span>
+            <label
+              className={`field ${submitted && !form.date ? "has-error" : ""}`}
+            >
+              <span>
+                Fecha <em>* obligatorio</em>
+              </span>
               <DatePicker
                 value={form.date}
                 max={TODAY_ISO}
@@ -5244,28 +5295,52 @@ function ConsumptionModal({
                 label="Seleccionar fecha de consumo"
               />
             </label>
-            <label className={`field ${submitted && !form.feed.trim() ? "has-error" : ""}`}>
-              <span>Alimento <em>* obligatorio</em></span>
+            <label
+              className={`field ${
+                submitted && !form.feed.trim() ? "has-error" : ""
+              }`}
+            >
+              <span>
+                Alimento <em>* obligatorio</em>
+              </span>
               <input
                 value={form.feed}
-                onChange={(event) => setForm({ ...form, feed: event.target.value })}
+                onChange={(event) =>
+                  setForm({ ...form, feed: event.target.value })
+                }
                 placeholder="Ej. Concentrado iniciación"
               />
             </label>
-            <label className={`field ${submitted && quantity <= 0 ? "has-error" : ""}`}>
-              <span>Cantidad (kg) <em>* obligatorio</em></span>
+            <label
+              className={`field ${
+                submitted && quantity <= 0 ? "has-error" : ""
+              }`}
+            >
+              <span>
+                Cantidad (kg) <em>* obligatorio</em>
+              </span>
               <ColombianNumberInput
                 value={form.quantity}
-                onChange={(quantityValue) => setForm({ ...form, quantity: quantityValue })}
+                onChange={(quantityValue) =>
+                  setForm({ ...form, quantity: quantityValue })
+                }
                 placeholder="Ej. 250"
                 ariaInvalid={submitted && quantity <= 0}
               />
             </label>
-            <label className={`field ${submitted && !form.responsible.trim() ? "has-error" : ""}`}>
-              <span>Responsable <em>* obligatorio</em></span>
+            <label
+              className={`field ${
+                submitted && !form.responsible.trim() ? "has-error" : ""
+              }`}
+            >
+              <span>
+                Responsable <em>* obligatorio</em>
+              </span>
               <input
                 value={form.responsible}
-                onChange={(event) => setForm({ ...form, responsible: event.target.value })}
+                onChange={(event) =>
+                  setForm({ ...form, responsible: event.target.value })
+                }
               />
             </label>
           </div>
@@ -5273,14 +5348,20 @@ function ConsumptionModal({
             <span>Observaciones</span>
             <textarea
               value={form.notes}
-              onChange={(event) => setForm({ ...form, notes: event.target.value })}
+              onChange={(event) =>
+                setForm({ ...form, notes: event.target.value })
+              }
               placeholder="Información adicional"
             />
           </label>
         </div>
         <div className="modal-actions">
-          <button type="button" className="button secondary" onClick={onClose}>Cancelar</button>
-          <button className="button primary" type="submit">Registrar consumo</button>
+          <button type="button" className="button secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="button primary" type="submit">
+            Registrar consumo
+          </button>
         </div>
       </form>
     </DialogShell>
@@ -5315,11 +5396,19 @@ function MovementsTab({ records }: { records: LotTransfer[] }) {
                   <tr key={record.id}>
                     <td>{record.date}</td>
                     <td>
-                      <span className={`status ${record.direction === "Entrada" ? "positive" : "neutral"}`}>
+                      <span
+                        className={`status ${
+                          record.direction === "Entrada"
+                            ? "positive"
+                            : "neutral"
+                        }`}
+                      >
                         {record.direction}
                       </span>
                     </td>
-                    <td><strong>{record.otherLot}</strong></td>
+                    <td>
+                      <strong>{record.otherLot}</strong>
+                    </td>
                     <td>{record.animals}</td>
                     <td>{formatDecimal(record.averageWeight)} kg</td>
                     <td>{record.responsible}</td>
@@ -5352,7 +5441,9 @@ function MigrateLotDialog({
   return (
     <DialogShell title="Migrar lote a Levante" onClose={onClose} size="small">
       <div className="finish-lot-content">
-        <span className="finish-lot-icon"><Icon name="growth" size={22} /></span>
+        <span className="finish-lot-icon">
+          <Icon name="growth" size={22} />
+        </span>
         <div>
           <h3>{lot.code} pasará a Levante</h3>
           <p>
@@ -5361,12 +5452,23 @@ function MigrateLotDialog({
           </p>
         </div>
         <div className="finish-summary">
-          <div><span>Animales</span><strong>{figures.currentAnimals}</strong></div>
-          <div><span>Peso promedio</span><strong>{formatDecimal(lot.averageWeight)} kg</strong></div>
-          <div><span>Destino</span><strong>Levante</strong></div>
+          <div>
+            <span>Animales</span>
+            <strong>{figures.currentAnimals}</strong>
+          </div>
+          <div>
+            <span>Peso promedio</span>
+            <strong>{formatDecimal(lot.averageWeight)} kg</strong>
+          </div>
+          <div>
+            <span>Destino</span>
+            <strong>Levante</strong>
+          </div>
         </div>
         <label className="field">
-          <span>Fecha de migración <em>* obligatorio</em></span>
+          <span>
+            Fecha de migración <em>* obligatorio</em>
+          </span>
           <DatePicker
             value={date}
             max={TODAY_ISO}
@@ -5376,8 +5478,14 @@ function MigrateLotDialog({
         </label>
       </div>
       <div className="modal-actions">
-        <button className="button secondary" onClick={onClose}>Cancelar</button>
-        <button className="button primary" disabled={!date || figures.currentAnimals === 0} onClick={() => onConfirm(date)}>
+        <button className="button secondary" onClick={onClose}>
+          Cancelar
+        </button>
+        <button
+          className="button primary"
+          disabled={!date || figures.currentAnimals === 0}
+          onClick={() => onConfirm(date)}
+        >
           Confirmar migración
         </button>
       </div>
@@ -5805,18 +5913,23 @@ function LotDetail({
   )
 }
 
-type SowStatus = "Gestación" | "Lactancia" | "Vacía" | "Reemplazo" | "Bajas"
+type SowStage = "Gestación" | "Lactancia" | "Vacía" | "Reemplazo"
+type SowRecordStatus = "Activas" | "Pendiente de venta" | "Fallecidas" | "Descartadas" | "Transferidas" | "Eliminadas"
 type Sow = {
   id: number
   number: string
-  status: SowStatus
+  stage: SowStage
+  recordStatus: SowRecordStatus
   band: number
   daysInStatus: number
   probableFarrowing?: string
+  piglets?: number
+  weightKg?: number
   parity: number
   attention?: "overdue" | "vaccine"
   withdrawalDate?: string
   withdrawalReason?: string
+  withdrawalBy?: string
 }
 
 type BreedingEventType = "Servicio y celo" | "Gestación" | "Parto y lactancia" | "Destete" | "Peso y condición corporal"
@@ -5854,16 +5967,18 @@ const initialSowVaccines: SowVaccine[] = [
   { id: 3, name: "Erisipela", date: "22/03/2026", overdue: false },
 ]
 
-const sowStatuses: SowStatus[] = [
-  "Gestación",
-  "Lactancia",
-  "Vacía",
-  "Reemplazo",
-  "Bajas",
+const sowStages: SowStage[] = ["Gestación", "Lactancia", "Vacía", "Reemplazo"]
+const sowRecordStatuses: SowRecordStatus[] = [
+  "Activas",
+  "Pendiente de venta",
+  "Fallecidas",
+  "Descartadas",
+  "Transferidas",
+  "Eliminadas",
 ]
 
 const initialSows: Sow[] = Array.from({ length: 26 }, (_, index) => {
-  const status: SowStatus =
+  const stage: SowStage =
     index < 10
       ? "Gestación"
       : index < 17
@@ -5874,26 +5989,82 @@ const initialSows: Sow[] = Array.from({ length: 26 }, (_, index) => {
   return {
     id: 1304 + index,
     number: `#${1304 + index}`,
-    status,
+    stage,
+    recordStatus: "Activas",
     band: 37 + (index % 4),
     daysInStatus:
-      status === "Gestación"
+      stage === "Gestación"
         ? 94 + index * 2
-        : status === "Lactancia"
+        : stage === "Lactancia"
           ? 4 + (index % 7)
-          : status === "Vacía"
+          : stage === "Vacía"
             ? 3 + (index % 8)
-            : 28 + index,
+            : 210 + (index - 22) * 7,
     probableFarrowing:
-      status === "Gestación"
+      stage === "Gestación"
         ? index === 0
           ? "14/03/2026"
           : `${18 + (index % 9)}/03/2026`
         : undefined,
+    piglets: stage === "Lactancia" ? 10 + (index % 4) : undefined,
+    weightKg: stage === "Reemplazo" ? 135 + (index - 22) * 4 : undefined,
     parity: 1 + (index % 6),
     attention: index === 0 ? "overdue" : index === 1 ? "vaccine" : undefined,
   }
 })
+
+const initialInactiveSows: Sow[] = [
+  {
+    ...initialSows[4],
+    id: 1401,
+    number: "#1289",
+    recordStatus: "Fallecidas",
+    withdrawalDate: "2026-03-12",
+    withdrawalReason: "Mortalidad",
+    withdrawalBy: "Andrés Mejía",
+    attention: undefined,
+  },
+  {
+    ...initialSows[12],
+    id: 1402,
+    number: "#1264",
+    recordStatus: "Descartadas",
+    withdrawalDate: "2026-03-10",
+    withdrawalReason: "Descarte productivo",
+    withdrawalBy: "Laura Gómez",
+    attention: undefined,
+  },
+  {
+    ...initialSows[19],
+    id: 1403,
+    number: "#1247",
+    recordStatus: "Pendiente de venta",
+    withdrawalDate: "2026-03-14",
+    withdrawalReason: "Marcada para descarte",
+    withdrawalBy: "Andrés Mejía",
+    attention: undefined,
+  },
+  {
+    ...initialSows[22],
+    id: 1404,
+    number: "#1218",
+    recordStatus: "Transferidas",
+    withdrawalDate: "2026-03-08",
+    withdrawalReason: "Transferencia a otra granja",
+    withdrawalBy: "Laura Gómez",
+    attention: undefined,
+  },
+  {
+    ...initialSows[18],
+    id: 1405,
+    number: "#1196",
+    recordStatus: "Eliminadas",
+    withdrawalDate: "2026-03-05",
+    withdrawalReason: "Registro duplicado",
+    withdrawalBy: "Andrés Mejía",
+    attention: undefined,
+  },
+]
 
 type BreedingAlert = {
   id: number
@@ -5910,7 +6081,7 @@ const initialBreedingAlerts: BreedingAlert[] = [
     sowNumber: "#1304",
     type: "parto",
     title: "Parto atrasado",
-    detail: "FPP (fecha probable de parto): 14/03/2026 · 2 días de atraso",
+    detail: "Fecha probable de parto: 14/03/2026 · 2 días de atraso",
     urgency: 1,
   },
   {
@@ -5942,6 +6113,30 @@ function BreedingSkeletons() {
         </div>
       ))}
     </div>
+  )
+}
+
+function TermInfo({
+  abbreviation,
+  meaning,
+}: {
+  abbreviation: string
+  meaning: string
+}) {
+  const label = `${abbreviation}: ${meaning}`
+  return (
+    <span className="term-info">
+      <span>{abbreviation}</span>
+      <button
+        type="button"
+        className="term-info-button"
+        aria-label={label}
+        data-tooltip={label}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <Icon name="info" size={14} />
+      </button>
+    </span>
   )
 }
 
@@ -6030,6 +6225,7 @@ function BreedingHeader({
   setBellOpen,
   registerOpen,
   setRegisterOpen,
+  registerMenu,
   onResolve,
 }: {
   farmName: string
@@ -6039,8 +6235,13 @@ function BreedingHeader({
   setBellOpen: (value: boolean) => void
   registerOpen: boolean
   setRegisterOpen: (value: boolean) => void
+  registerMenu: ReactNode
   onResolve: (alert: BreedingAlert) => void
 }) {
+  const bellRef = useDismissibleMenu(bellOpen, () => setBellOpen(false))
+  const registerRef = useDismissibleMenu(registerOpen, () =>
+    setRegisterOpen(false),
+  )
   return (
     <header className="page-header breeding-header">
       <div>
@@ -6062,7 +6263,7 @@ function BreedingHeader({
         </p>
       </div>
       <div className="header-actions breeding-actions">
-        <div className="bell-wrap">
+        <div className="bell-wrap" ref={bellRef}>
           <button
             className="icon-button alert-bell"
             aria-label="Alertas del plantel"
@@ -6106,7 +6307,7 @@ function BreedingHeader({
             </div>
           )}
         </div>
-        <div className="register-wrap">
+        <div className="register-wrap" ref={registerRef}>
           <button
             className="button primary"
             onClick={() => {
@@ -6117,6 +6318,7 @@ function BreedingHeader({
             <Icon name="plus" size={18} />
             Registrar
           </button>
+          {registerMenu}
         </div>
       </div>
     </header>
@@ -6175,15 +6377,17 @@ function AttendToday({
 }
 
 function SowMenu({
-  sow,
   onView,
-  onNotice,
+  onHealth,
+  onDiscard,
   onWithdrawal,
+  onDelete,
 }: {
-  sow: Sow
   onView: () => void
-  onNotice: (text: string) => void
+  onHealth: () => void
+  onDiscard: () => void
   onWithdrawal: () => void
+  onDelete: () => void
 }) {
   return (
     <div className="lot-menu sow-menu" role="menu">
@@ -6192,16 +6396,19 @@ function SowMenu({
         Ver ficha
       </button>
       <div className="menu-divider" />
-      <button onClick={() => onNotice(`${sow.number} marcada para descarte`)}>
+      <button onClick={onDiscard}>
         <Icon name="alert" size={16} />
         Marcar para descarte
       </button>
-      {sow.status !== "Bajas" && (
-        <button onClick={onWithdrawal}>
-          <Icon name="logout" size={16} />
-          Registrar baja
-        </button>
-      )}
+      <button onClick={onWithdrawal}>
+        <Icon name="logout" size={16} />
+        Registrar baja
+      </button>
+      <div className="menu-divider" />
+      <button className="danger-menu-item" onClick={onDelete}>
+        <Icon name="trash" size={16} />
+        Eliminar
+      </button>
     </div>
   )
 }
@@ -6213,8 +6420,10 @@ function SowCard({
   onRegister,
   onHealth,
   onView,
-  onNotice,
+  onDiscard,
   onWithdrawal,
+  onDelete,
+  alert,
 }: {
   sow: Sow
   menuOpen: boolean
@@ -6222,90 +6431,86 @@ function SowCard({
   onRegister: () => void
   onHealth: () => void
   onView: () => void
-  onNotice: (text: string) => void
+  onDiscard: () => void
   onWithdrawal: () => void
+  onDelete: () => void
+  alert?: BreedingAlert
 }) {
   const delayed = sow.attention === "overdue"
-  const statusTone =
-    sow.attention === "overdue"
-      ? "critical"
-      : sow.attention === "vaccine"
-        ? "warning"
-        : "neutral"
+  const keyData =
+    sow.stage === "Gestación" ? (
+      <>
+        {sow.daysInStatus} días ·{" "}
+        <TermInfo abbreviation="FPP" meaning="fecha probable de parto" />{" "}
+        <span className={delayed ? "overdue-date" : ""}>
+          {sow.probableFarrowing}
+        </span>
+      </>
+    ) : sow.stage === "Lactancia" ? (
+      <>
+        {sow.daysInStatus} días · {sow.piglets ?? 0} lechones
+      </>
+    ) : sow.stage === "Vacía" ? (
+      <>{sow.daysInStatus} días vacía</>
+    ) : (
+      <>
+        {sow.daysInStatus} días · {sow.weightKg ?? 0} kg
+      </>
+    )
   return (
-    <article className="sow-card">
-      <div className="sow-card-heading">
-        <div>
-          <span className="lot-label">Cerda</span>
-          <h3>{sow.number}</h3>
+    <article
+      className="sow-card compact"
+      role="button"
+      tabIndex={0}
+      onClick={(event) => {
+        if ((event.target as Element).closest("button, .sow-menu")) return
+        onView()
+      }}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault()
+          onView()
+        }
+      }}
+    >
+      <div className="sow-card-row sow-card-primary">
+        <div className="sow-card-identity">
+          <strong>{sow.number}</strong>
+          <span>Banda {sow.band}</span>
         </div>
         <div className="sow-card-menu">
-          <span className={`status ${statusTone}`}>{sow.status}</span>
+          {alert && (
+            <span className={`sow-urgent sow-urgent-${alert.type}`}>
+              {alert.title}
+            </span>
+          )}
           <button
             className="dots-button"
             aria-label={`Opciones de la cerda ${sow.number}`}
+            aria-expanded={menuOpen}
             onClick={onMenu}
           >
             <Icon name="dots" size={20} />
           </button>
           {menuOpen && (
             <SowMenu
-              sow={sow}
               onView={onView}
-              onNotice={onNotice}
+              onHealth={onHealth}
+              onDiscard={onDiscard}
               onWithdrawal={onWithdrawal}
+              onDelete={onDelete}
             />
           )}
         </div>
       </div>
-      <div className="sow-data">
-        <div>
-          <span>
-            {sow.status === "Bajas"
-              ? "Fecha de baja"
-              : sow.status === "Vacía"
-              ? "Días como vacía"
-              : `Días en ${sow.status.toLowerCase()}`}
-          </span>
-          <strong>
-            {sow.status === "Bajas" && sow.withdrawalDate
-              ? formatDate(new Date(`${sow.withdrawalDate}T12:00:00`))
-              : sow.daysInStatus}
-          </strong>
-        </div>
-        {sow.status === "Bajas" && (
-          <div>
-            <span>Motivo de baja</span>
-            <strong>{sow.withdrawalReason}</strong>
-          </div>
-        )}
-        <div>
-          <span>Banda</span>
-          <strong>{sow.band}</strong>
-        </div>
-        {sow.status === "Gestación" && (
-          <div className={delayed ? "overdue-text" : ""}>
-            <span title="Fecha probable de parto" className="term-help">
-              FPP (fecha probable de parto)
-            </span>
-            <strong>{sow.probableFarrowing}</strong>
-          </div>
-        )}
-      </div>
-      {sow.status !== "Bajas" && <div className="sow-actions">
-        <button onClick={onRegister}>
-          <Icon name="plus" size={17} />
+      <div className="sow-card-row sow-card-secondary">
+        <span className="sow-key-data">{keyData}</span>
+        <button className="sow-register-button" onClick={onRegister}>
+          <Icon name="plus" size={15} />
           Registrar evento
         </button>
-        <button onClick={onHealth}>
-          <Icon name="syringe" size={17} />
-          Sanidad
-        </button>
-        <button onClick={onView}>
-          <Icon name="arrow" size={17} />
-          Ver ficha
-        </button>
-      </div>}
+      </div>
     </article>
   )
 }
@@ -6313,9 +6518,11 @@ function SowCard({
 function SowTable({
   sows,
   onView,
+  inactive = false,
 }: {
   sows: Sow[]
   onView: (sow: Sow) => void
+  inactive?: boolean
 }) {
   return (
     <div className="table-wrap">
@@ -6323,12 +6530,25 @@ function SowTable({
         <thead>
           <tr>
             <th>Número</th>
-            <th>Estado</th>
+            {!inactive && <th>Etapa</th>}
             <th>Banda</th>
-            <th>Días en estado</th>
-            <th>FPP (fecha probable de parto)</th>
-            <th>Fecha de baja</th>
-            <th>Motivo de baja</th>
+            {inactive ? (
+              <>
+                <th>Fecha de baja</th>
+                <th>Motivo de baja</th>
+                <th>Registró</th>
+              </>
+            ) : (
+              <>
+                <th>Días en etapa</th>
+                <th>
+                  <TermInfo
+                    abbreviation="FPP"
+                    meaning="fecha probable de parto"
+                  />
+                </th>
+              </>
+            )}
             <th>Acción</th>
           </tr>
         </thead>
@@ -6338,28 +6558,38 @@ function SowTable({
               <td>
                 <strong>{sow.number}</strong>
               </td>
-              <td>
-                <span
-                  className={`status ${
-                    sow.attention === "overdue"
-                      ? "critical"
-                      : sow.attention === "vaccine"
-                        ? "warning"
-                        : "neutral"
-                  }`}
-                >
-                  {sow.status}
-                </span>
-              </td>
+              {!inactive && (
+                <td>
+                  <span
+                    className={`status ${
+                      sow.attention === "overdue"
+                        ? "critical"
+                        : sow.attention === "vaccine"
+                          ? "warning"
+                          : "neutral"
+                    }`}
+                  >
+                    {sow.stage}
+                  </span>
+                </td>
+              )}
               <td>{sow.band}</td>
-              <td>{sow.daysInStatus}</td>
-              <td>{sow.probableFarrowing ?? "No aplica"}</td>
-              <td>
-                {sow.withdrawalDate
-                  ? formatDate(new Date(`${sow.withdrawalDate}T12:00:00`))
-                  : "No aplica"}
-              </td>
-              <td>{sow.withdrawalReason ?? "No aplica"}</td>
+              {inactive ? (
+                <>
+                  <td>
+                    {sow.withdrawalDate
+                      ? formatDate(new Date(`${sow.withdrawalDate}T12:00:00`))
+                      : "No aplica"}
+                  </td>
+                  <td>{sow.withdrawalReason ?? "No aplica"}</td>
+                  <td>{sow.withdrawalBy ?? "No disponible"}</td>
+                </>
+              ) : (
+                <>
+                  <td>{sow.daysInStatus}</td>
+                  <td>{sow.probableFarrowing ?? "No aplica"}</td>
+                </>
+              )}
               <td>
                 <button className="text-button" onClick={() => onView(sow)}>
                   Ver ficha
@@ -6417,7 +6647,7 @@ function SowSearchField({
         <datalist id={listId}>
           {sows.map((sow) => (
             <option key={sow.id} value={sow.number}>
-              {sow.status} · Banda {sow.band}
+              {sow.stage} · Banda {sow.band}
             </option>
           ))}
         </datalist>
@@ -6564,7 +6794,7 @@ function BirthModal({
               className={`field ${submitted && !form.alive ? "has-error" : ""}`}
             >
               <span>
-                <abbr title="Nacidos vivos">NV</abbr> (nacidos vivos){" "}
+                <TermInfo abbreviation="NV" meaning="nacidos vivos" />{" "}
                 <em>* obligatorio</em>
               </span>
               <input
@@ -6587,7 +6817,7 @@ function BirthModal({
             </label>
             <label className="field">
               <span>
-                <abbr title="Nacidos muertos">NAT</abbr> (nacidos muertos)
+                <TermInfo abbreviation="NAT" meaning="nacidos muertos" />
               </span>
               <input
                 inputMode="numeric"
@@ -6603,7 +6833,7 @@ function BirthModal({
             </label>
             <label className="field">
               <span>
-                <abbr title="Momificados">MOM</abbr> (momificados)
+                <TermInfo abbreviation="MOM" meaning="momificados" />
               </span>
               <input
                 inputMode="numeric"
@@ -7331,7 +7561,7 @@ function SowPanel({
                     : "neutral"
               }`}
             >
-              {sow.status}
+              {sow.stage}
             </span>
             <span>
               Banda {sow.band} · {sow.daysInStatus} días
@@ -7339,15 +7569,14 @@ function SowPanel({
           </div>
           <div className="panel-kpis">
             <div>
-              <span title="Partos por hembra al año" className="term-help">
-                PHA (partos por hembra al año)
-              </span>
+              <TermInfo abbreviation="PHA" meaning="partos por hembra al año" />
               <strong>2,35</strong>
             </div>
             <div>
-              <span title="Destetados por hembra al año" className="term-help">
-                DHA (destetados por hembra al año)
-              </span>
+              <TermInfo
+                abbreviation="DHA"
+                meaning="destetados por hembra al año"
+              />
               <strong>25,8</strong>
             </div>
           </div>
@@ -7480,11 +7709,14 @@ function WithdrawalSowDialog({
         </div>
         <p>
           {sow.number} saldrá del plantel activo, pero su ficha y todo el
-          historial permanecerán disponibles en la sección Bajas.
+          historial permanecerán disponibles en el filtro de estado
+          correspondiente.
         </p>
         <div className="form-grid withdrawal-fields">
           <label className={`field ${submitted && !date ? "has-error" : ""}`}>
-            <span>Fecha de baja <em>* obligatorio</em></span>
+            <span>
+              Fecha de baja <em>* obligatorio</em>
+            </span>
             <DatePicker
               value={date}
               max={TODAY_ISO}
@@ -7493,14 +7725,21 @@ function WithdrawalSowDialog({
             />
           </label>
           <label className={`field ${submitted && !reason ? "has-error" : ""}`}>
-            <span>Motivo <em>* obligatorio</em></span>
-            <select value={reason} onChange={(event) => setReason(event.target.value)}>
+            <span>
+              Motivo <em>* obligatorio</em>
+            </span>
+            <select
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+            >
               <option value="">Selecciona</option>
               <option>Descarte productivo</option>
               <option>Problema reproductivo</option>
               <option>Enfermedad</option>
               <option>Mortalidad</option>
               <option>Venta</option>
+              <option>Transferencia</option>
+              <option>Eliminación de registro</option>
               <option>Otro</option>
             </select>
           </label>
@@ -7524,30 +7763,51 @@ function WithdrawalSowDialog({
   )
 }
 
+const withdrawalStatusForReason = (reason: string): SowRecordStatus => {
+  if (reason === "Mortalidad" || reason === "Enfermedad") return "Fallecidas"
+  if (reason === "Descarte productivo" || reason === "Problema reproductivo") {
+    return "Descartadas"
+  }
+  if (reason === "Venta" || reason === "Transferencia") return "Transferidas"
+  return "Eliminadas"
+}
+
 function BreedingPage({
   farmName,
   onNotice,
+  onAlertCountChange,
 }: {
   farmName: string
   onNotice: (text: string) => void
+  onAlertCountChange: (count: number) => void
 }) {
-  const [sows, setSows] = useState(() =>
-    farmName === "Granja La Esperanza"
-      ? initialSows
-      : initialSows
-          .slice(0, farmName === "Granja El Porvenir" ? 12 : 18)
-          .map((sow, index) => ({
-            ...sow,
-            id: sow.id + (farmName === "Granja El Porvenir" ? 200 : 400),
-            number: `#${
-              farmName === "Granja El Porvenir" ? 1501 + index : 1701 + index
-            }`,
-            band: (farmName === "Granja El Porvenir" ? 41 : 45) + (index % 3),
-          })),
-  )
+  const [sows, setSows] = useState(() => {
+    if (farmName === "Granja La Esperanza") {
+      return [...initialSows, ...initialInactiveSows]
+    }
+    const isElPorvenir = farmName === "Granja El Porvenir"
+    const idOffset = isElPorvenir ? 200 : 400
+    const numberStart = isElPorvenir ? 1501 : 1701
+    const bandStart = isElPorvenir ? 41 : 45
+    const activeSows = initialSows
+      .slice(0, isElPorvenir ? 12 : 18)
+      .map((sow, index) => ({
+        ...sow,
+        id: sow.id + idOffset,
+        number: `#${numberStart + index}`,
+        band: bandStart + (index % 3),
+      }))
+    const inactiveSows = initialInactiveSows.map((sow, index) => ({
+      ...sow,
+      id: sow.id + idOffset,
+      number: `#${numberStart - 20 - index}`,
+      band: bandStart + (index % 3),
+    }))
+    return [...activeSows, ...inactiveSows]
+  })
   const [loading, setLoading] = useState(true)
-  const [status, setStatus] = useState<SowStatus>("Gestación")
-  const [statusFilter, setStatusFilter] = useState<SowStatus | "Todos">("Gestación")
+  const [stage, setStage] = useState<SowStage>("Gestación")
+  const [recordStatus, setRecordStatus] = useState<SowRecordStatus>("Activas")
   const [band, setBand] = useState("Todas")
   const [query, setQuery] = useState("")
   const [tableView, setTableView] = useState(false)
@@ -7581,10 +7841,19 @@ function BreedingPage({
     return () => window.clearTimeout(timer)
   }, [])
 
+  const activeAlerts = alerts.filter((alert) =>
+    sows.some(
+      (sow) => sow.number === alert.sowNumber && sow.recordStatus === "Activas",
+    ),
+  )
+  useEffect(() => {
+    onAlertCountChange(activeAlerts.length)
+  }, [activeAlerts.length, onAlertCountChange])
+
   const filtered = sows.filter(
     (sow) =>
-      sow.status === status &&
-      (statusFilter === "Todos" || sow.status === statusFilter) &&
+      sow.recordStatus === recordStatus &&
+      (recordStatus !== "Activas" || sow.stage === stage) &&
       (band === "Todas" || sow.band === Number(band)) &&
       sow.number.includes(query.trim()),
   )
@@ -7601,13 +7870,37 @@ function BreedingPage({
     else openRegister(sow)
     setAlerts(alerts.filter((item) => item.id !== alert.id))
   }
+  const moveSowToStatus = (
+    sow: Sow,
+    nextStatus: SowRecordStatus,
+    reason: string,
+    date = TODAY_ISO,
+  ) => {
+    setSows((current) =>
+      current.map((item) =>
+        item.id === sow.id
+          ? {
+              ...item,
+              recordStatus: nextStatus,
+              withdrawalDate: date,
+              withdrawalReason: reason,
+              withdrawalBy: "Andrés Mejía",
+              attention: undefined,
+            }
+          : item,
+      ),
+    )
+    setAlerts((current) =>
+      current.filter((alert) => alert.sowNumber !== sow.number),
+    )
+  }
   return (
     <>
       <div className="breeding-page">
         <BreedingHeader
           farmName={farmName}
-          sowCount={sows.length}
-          alerts={alerts}
+          sowCount={sows.filter((sow) => sow.recordStatus === "Activas").length}
+          alerts={activeAlerts}
           bellOpen={bellOpen}
           setBellOpen={setBellOpen}
           registerOpen={registerOpen}
@@ -7615,58 +7908,73 @@ function BreedingPage({
             setRegisterSow(null)
             setRegisterOpen(value)
           }}
+          registerMenu={
+            registerOpen ? (
+              <RegisterMenu
+                sow={registerSow}
+                onClose={() => setRegisterOpen(false)}
+                onEvent={(type) => {
+                  if (type === "Parto y lactancia") {
+                    setBirthModal({ sow: registerSow })
+                  } else {
+                    setEventModal({ sow: registerSow, type })
+                  }
+                }}
+                onHealth={() => setHealthModal({ sow: registerSow })}
+                onNotice={onNotice}
+              />
+            ) : null
+          }
           onResolve={resolveAlert}
         />
-        {registerOpen && (
-          <RegisterMenu
-            sow={registerSow}
-            onClose={() => setRegisterOpen(false)}
-            onEvent={(type) => {
-              if (type === "Parto y lactancia") {
-                setBirthModal({ sow: registerSow })
-              } else {
-                setEventModal({ sow: registerSow, type })
-              }
-            }}
-            onHealth={() => setHealthModal({ sow: registerSow })}
-            onNotice={onNotice}
-          />
-        )}
-        <AttendToday alerts={alerts} onAction={resolveAlert} />
+        <AttendToday alerts={activeAlerts} onAction={resolveAlert} />
         <section className="sow-directory">
           <div className="sow-toolbar">
-            <div className="sow-tabs">
-              {sowStatuses.map((item) => (
-                <button
-                  className={status === item ? "active" : ""}
-                  onClick={() => {
-                    setStatus(item)
-                    setStatusFilter(item)
-                  }}
-                  key={item}
-                >
-                  {item}
-                  <span>
-                    {sows.filter((sow) => sow.status === item).length}
-                  </span>
-                </button>
-              ))}
-            </div>
+            {recordStatus === "Activas" ? (
+              <div className="sow-tabs">
+                {sowStages.map((item) => (
+                  <button
+                    className={stage === item ? "active" : ""}
+                    onClick={() => setStage(item)}
+                    key={item}
+                  >
+                    {item}
+                    <span>
+                      {
+                        sows.filter(
+                          (sow) =>
+                            sow.recordStatus === "Activas" &&
+                            sow.stage === item,
+                        ).length
+                      }
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div />
+            )}
             <div className="sow-view-actions">
               <button
                 className="button secondary"
-                onClick={() => onNotice("Descarga del plantel preparada")}
+                onClick={() =>
+                  onNotice(
+                    `Descarga preparada · ${filtered.length} cerdas ${recordStatus.toLowerCase()}`,
+                  )
+                }
               >
                 <Icon name="download" size={17} />
                 Descargar
               </button>
-              <button
-                className="button secondary"
-                onClick={() => setTableView(!tableView)}
-              >
-                <Icon name={tableView ? "grid" : "table"} size={17} />
-                {tableView ? "Ver tarjetas" : "Ver en tabla"}
-              </button>
+              {recordStatus === "Activas" && (
+                <button
+                  className="button secondary"
+                  onClick={() => setTableView(!tableView)}
+                >
+                  <Icon name={tableView ? "grid" : "table"} size={17} />
+                  {tableView ? "Ver tarjetas" : "Ver en tabla"}
+                </button>
+              )}
             </div>
           </div>
           <div className="sow-filters">
@@ -7678,45 +7986,60 @@ function BreedingPage({
                 placeholder="Buscar por número"
               />
             </label>
-            <label className="band-filter">
+            <label className="band-filter sow-status-filter">
               <span>Estado</span>
               <select
-                value={statusFilter}
+                value={recordStatus}
                 onChange={(event) => {
-                  const value = event.target.value as SowStatus | "Todos"
-                  setStatusFilter(value)
-                  if (value !== "Todos") setStatus(value)
+                  setRecordStatus(event.target.value as SowRecordStatus)
+                  setBand("Todas")
                 }}
               >
-                <option>Todos</option>
-                {sowStatuses.map((value) => <option key={value}>{value}</option>)}
+                {sowRecordStatuses.map((item) => (
+                  <option value={item} key={item}>
+                    {item} (
+                    {sows.filter((sow) => sow.recordStatus === item).length})
+                  </option>
+                ))}
               </select>
             </label>
             <label className="band-filter">
               <span>Banda</span>
               <select value={band} onChange={(e) => setBand(e.target.value)}>
                 <option>Todas</option>
-                {[...new Set(sows.map((sow) => sow.band))]
+                {[
+                  ...new Set(
+                    sows
+                      .filter((sow) => sow.recordStatus === recordStatus)
+                      .map((sow) => sow.band),
+                  ),
+                ]
                   .sort((a, b) => a - b)
                   .map((value) => (
                     <option key={value}>{value}</option>
                   ))}
               </select>
             </label>
-            <div className="terms-help">
-              <span title="Partos por hembra al año">
-                PHA (partos por hembra al año)
-              </span>
-              <span title="Destetados por hembra al año">
-                DHA (destetados por hembra al año)
-              </span>
-              <span title="Nacidos vivos">NV (nacidos vivos)</span>
-              <span title="Nacidos muertos">NAT (nacidos muertos)</span>
-              <span title="Momificados">MOM (momificados)</span>
-            </div>
           </div>
+          {recordStatus !== "Activas" && (
+            <div className="inactive-sows-notice">
+              <span>
+                Mostrando cerdas <strong>{recordStatus.toLowerCase()}</strong>
+              </span>
+              <button
+                onClick={() => {
+                  setRecordStatus("Activas")
+                  setBand("Todas")
+                }}
+              >
+                Volver a activas
+              </button>
+            </div>
+          )}
           {loading ? (
             <BreedingSkeletons />
+          ) : recordStatus !== "Activas" ? (
+            <SowTable sows={filtered} onView={setPanelSow} inactive />
           ) : tableView ? (
             <SowTable sows={filtered} onView={setPanelSow} />
           ) : (
@@ -7725,6 +8048,9 @@ function BreedingPage({
                 <SowCard
                   key={sow.id}
                   sow={sow}
+                  alert={activeAlerts.find(
+                    (alert) => alert.sowNumber === sow.number,
+                  )}
                   menuOpen={menuOpen === sow.id}
                   onMenu={() =>
                     setMenuOpen(menuOpen === sow.id ? null : sow.id)
@@ -7738,13 +8064,27 @@ function BreedingPage({
                     setMenuOpen(null)
                     setPanelSow(sow)
                   }}
-                  onNotice={(text) => {
+                  onDiscard={() => {
                     setMenuOpen(null)
-                    onNotice(text)
+                    moveSowToStatus(
+                      sow,
+                      "Pendiente de venta",
+                      "Marcada para descarte",
+                    )
+                    onNotice(`${sow.number} marcada para descarte`)
                   }}
                   onWithdrawal={() => {
                     setMenuOpen(null)
                     setWithdrawingSow(sow)
+                  }}
+                  onDelete={() => {
+                    setMenuOpen(null)
+                    moveSowToStatus(
+                      sow,
+                      "Eliminadas",
+                      "Eliminación manual del registro",
+                    )
+                    onNotice(`${sow.number} eliminada`)
                   }}
                 />
               ))}
@@ -7817,18 +8157,11 @@ function BreedingPage({
           sow={withdrawingSow}
           onClose={() => setWithdrawingSow(null)}
           onConfirm={(withdrawalDate, withdrawalReason) => {
-            setSows(
-              sows.map((sow) =>
-                sow.id === withdrawingSow.id
-                  ? {
-                      ...sow,
-                      status: "Bajas",
-                      withdrawalDate,
-                      withdrawalReason,
-                      attention: undefined,
-                    }
-                  : sow,
-              ),
+            moveSowToStatus(
+              withdrawingSow,
+              withdrawalStatusForReason(withdrawalReason),
+              withdrawalReason,
+              withdrawalDate,
             )
             setWithdrawingSow(null)
             onNotice("Baja registrada")
@@ -9005,6 +9338,7 @@ function ReproducerListCard({
           <button
             className="dots-button"
             aria-label="Opciones del reproductor"
+            aria-expanded={menuOpen}
             onClick={onMenu}
           >
             <Icon name="dots" size={19} />
@@ -12805,21 +13139,25 @@ function CalendarPage({
             </button>
           </div>
           <div className="calendar-filters" aria-label="Filtrar eventos">
-            {(["Todos", "Vacuna", "Parto probable", "Pediluvio", "Documento ICA"] as const).map(
-              (item) => (
-                <button
-                  className={`${filter === item ? "active" : ""} ${
-                    item === "Todos"
-                      ? ""
-                      : `event-${item.toLowerCase().replace(" ", "-")}`
-                  }`}
-                  onClick={() => setFilter(item)}
-                  key={item}
-                >
-                  {item}
-                </button>
-              ),
-            )}
+            {([
+              "Todos",
+              "Vacuna",
+              "Parto probable",
+              "Pediluvio",
+              "Documento ICA",
+            ] as const).map((item) => (
+              <button
+                className={`${filter === item ? "active" : ""} ${
+                  item === "Todos"
+                    ? ""
+                    : `event-${item.toLowerCase().replace(" ", "-")}`
+                }`}
+                onClick={() => setFilter(item)}
+                key={item}
+              >
+                {item}
+              </button>
+            ))}
           </div>
         </div>
         <div className="month-calendar">
@@ -15395,48 +15733,145 @@ const operationalReportGroups: {
     name: "Inventario",
     icon: "box",
     reports: [
-      { id: "food-kardex", name: "Kardex de alimentos", description: "Entradas, salidas y saldo de alimentos por referencia." },
-      { id: "feed-consumption", name: "Registro de consumo", description: "Consumo de alimento por ciclo, lote y período." },
-      { id: "medicine-kardex", name: "Kardex de medicamentos", description: "Movimientos y existencias de productos veterinarios." },
-      { id: "medicine-purchases", name: "Compras de medicamentos", description: "Facturas y entradas de medicamentos a inventario." },
-      { id: "food-purchases", name: "Compras de alimentos", description: "Compras de concentrado y materias primas." },
-      { id: "bpaa-validation", name: "Validación BPAA", description: "Controles de buenas prácticas de alimentación animal." },
+      {
+        id: "food-kardex",
+        name: "Kardex de alimentos",
+        description: "Entradas, salidas y saldo de alimentos por referencia.",
+      },
+      {
+        id: "feed-consumption",
+        name: "Registro de consumo",
+        description: "Consumo de alimento por ciclo, lote y período.",
+      },
+      {
+        id: "medicine-kardex",
+        name: "Kardex de medicamentos",
+        description: "Movimientos y existencias de productos veterinarios.",
+      },
+      {
+        id: "medicine-purchases",
+        name: "Compras de medicamentos",
+        description: "Facturas y entradas de medicamentos a inventario.",
+      },
+      {
+        id: "food-purchases",
+        name: "Compras de alimentos",
+        description: "Compras de concentrado y materias primas.",
+      },
+      {
+        id: "bpaa-validation",
+        name: "Validación BPAA",
+        description: "Controles de buenas prácticas de alimentación animal.",
+      },
     ],
   },
   {
     name: "Sanidad",
     icon: "syringe",
     reports: [
-      { id: "treatments", name: "Registro de tratamientos", description: "Tratamientos veterinarios aplicados y tiempos de retiro." },
-      { id: "morbidity", name: "Registro de morbilidad", description: "Casos clínicos y seguimiento por animal o lote." },
-      { id: "medicated-feed", name: "Alimento medicado", description: "Suministro de alimento medicado y prescripciones." },
-      { id: "vaccination", name: "Registro de vacunación", description: "Vacunas aplicadas, dosis, lotes y responsables." },
-      { id: "mortality", name: "Mortalidades", description: "Mortalidad por fecha, ciclo, causa y responsable." },
-      { id: "bpmv-validation", name: "Validación BPMV", description: "Validaciones de buenas prácticas de medicamentos veterinarios." },
-      { id: "lactation-mortality", name: "Mortalidad en lactancia y adopciones", description: "Pérdidas, adopciones y movimientos de camadas." },
+      {
+        id: "treatments",
+        name: "Registro de tratamientos",
+        description: "Tratamientos veterinarios aplicados y tiempos de retiro.",
+      },
+      {
+        id: "morbidity",
+        name: "Registro de morbilidad",
+        description: "Casos clínicos y seguimiento por animal o lote.",
+      },
+      {
+        id: "medicated-feed",
+        name: "Alimento medicado",
+        description: "Suministro de alimento medicado y prescripciones.",
+      },
+      {
+        id: "vaccination",
+        name: "Registro de vacunación",
+        description: "Vacunas aplicadas, dosis, lotes y responsables.",
+      },
+      {
+        id: "mortality",
+        name: "Mortalidades",
+        description: "Mortalidad por fecha, ciclo, causa y responsable.",
+      },
+      {
+        id: "bpmv-validation",
+        name: "Validación BPMV",
+        description:
+          "Validaciones de buenas prácticas de medicamentos veterinarios.",
+      },
+      {
+        id: "lactation-mortality",
+        name: "Mortalidad en lactancia y adopciones",
+        description: "Pérdidas, adopciones y movimientos de camadas.",
+      },
     ],
   },
   {
     name: "Producción",
     icon: "growth",
     reports: [
-      { id: "animal-identification", name: "Identificación de animales y lotes", description: "Trazabilidad de animales, bandas y lotes productivos." },
-      { id: "body-condition", name: "Condición corporal", description: "Evaluaciones de condición corporal del plantel." },
-      { id: "weights", name: "Pesos", description: "Pesajes y evolución del peso por etapa." },
-      { id: "quarantine", name: "Cuarentena y aclimatación de reemplazos", description: "Seguimiento de reemplazos durante su adaptación." },
-      { id: "mother-productivity", name: "Productividad de la madre", description: "Ciclos, nacidos vivos y destetados por hembra." },
-      { id: "production-lots", name: "Lotes productivos", description: "Historial completo de lotes de Precebo y Levante." },
+      {
+        id: "animal-identification",
+        name: "Identificación de animales y lotes",
+        description: "Trazabilidad de animales, bandas y lotes productivos.",
+      },
+      {
+        id: "body-condition",
+        name: "Condición corporal",
+        description: "Evaluaciones de condición corporal del plantel.",
+      },
+      {
+        id: "weights",
+        name: "Pesos",
+        description: "Pesajes y evolución del peso por etapa.",
+      },
+      {
+        id: "quarantine",
+        name: "Cuarentena y aclimatación de reemplazos",
+        description: "Seguimiento de reemplazos durante su adaptación.",
+      },
+      {
+        id: "mother-productivity",
+        name: "Productividad de la madre",
+        description: "Ciclos, nacidos vivos y destetados por hembra.",
+      },
+      {
+        id: "production-lots",
+        name: "Lotes productivos",
+        description: "Historial completo de lotes de Precebo y Levante.",
+      },
     ],
   },
   {
     name: "Ventas",
     icon: "chart",
     reports: [
-      { id: "sales-finishing", name: "Levante/Engorde", description: "Ventas de animales de levante y finalización." },
-      { id: "sales-discards", name: "Descartes", description: "Ventas y bajas comerciales por descarte." },
-      { id: "sales-piglets", name: "Lechones", description: "Ventas de lechones por cliente y período." },
-      { id: "sales-precebo", name: "Precebo", description: "Ventas de animales al finalizar Precebo." },
-      { id: "sales-breeders", name: "Reproductores descartados", description: "Salida comercial de reproductores descartados." },
+      {
+        id: "sales-finishing",
+        name: "Levante/Engorde",
+        description: "Ventas de animales de levante y finalización.",
+      },
+      {
+        id: "sales-discards",
+        name: "Descartes",
+        description: "Ventas y bajas comerciales por descarte.",
+      },
+      {
+        id: "sales-piglets",
+        name: "Lechones",
+        description: "Ventas de lechones por cliente y período.",
+      },
+      {
+        id: "sales-precebo",
+        name: "Precebo",
+        description: "Ventas de animales al finalizar Precebo.",
+      },
+      {
+        id: "sales-breeders",
+        name: "Reproductores descartados",
+        description: "Salida comercial de reproductores descartados.",
+      },
     ],
   },
 ]
@@ -15469,7 +15904,10 @@ const icaChapters: IcaChapter[] = [
       { id: "1.1", name: "Plan sanitario" },
       { id: "1.2", name: "Enfermedades de control oficial (PPC)" },
       { id: "1.3", name: "Registro de mortalidad" },
-      { id: "1.4", name: "Instructivo de manejo sanitario sobre enfermedades de control oficial" },
+      {
+        id: "1.4",
+        name: "Instructivo de manejo sanitario sobre enfermedades de control oficial",
+      },
       { id: "1.5", name: "Área de enfermería o tratamiento" },
     ],
   },
@@ -15537,14 +15975,26 @@ const icaChapters: IcaChapter[] = [
     number: 6,
     name: "Saneamiento",
     items: [
-      { id: "6.1.1", name: "Registro de limpieza de áreas, equipos y utensilios" },
-      { id: "6.1.2", name: "Protocolo de limpieza de áreas, equipos y utensilios" },
+      {
+        id: "6.1.1",
+        name: "Registro de limpieza de áreas, equipos y utensilios",
+      },
+      {
+        id: "6.1.2",
+        name: "Protocolo de limpieza de áreas, equipos y utensilios",
+      },
       { id: "6.2", name: "Ubicación alejada de contaminación" },
       { id: "6.3", name: "Protección de fuentes hídricas" },
-      { id: "6.4.1", name: "Protocolo de disposición de estiércol y efluentes" },
+      {
+        id: "6.4.1",
+        name: "Protocolo de disposición de estiércol y efluentes",
+      },
       { id: "6.4.2", name: "Disposición de estiércol y efluentes" },
       { id: "6.5", name: "Manejo de residuos sólidos" },
-      { id: "6.6", name: "Almacenamiento de productos, equipos y herramientas" },
+      {
+        id: "6.6",
+        name: "Almacenamiento de productos, equipos y herramientas",
+      },
       { id: "6.7.1", name: "Protocolo de manejo de plagas y roedores" },
       { id: "6.7.2", name: "Registro de control de plagas" },
     ],
@@ -15604,34 +16054,157 @@ const operationalReportRows = (report: OperationalReport) => {
   if (report.id === "vaccination") {
     return {
       columns: [
-        "Fecha", "Ciclo", "Animal/Lote/Banda", "Vacuna", "Retiro (días)",
-        "Estado del retiro", "Vía", "Dosis (ml)", "Cantidad de animales",
-        "Total consumido", "Responsable", "Lote de la vacuna", "Vencimiento",
-        "Registro ICA", "Laboratorio",
+        "Fecha",
+        "Ciclo",
+        "Animal/Lote/Banda",
+        "Vacuna",
+        "Retiro (días)",
+        "Estado del retiro",
+        "Vía",
+        "Dosis (ml)",
+        "Cantidad de animales",
+        "Total consumido",
+        "Responsable",
+        "Lote de la vacuna",
+        "Vencimiento",
+        "Registro ICA",
+        "Laboratorio",
       ],
       rows: [
-        ["14/03/2026", "Plantel reproductivo", "Cerda #1305", "Parvovirus", "0", "No aplica", "Intramuscular", "2", "1", "2 ml", "Andrés Mejía", "PV-24018", "18/11/2026", "ICA 8421-MV", "VetPharma"],
-        ["12/03/2026", "Precebo", "PR-2026-11", "Circovirus", "0", "No aplica", "Intramuscular", "1", "118", "118 ml", "Carlos Ríos", "CV-9032", "30/09/2026", "ICA 6147-MV", "BioPorc"],
-        ["08/03/2026", "Levante", "LV-2026-08", "Mycoplasma", "0", "No aplica", "Intramuscular", "2", "99", "198 ml", "Andrés Mejía", "MY-1188", "15/10/2026", "ICA 7732-MV", "AgroVet"],
+        [
+          "14/03/2026",
+          "Plantel reproductivo",
+          "Cerda #1305",
+          "Parvovirus",
+          "0",
+          "No aplica",
+          "Intramuscular",
+          "2",
+          "1",
+          "2 ml",
+          "Andrés Mejía",
+          "PV-24018",
+          "18/11/2026",
+          "ICA 8421-MV",
+          "VetPharma",
+        ],
+        [
+          "12/03/2026",
+          "Precebo",
+          "PR-2026-11",
+          "Circovirus",
+          "0",
+          "No aplica",
+          "Intramuscular",
+          "1",
+          "118",
+          "118 ml",
+          "Carlos Ríos",
+          "CV-9032",
+          "30/09/2026",
+          "ICA 6147-MV",
+          "BioPorc",
+        ],
+        [
+          "08/03/2026",
+          "Levante",
+          "LV-2026-08",
+          "Mycoplasma",
+          "0",
+          "No aplica",
+          "Intramuscular",
+          "2",
+          "99",
+          "198 ml",
+          "Andrés Mejía",
+          "MY-1188",
+          "15/10/2026",
+          "ICA 7732-MV",
+          "AgroVet",
+        ],
       ],
     }
   }
   if (report.id === "mortality") {
     return {
-      columns: ["Fecha", "Ciclo", "Animal/Lote", "Cantidad", "Sexo", "Causa", "Responsable"],
+      columns: [
+        "Fecha",
+        "Ciclo",
+        "Animal/Lote",
+        "Cantidad",
+        "Sexo",
+        "Causa",
+        "Responsable",
+      ],
       rows: [
-        ["12/03/2026", "Precebo", "PR-2026-11", "1", "Macho", "Aplastamiento", "Carlos Ríos"],
-        ["12/03/2026", "Levante", "LV-2026-08", "1", "Macho", "Enfermedad respiratoria", "Andrés Mejía"],
-        ["08/03/2026", "Precebo", "PC-2025-017", "2", "Hembra", "Bajo consumo", "Andrés Mejía"],
+        [
+          "12/03/2026",
+          "Precebo",
+          "PR-2026-11",
+          "1",
+          "Macho",
+          "Aplastamiento",
+          "Carlos Ríos",
+        ],
+        [
+          "12/03/2026",
+          "Levante",
+          "LV-2026-08",
+          "1",
+          "Macho",
+          "Enfermedad respiratoria",
+          "Andrés Mejía",
+        ],
+        [
+          "08/03/2026",
+          "Precebo",
+          "PC-2025-017",
+          "2",
+          "Hembra",
+          "Bajo consumo",
+          "Andrés Mejía",
+        ],
       ],
     }
   }
   return {
-    columns: ["Fecha", "Ciclo", "Animal/Lote/Banda", "Concepto", "Cantidad", "Responsable", "Estado"],
+    columns: [
+      "Fecha",
+      "Ciclo",
+      "Animal/Lote/Banda",
+      "Concepto",
+      "Cantidad",
+      "Responsable",
+      "Estado",
+    ],
     rows: [
-      ["15/03/2026", "Levante", "LV-2026-08", report.name, "99", "Andrés Mejía", "Al día"],
-      ["12/03/2026", "Precebo", "PR-2026-11", report.name, "118", "Carlos Ríos", "Al día"],
-      ["08/03/2026", "Plantel reproductivo", "Banda 37", report.name, "26", "Andrés Mejía", "Verificado"],
+      [
+        "15/03/2026",
+        "Levante",
+        "LV-2026-08",
+        report.name,
+        "99",
+        "Andrés Mejía",
+        "Al día",
+      ],
+      [
+        "12/03/2026",
+        "Precebo",
+        "PR-2026-11",
+        report.name,
+        "118",
+        "Carlos Ríos",
+        "Al día",
+      ],
+      [
+        "08/03/2026",
+        "Plantel reproductivo",
+        "Banda 37",
+        report.name,
+        "26",
+        "Andrés Mejía",
+        "Verificado",
+      ],
     ],
   }
 }
@@ -15666,11 +16239,22 @@ function OperationalReportDialog({
         <div className="report-modal-period">
           <label>
             <span>Desde</span>
-            <DatePicker value={from} max={to} onChange={setFrom} label="Fecha inicial" />
+            <DatePicker
+              value={from}
+              max={to}
+              onChange={setFrom}
+              label="Fecha inicial"
+            />
           </label>
           <label>
             <span>Hasta</span>
-            <DatePicker value={to} min={from} max={TODAY_ISO} onChange={setTo} label="Fecha final" />
+            <DatePicker
+              value={to}
+              min={from}
+              max={TODAY_ISO}
+              onChange={setTo}
+              label="Fecha final"
+            />
           </label>
           <button
             className="button primary"
@@ -15685,13 +16269,20 @@ function OperationalReportDialog({
         <div className="report-table-toolbar">
           <label className="search-field">
             <Icon name="search" size={18} />
-            <input value={query} onChange={(event) => {
-              setQuery(event.target.value)
-              setPage(1)
-            }} placeholder="Buscar en el reporte" />
+            <input
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value)
+                setPage(1)
+              }}
+              placeholder="Buscar en el reporte"
+            />
           </label>
           <div className="report-toolbar-menu">
-            <button className="button secondary" onClick={() => setColumnsOpen(!columnsOpen)}>
+            <button
+              className="button secondary"
+              onClick={() => setColumnsOpen(!columnsOpen)}
+            >
               <Icon name="table" size={17} /> Columnas
             </button>
             {columnsOpen && (
@@ -15716,24 +16307,37 @@ function OperationalReportDialog({
           </div>
           <label className="report-page-size">
             <span>Filas por página</span>
-            <select value={pageSize} onChange={(event) => {
-              setPageSize(event.target.value)
-              setPage(1)
-            }}>
-              <option>25</option><option>50</option><option>100</option>
+            <select
+              value={pageSize}
+              onChange={(event) => {
+                setPageSize(event.target.value)
+                setPage(1)
+              }}
+            >
+              <option>25</option>
+              <option>50</option>
+              <option>100</option>
             </select>
           </label>
           <div className="report-toolbar-menu">
-            <button className="button secondary" onClick={() => setExportOpen(!exportOpen)}>
+            <button
+              className="button secondary"
+              onClick={() => setExportOpen(!exportOpen)}
+            >
               <Icon name="download" size={17} /> Exportar
             </button>
             {exportOpen && (
               <div className="report-dropdown export-dropdown">
                 {["Excel", "CSV", "PDF"].map((format) => (
-                  <button key={format} onClick={() => {
-                    setExportOpen(false)
-                    onNotice(`Reporte exportado en ${format}`)
-                  }}>{format}</button>
+                  <button
+                    key={format}
+                    onClick={() => {
+                      setExportOpen(false)
+                      onNotice(`Reporte exportado en ${format}`)
+                    }}
+                  >
+                    {format}
+                  </button>
                 ))}
               </div>
             )}
@@ -15741,23 +16345,49 @@ function OperationalReportDialog({
         </div>
         <div className="table-wrap operational-data-table">
           <table>
-            <thead><tr>{data.columns.map((column) => visibleColumns.has(column) && <th key={column}>{column}</th>)}</tr></thead>
+            <thead>
+              <tr>
+                {data.columns.map(
+                  (column) =>
+                    visibleColumns.has(column) && (
+                      <th key={column}>{column}</th>
+                    ),
+                )}
+              </tr>
+            </thead>
             <tbody>
               {filteredRows.map((row, rowIndex) => (
                 <tr key={rowIndex}>
-                  {row.map((value, index) => visibleColumns.has(data.columns[index]) && <td key={`${rowIndex}-${index}`}>{value}</td>)}
+                  {row.map(
+                    (value, index) =>
+                      visibleColumns.has(data.columns[index]) && (
+                        <td key={`${rowIndex}-${index}`}>{value}</td>
+                      ),
+                  )}
                 </tr>
               ))}
             </tbody>
           </table>
-          {!filteredRows.length && <div className="report-no-data">No hay datos con estos filtros</div>}
+          {!filteredRows.length && (
+            <div className="report-no-data">No hay datos con estos filtros</div>
+          )}
         </div>
         <div className="report-pagination">
           <span>{filteredRows.length} registros</span>
           <div>
-            <button disabled={page === 1} onClick={() => setPage(Math.max(1, page - 1))}>Anterior</button>
+            <button
+              disabled={page === 1}
+              onClick={() => setPage(Math.max(1, page - 1))}
+            >
+              Anterior
+            </button>
             <strong>{page} de 3</strong>
-            <button disabled={page === 3} onClick={() => setPage(Math.min(3, page + 1))}>Siguiente</button>
+            <button
+              disabled={page === 3}
+              onClick={() => setPage(Math.min(3, page + 1))}
+            >
+              Siguiente
+            </button>
           </div>
         </div>
       </div>
@@ -15782,15 +16412,33 @@ function IcaAttachmentDialog({
   const [noExpiration, setNoExpiration] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   return (
-    <DialogShell title="Adjuntar documento o foto" onClose={onClose} size="wide">
-      <div className="ica-form-context"><strong>{item.id} · {item.name}</strong></div>
+    <DialogShell
+      title="Adjuntar documento o foto"
+      onClose={onClose}
+      size="wide"
+    >
+      <div className="ica-form-context">
+        <strong>
+          {item.id} · {item.name}
+        </strong>
+      </div>
       <div className="form-content ica-attachment-form">
-        <label className={`field ${submitted && !name.trim() ? "has-error" : ""}`}>
-          <span>Nombre del soporte <em>* obligatorio</em></span>
-          <input value={name} onChange={(event) => setName(event.target.value)} placeholder="Ej. Plan sanitario 2026" />
+        <label
+          className={`field ${submitted && !name.trim() ? "has-error" : ""}`}
+        >
+          <span>
+            Nombre del soporte <em>* obligatorio</em>
+          </span>
+          <input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            placeholder="Ej. Plan sanitario 2026"
+          />
         </label>
         <label
-          className={`ica-file-drop ${submitted && !fileName && !reference.trim() ? "has-error" : ""}`}
+          className={`ica-file-drop ${
+            submitted && !fileName && !reference.trim() ? "has-error" : ""
+          }`}
           onDragOver={(event) => event.preventDefault()}
           onDrop={(event) => {
             event.preventDefault()
@@ -15803,39 +16451,76 @@ function IcaAttachmentDialog({
           <input
             type="file"
             accept=".pdf,.jpg,.jpeg,.png"
-            onChange={(event) => setFileName(event.target.files?.[0]?.name ?? "")}
+            onChange={(event) =>
+              setFileName(event.target.files?.[0]?.name ?? "")
+            }
           />
         </label>
         <label className="field">
           <span>Ruta/referencia</span>
-          <input value={reference} onChange={(event) => setReference(event.target.value)} placeholder="Ej. Archivador sanitario, carpeta 2" />
+          <input
+            value={reference}
+            onChange={(event) => setReference(event.target.value)}
+            placeholder="Ej. Archivador sanitario, carpeta 2"
+          />
         </label>
         <div className="form-grid">
           <label className="field">
             <span>Fecha de expedición (opcional)</span>
-            <DatePicker value={issuedAt} onChange={setIssuedAt} max={TODAY_ISO} label="Fecha de expedición" />
+            <DatePicker
+              value={issuedAt}
+              onChange={setIssuedAt}
+              max={TODAY_ISO}
+              label="Fecha de expedición"
+            />
           </label>
-          <label className={`field ${submitted && !noExpiration && !expiration ? "has-error" : ""}`}>
-            <span>Fecha de vencimiento <em>* obligatorio</em></span>
-            <DatePicker value={expiration} onChange={setExpiration} min={TODAY_ISO} label="Fecha de vencimiento" />
+          <label
+            className={`field ${
+              submitted && !noExpiration && !expiration ? "has-error" : ""
+            }`}
+          >
+            <span>
+              Fecha de vencimiento <em>* obligatorio</em>
+            </span>
+            <DatePicker
+              value={expiration}
+              onChange={setExpiration}
+              min={TODAY_ISO}
+              label="Fecha de vencimiento"
+            />
           </label>
         </div>
         <label className="ica-checkbox">
-          <input type="checkbox" checked={noExpiration} onChange={(event) => setNoExpiration(event.target.checked)} />
+          <input
+            type="checkbox"
+            checked={noExpiration}
+            onChange={(event) => setNoExpiration(event.target.checked)}
+          />
           No vence
         </label>
-        <label className="field"><span>Observaciones</span><textarea placeholder="Información adicional" /></label>
+        <label className="field">
+          <span>Observaciones</span>
+          <textarea placeholder="Información adicional" />
+        </label>
       </div>
       <div className="modal-actions">
-        <button className="button secondary" onClick={onClose}>Cancelar</button>
-        <button className="button primary" onClick={() => {
-          setSubmitted(true)
-          if (
-            name.trim() &&
-            (fileName || reference.trim()) &&
-            (noExpiration || expiration)
-          ) onSave()
-        }}>Guardar documento</button>
+        <button className="button secondary" onClick={onClose}>
+          Cancelar
+        </button>
+        <button
+          className="button primary"
+          onClick={() => {
+            setSubmitted(true)
+            if (
+              name.trim() &&
+              (fileName || reference.trim()) &&
+              (noExpiration || expiration)
+            )
+              onSave()
+          }}
+        >
+          Guardar documento
+        </button>
       </div>
     </DialogShell>
   )
@@ -15854,14 +16539,40 @@ function IcaVerificationDialog({
   const [responsible, setResponsible] = useState(CONNECTED_USER)
   return (
     <DialogShell title="Verificación en campo" onClose={onClose}>
-      <div className="ica-form-context"><strong>{item.id} · {item.name}</strong></div>
+      <div className="ica-form-context">
+        <strong>
+          {item.id} · {item.name}
+        </strong>
+      </div>
       <div className="form-content form-grid">
-        <label className="field"><span>Fecha</span><DatePicker value={date} max={TODAY_ISO} onChange={setDate} label="Fecha de verificación" /></label>
-        <label className="field"><span>Responsable</span><input value={responsible} onChange={(event) => setResponsible(event.target.value)} /></label>
+        <label className="field">
+          <span>Fecha</span>
+          <DatePicker
+            value={date}
+            max={TODAY_ISO}
+            onChange={setDate}
+            label="Fecha de verificación"
+          />
+        </label>
+        <label className="field">
+          <span>Responsable</span>
+          <input
+            value={responsible}
+            onChange={(event) => setResponsible(event.target.value)}
+          />
+        </label>
       </div>
       <div className="modal-actions">
-        <button className="button secondary" onClick={onClose}>Cancelar</button>
-        <button className="button primary" disabled={!date || !responsible.trim()} onClick={onSave}>Guardar verificación</button>
+        <button className="button secondary" onClick={onClose}>
+          Cancelar
+        </button>
+        <button
+          className="button primary"
+          disabled={!date || !responsible.trim()}
+          onClick={onSave}
+        >
+          Guardar verificación
+        </button>
       </div>
     </DialogShell>
   )
@@ -15886,7 +16597,8 @@ function ReportsPage({
   const allReports = [...operationalReports, ...porciReports]
   const [section, setSection] = useState<"reports" | "ica">("reports")
   const [reportQuery, setReportQuery] = useState("")
-  const [selectedReport, setSelectedReport] = useState<OperationalReport | null>(null)
+  const [selectedReport, setSelectedReport] =
+    useState<OperationalReport | null>(null)
   const [ready, setReady] = useState(() => new Set(initialIcaReady))
   const [icaQuery, setIcaQuery] = useState("")
   const [icaFilter, setIcaFilter] = useState<"Todos" | "Pendientes">("Todos")
@@ -15904,14 +16616,20 @@ function ReportsPage({
   const findReport = (id: string) =>
     allReports.find((report) => report.id === id) ?? {
       id,
-      name: id === "porci-pest-control" ? "Registro de control de plagas" : "Reporte operativo",
+      name:
+        id === "porci-pest-control"
+          ? "Registro de control de plagas"
+          : "Reporte operativo",
       description: "Registros generados por la operación de la granja.",
       group: "PorciTablas",
       icon: "table" as IconName,
     }
   const detailFor = (item: IcaItem) => {
     if (expiredIcaItems.has(item.id)) return "Venció el 15/12/2025"
-    if (ready.has(item.id)) return item.id.startsWith("2.") ? "Último registro: 24/07/2026" : "Evidencia actualizada"
+    if (ready.has(item.id))
+      return item.id.startsWith("2.")
+        ? "Último registro: 24/07/2026"
+        : "Evidencia actualizada"
     if (verifyIcaItems.has(item.id)) return "Pendiente de verificación en campo"
     return "No se ha adjuntado evidencia"
   }
@@ -15924,7 +16642,9 @@ function ReportsPage({
   ].map((group) => ({
     ...group,
     reports: group.reports.filter((report) =>
-      `${report.name} ${report.description}`.toLowerCase().includes(reportQuery.toLowerCase()),
+      `${report.name} ${report.description}`
+        .toLowerCase()
+        .includes(reportQuery.toLowerCase()),
     ),
   }))
   return (
@@ -15932,10 +16652,18 @@ function ReportsPage({
       <div className="connected-tool-page operational-reports-page">
         <header className="page-header connected-page-header reports-module-header">
           <div>
-            <div className="breadcrumbs"><span>Inicio</span><Icon name="chevron" size={14} /><span>{farmName}</span><Icon name="chevron" size={14} /><strong>Reportes</strong></div>
+            <div className="breadcrumbs">
+              <span>Inicio</span>
+              <Icon name="chevron" size={14} />
+              <span>{farmName}</span>
+              <Icon name="chevron" size={14} />
+              <strong>Reportes</strong>
+            </div>
             <div className="reports-title-line">
               <h1>Reportes · {farmName}</h1>
-              <span className="status positive">Preparación expediente ICA</span>
+              <span className="status positive">
+                Preparación expediente ICA
+              </span>
             </div>
             <p>Reportes e informes de la granja</p>
           </div>
@@ -15960,10 +16688,14 @@ function ReportsPage({
                     <div>
                       <strong>Documento vencido · numeral 4.2</strong>
                       <p>Actualiza la evidencia de vigencia de productos.</p>
-                      <button onClick={() => {
-                        setAlertsOpen(false)
-                        setSection("ica")
-                      }}>Abrir carpeta ICA</button>
+                      <button
+                        onClick={() => {
+                          setAlertsOpen(false)
+                          setSection("ica")
+                        }}
+                      >
+                        Abrir carpeta ICA
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -15972,110 +16704,290 @@ function ReportsPage({
           </div>
         </header>
         <div className="reports-main-switch" aria-label="Secciones de reportes">
-          <button className={section === "reports" ? "active" : ""} onClick={() => setSection("reports")}>Reportes operativos</button>
-          <button className={section === "ica" ? "active" : ""} onClick={() => setSection("ica")}>Carpeta ICA <span>{pending}</span></button>
+          <button
+            className={section === "reports" ? "active" : ""}
+            onClick={() => setSection("reports")}
+          >
+            Reportes operativos
+          </button>
+          <button
+            className={section === "ica" ? "active" : ""}
+            onClick={() => setSection("ica")}
+          >
+            Carpeta ICA <span>{pending}</span>
+          </button>
         </div>
         {section === "reports" ? (
           <div className="operational-reports-content">
-            <label className="search-field reports-search"><Icon name="search" size={18} /><input value={reportQuery} onChange={(event) => setReportQuery(event.target.value)} placeholder="Buscar reporte" /></label>
+            <label className="search-field reports-search">
+              <Icon name="search" size={18} />
+              <input
+                value={reportQuery}
+                onChange={(event) => setReportQuery(event.target.value)}
+                placeholder="Buscar reporte"
+              />
+            </label>
             <div className="operational-groups">
-              {filteredReportGroups.map((group) => group.reports.length > 0 && (
-                <section className="operational-group" key={group.name}>
-                  <div className="section-heading-accent"><h2>{group.name} <span>· {group.reports.length}</span></h2></div>
-                  <div className="operational-report-list">
-                    {group.reports.map((report) => (
-                      <button key={report.id} onClick={() => setSelectedReport(report)}>
-                        <span className="operational-report-icon"><Icon name={report.icon} size={20} /></span>
-                        <span className="operational-report-copy"><strong>{report.name}</strong><small>{report.description}</small></span>
-                        <span className="status neutral">{report.group}</span>
-                        <Icon name="arrow" size={17} />
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              ))}
+              {filteredReportGroups.map(
+                (group) =>
+                  group.reports.length > 0 && (
+                    <section className="operational-group" key={group.name}>
+                      <div className="section-heading-accent">
+                        <h2>
+                          {group.name} <span>· {group.reports.length}</span>
+                        </h2>
+                      </div>
+                      <div className="operational-report-list">
+                        {group.reports.map((report) => (
+                          <button
+                            key={report.id}
+                            onClick={() => setSelectedReport(report)}
+                          >
+                            <span className="operational-report-icon">
+                              <Icon name={report.icon} size={20} />
+                            </span>
+                            <span className="operational-report-copy">
+                              <strong>{report.name}</strong>
+                              <small>{report.description}</small>
+                            </span>
+                            <span className="status neutral">
+                              {report.group}
+                            </span>
+                            <Icon name="arrow" size={17} />
+                          </button>
+                        ))}
+                      </div>
+                    </section>
+                  ),
+              )}
             </div>
             <section className="ica-package-card">
-              <span><Icon name="document" size={23} /></span>
-              <div><h2>Paquete ICA completo</h2><p>Todos los reportes requeridos en un ZIP</p></div>
-              <button className="button secondary" onClick={() => onNotice("Paquete descargado")}><Icon name="download" size={17} />Exportar todos</button>
+              <span>
+                <Icon name="document" size={23} />
+              </span>
+              <div>
+                <h2>Paquete ICA completo</h2>
+                <p>Todos los reportes requeridos en un ZIP</p>
+              </div>
+              <button
+                className="button secondary"
+                onClick={() => onNotice("Paquete descargado")}
+              >
+                <Icon name="download" size={17} />
+                Exportar todos
+              </button>
             </section>
           </div>
         ) : (
           <div className="ica-folder">
             <section className="ica-progress-card">
               <div className="ica-progress-heading">
-                <div><span>Carpeta ICA</span><strong>{ready.size} de 61 listos · {progress} %</strong></div>
+                <div>
+                  <span>Carpeta ICA</span>
+                  <strong>
+                    {ready.size} de 61 listos · {progress} %
+                  </strong>
+                </div>
                 <span className="status warning">{pending} pendientes</span>
               </div>
-              <div className="ica-progress-track"><span style={{ width: `${progress}%` }} /></div>
+              <div className="ica-progress-track">
+                <span style={{ width: `${progress}%` }} />
+              </div>
               <div className="ica-progress-actions">
-                <div><span>Código del expediente</span><strong>76509-2026-08-25</strong></div>
-                <div className="ica-date-range-wrap">
-                  <button className="icon-button" aria-label="Rango de fechas del expediente" onClick={() => setDateRangeOpen(!dateRangeOpen)}><Icon name="calendar" size={19} /></button>
-                  {dateRangeOpen && <div className="ica-date-range-popover">
-                    <label><span>Desde</span><DatePicker value={folderFrom} max={folderTo} onChange={setFolderFrom} label="Desde" /></label>
-                    <label><span>Hasta</span><DatePicker value={folderTo} min={folderFrom} max={TODAY_ISO} onChange={setFolderTo} label="Hasta" /></label>
-                  </div>}
+                <div>
+                  <span>Código del expediente</span>
+                  <strong>76509-2026-08-25</strong>
                 </div>
-                <button className="button primary" onClick={() => onNotice("Expediente ICA descargado")}><Icon name="download" size={17} />Descargar expediente</button>
+                <div className="ica-date-range-wrap">
+                  <button
+                    className="icon-button"
+                    aria-label="Rango de fechas del expediente"
+                    onClick={() => setDateRangeOpen(!dateRangeOpen)}
+                  >
+                    <Icon name="calendar" size={19} />
+                  </button>
+                  {dateRangeOpen && (
+                    <div className="ica-date-range-popover">
+                      <label>
+                        <span>Desde</span>
+                        <DatePicker
+                          value={folderFrom}
+                          max={folderTo}
+                          onChange={setFolderFrom}
+                          label="Desde"
+                        />
+                      </label>
+                      <label>
+                        <span>Hasta</span>
+                        <DatePicker
+                          value={folderTo}
+                          min={folderFrom}
+                          max={TODAY_ISO}
+                          onChange={setFolderTo}
+                          label="Hasta"
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+                <button
+                  className="button primary"
+                  onClick={() => onNotice("Expediente ICA descargado")}
+                >
+                  <Icon name="download" size={17} />
+                  Descargar expediente
+                </button>
               </div>
             </section>
             <div className="ica-filters">
-              <label className="search-field"><Icon name="search" size={18} /><input value={icaQuery} onChange={(event) => setIcaQuery(event.target.value)} placeholder="Buscar numeral, evidencia o criterio" /></label>
+              <label className="search-field">
+                <Icon name="search" size={18} />
+                <input
+                  value={icaQuery}
+                  onChange={(event) => setIcaQuery(event.target.value)}
+                  placeholder="Buscar numeral, evidencia o criterio"
+                />
+              </label>
               <div className="reports-main-switch compact">
-                {(["Todos", "Pendientes"] as const).map((filter) => <button key={filter} className={icaFilter === filter ? "active" : ""} onClick={() => setIcaFilter(filter)}>{filter}</button>)}
+                {(["Todos", "Pendientes"] as const).map((filter) => (
+                  <button
+                    key={filter}
+                    className={icaFilter === filter ? "active" : ""}
+                    onClick={() => setIcaFilter(filter)}
+                  >
+                    {filter}
+                  </button>
+                ))}
               </div>
             </div>
             <div className="ica-chapters">
               {icaChapters.map((chapter) => {
-                const chapterReady = chapter.items.filter((item) => ready.has(item.id)).length
+                const chapterReady = chapter.items.filter((item) =>
+                  ready.has(item.id),
+                ).length
                 const chapterDone = chapterReady === chapter.items.length
-                const visibleItems = chapter.items.filter((item) =>
-                  `${item.id} ${item.name} ${detailFor(item)}`.toLowerCase().includes(icaQuery.toLowerCase()) &&
-                  (icaFilter === "Todos" || !ready.has(item.id)),
+                const visibleItems = chapter.items.filter(
+                  (item) =>
+                    `${item.id} ${item.name} ${detailFor(item)}`
+                      .toLowerCase()
+                      .includes(icaQuery.toLowerCase()) &&
+                    (icaFilter === "Todos" || !ready.has(item.id)),
                 )
-                if (!visibleItems.length && (icaQuery || icaFilter === "Pendientes")) return null
-                const open = openChapters.has(chapter.number) || Boolean(icaQuery)
+                if (
+                  !visibleItems.length &&
+                  (icaQuery || icaFilter === "Pendientes")
+                )
+                  return null
+                const open =
+                  openChapters.has(chapter.number) || Boolean(icaQuery)
                 return (
                   <section className="ica-chapter" key={chapter.number}>
-                    <button className="ica-chapter-heading" onClick={() => {
-                      const next = new Set(openChapters)
-                      if (next.has(chapter.number)) next.delete(chapter.number)
-                      else next.add(chapter.number)
-                      setOpenChapters(next)
-                    }}>
-                      <span className="ica-chapter-number">{chapter.number}</span>
-                      <span><strong>{chapter.name}</strong><small>{chapterReady} de {chapter.items.length} listos</small></span>
-                      <span className={`status ${chapterDone ? "positive" : "warning"}`}>{chapterDone ? "Al día" : "Pendiente"}</span>
+                    <button
+                      className="ica-chapter-heading"
+                      onClick={() => {
+                        const next = new Set(openChapters)
+                        if (next.has(chapter.number))
+                          next.delete(chapter.number)
+                        else next.add(chapter.number)
+                        setOpenChapters(next)
+                      }}
+                    >
+                      <span className="ica-chapter-number">
+                        {chapter.number}
+                      </span>
+                      <span>
+                        <strong>{chapter.name}</strong>
+                        <small>
+                          {chapterReady} de {chapter.items.length} listos
+                        </small>
+                      </span>
+                      <span
+                        className={`status ${
+                          chapterDone ? "positive" : "warning"
+                        }`}
+                      >
+                        {chapterDone ? "Al día" : "Pendiente"}
+                      </span>
                       <Icon name="chevron" size={18} />
                     </button>
-                    {open && <div className="ica-items">
-                      {visibleItems.map((item) => {
-                        const isReady = ready.has(item.id)
-                        const isExpired = expiredIcaItems.has(item.id) && !isReady
-                        const action = openIcaReports[item.id] ? "Abrir" : verifyIcaItems.has(item.id) ? "Verificar" : "Adjuntar"
-                        return (
-                          <div className="ica-item" key={item.id}>
-                            <strong className="ica-item-number">{item.id}</strong>
-                            <div className="ica-item-copy"><strong>{item.name}</strong><small>{detailFor(item)}</small></div>
-                            <button className="ica-info-button" aria-label={`Criterios de ${item.id}`} onClick={() => setCriteria(item)}><Icon name="info" size={17} /></button>
-                            <span className={`status ${isReady ? "positive" : isExpired ? "critical" : "warning"}`}>{isReady ? "Al día" : isExpired ? "Vencido" : "Pendiente"}</span>
-                            {(verifyIcaItems.has(item.id) || item.id === "3.2") && <label className="physical-check"><input type="checkbox" checked={physical.has(item.id)} onChange={() => {
-                              const next = new Set(physical)
-                              if (next.has(item.id)) next.delete(item.id)
-                              else next.add(item.id)
-                              setPhysical(next)
-                            }} />Físico en granja</label>}
-                            <button className="button secondary ica-row-action" onClick={() => {
-                              if (action === "Abrir") setSelectedReport(findReport(openIcaReports[item.id]))
-                              else if (action === "Verificar") setVerification(item)
-                              else setAttachment(item)
-                            }}>{action}</button>
-                          </div>
-                        )
-                      })}
-                    </div>}
+                    {open && (
+                      <div className="ica-items">
+                        {visibleItems.map((item) => {
+                          const isReady = ready.has(item.id)
+                          const isExpired =
+                            expiredIcaItems.has(item.id) && !isReady
+                          const action = openIcaReports[item.id]
+                            ? "Abrir"
+                            : verifyIcaItems.has(item.id)
+                              ? "Verificar"
+                              : "Adjuntar"
+                          return (
+                            <div className="ica-item" key={item.id}>
+                              <strong className="ica-item-number">
+                                {item.id}
+                              </strong>
+                              <div className="ica-item-copy">
+                                <strong>{item.name}</strong>
+                                <small>{detailFor(item)}</small>
+                              </div>
+                              <button
+                                className="ica-info-button"
+                                aria-label={`Criterios de ${item.id}`}
+                                onClick={() => setCriteria(item)}
+                              >
+                                <Icon name="info" size={17} />
+                              </button>
+                              <span
+                                className={`status ${
+                                  isReady
+                                    ? "positive"
+                                    : isExpired
+                                      ? "critical"
+                                      : "warning"
+                                }`}
+                              >
+                                {isReady
+                                  ? "Al día"
+                                  : isExpired
+                                    ? "Vencido"
+                                    : "Pendiente"}
+                              </span>
+                              {(verifyIcaItems.has(item.id) ||
+                                item.id === "3.2") && (
+                                <label className="physical-check">
+                                  <input
+                                    type="checkbox"
+                                    checked={physical.has(item.id)}
+                                    onChange={() => {
+                                      const next = new Set(physical)
+                                      if (next.has(item.id))
+                                        next.delete(item.id)
+                                      else next.add(item.id)
+                                      setPhysical(next)
+                                    }}
+                                  />
+                                  Físico en granja
+                                </label>
+                              )}
+                              <button
+                                className="button secondary ica-row-action"
+                                onClick={() => {
+                                  if (action === "Abrir")
+                                    setSelectedReport(
+                                      findReport(openIcaReports[item.id]),
+                                    )
+                                  else if (action === "Verificar")
+                                    setVerification(item)
+                                  else setAttachment(item)
+                                }}
+                              >
+                                {action}
+                              </button>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
                   </section>
                 )
               })}
@@ -16083,29 +16995,85 @@ function ReportsPage({
           </div>
         )}
       </div>
-      {selectedReport && <OperationalReportDialog report={selectedReport} onClose={() => setSelectedReport(null)} onNotice={onNotice} />}
-      {attachment && <IcaAttachmentDialog item={attachment} onClose={() => setAttachment(null)} onSave={() => {
-        setReady((current) => new Set(current).add(attachment.id))
-        setAttachment(null)
-        onNotice("Documento guardado")
-      }} />}
-      {verification && <IcaVerificationDialog item={verification} onClose={() => setVerification(null)} onSave={() => {
-        setReady((current) => new Set(current).add(verification.id))
-        setVerification(null)
-        onNotice("Verificación guardada")
-      }} />}
-      {criteria && <div className="side-panel-backdrop" onMouseDown={(event) => event.target === event.currentTarget && setCriteria(null)}>
-        <aside className="sow-panel criteria-panel">
-          <div className="panel-heading"><div><span>Criterios de cumplimiento</span><h2>{criteria.id}</h2></div><button className="icon-button" onClick={() => setCriteria(null)}><Icon name="x" size={20} /></button></div>
-          <div className="panel-body"><h3>{criteria.name}</h3><p>La evidencia debe estar vigente, identificar claramente la granja y permitir verificar el cumplimiento del numeral.</p><ul><li>Documento legible y completo.</li><li>Fecha y responsable identificados.</li><li>Disponible para consulta durante la visita ICA.</li></ul></div>
-        </aside>
-      </div>}
+      {selectedReport && (
+        <OperationalReportDialog
+          report={selectedReport}
+          onClose={() => setSelectedReport(null)}
+          onNotice={onNotice}
+        />
+      )}
+      {attachment && (
+        <IcaAttachmentDialog
+          item={attachment}
+          onClose={() => setAttachment(null)}
+          onSave={() => {
+            setReady((current) => new Set(current).add(attachment.id))
+            setAttachment(null)
+            onNotice("Documento guardado")
+          }}
+        />
+      )}
+      {verification && (
+        <IcaVerificationDialog
+          item={verification}
+          onClose={() => setVerification(null)}
+          onSave={() => {
+            setReady((current) => new Set(current).add(verification.id))
+            setVerification(null)
+            onNotice("Verificación guardada")
+          }}
+        />
+      )}
+      {criteria && (
+        <div
+          className="side-panel-backdrop"
+          onMouseDown={(event) =>
+            event.target === event.currentTarget && setCriteria(null)
+          }
+        >
+          <aside className="sow-panel criteria-panel">
+            <div className="panel-heading">
+              <div>
+                <span>Criterios de cumplimiento</span>
+                <h2>{criteria.id}</h2>
+              </div>
+              <button className="icon-button" onClick={() => setCriteria(null)}>
+                <Icon name="x" size={20} />
+              </button>
+            </div>
+            <div className="panel-body">
+              <h3>{criteria.name}</h3>
+              <p>
+                La evidencia debe estar vigente, identificar claramente la
+                granja y permitir verificar el cumplimiento del numeral.
+              </p>
+              <ul>
+                <li>Documento legible y completo.</li>
+                <li>Fecha y responsable identificados.</li>
+                <li>Disponible para consulta durante la visita ICA.</li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+      )}
     </>
   )
 }
 
 export default function App() {
   const [farms, setFarms] = useState(initialFarms)
+  const [farmQuery, setFarmQuery] = useState("")
+  const [favoriteFarmIds, setFavoriteFarmIds] = useState<number[]>(() => {
+    try {
+      const stored = window.localStorage.getItem("porcitrack-favorite-farms")
+      const parsed: unknown = stored ? JSON.parse(stored) : []
+      return Array.isArray(parsed)
+        ? parsed.filter((id): id is number => typeof id === "number")
+        : []
+    } catch {
+      return []
+    }
+  })
   const [lots, setLots] = useState(initialLots)
   const [porciTables, setPorciTables] = useState(initialPorciTables)
   const [loading, setLoading] = useState(true)
@@ -16117,6 +17085,9 @@ export default function App() {
   const [editing, setEditing] = useState<Farm | null>(null)
   const [deleting, setDeleting] = useState<Farm | null>(null)
   const [toast, setToast] = useState("")
+  const [breedingAlertCount, setBreedingAlertCount] = useState(
+    initialBreedingAlerts.length,
+  )
   const [inventoryAttentionByFarm, setInventoryAttentionByFarm] =
     useState<Record<number, InventoryAttention[]>>({
       1: initialInventoryAttention,
@@ -16168,6 +17139,12 @@ export default function App() {
     const timer = window.setTimeout(() => setToast(""), 3000)
     return () => window.clearTimeout(timer)
   }, [toast])
+  useEffect(() => {
+    window.localStorage.setItem(
+      "porcitrack-favorite-farms",
+      JSON.stringify(favoriteFarmIds),
+    )
+  }, [favoriteFarmIds])
 
   const totalAnimals = useMemo(
     () =>
@@ -16180,12 +17157,33 @@ export default function App() {
   const totalLots = farms.reduce((sum, farm) => sum + farm.lots, 0)
   const mostUrgentAlert =
     farms.find((farm) => farm.alerts > 0)?.urgent ?? "Todo está al día"
+  const visibleFarms = useMemo(() => {
+    const normalizedQuery = farmQuery
+      .trim()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLocaleLowerCase("es")
+
+    return farms
+      .filter((farm) =>
+        farm.name
+          .normalize("NFD")
+          .replace(/\p{Diacritic}/gu, "")
+          .toLocaleLowerCase("es")
+          .includes(normalizedQuery),
+      )
+      .sort(
+        (a, b) =>
+          Number(favoriteFarmIds.includes(b.id)) -
+          Number(favoriteFarmIds.includes(a.id)),
+      )
+  }, [farmQuery, farms, favoriteFarmIds])
   const consolidatedMortality = averageReportValue(
     Object.values(reportDataByFarm).map((data) => data.mortalityRate),
   )
   const alertCounts: Record<string, number> = {
     "Plantel reproductivo": selectedFarm.cycles.includes("Plantel reproductivo")
-      ? initialBreedingAlerts.length
+      ? breedingAlertCount
       : 0,
     Inventario: (inventoryAttentionByFarm[selectedFarm.id] ?? []).length,
     PorciTabla:
@@ -16377,10 +17375,14 @@ export default function App() {
         return current
       }
       const purchasedFemales = currentSource.purchaseRecords
-        .filter((record) => record.purchaseType === "Animales" && !record.annulled)
+        .filter(
+          (record) => record.purchaseType === "Animales" && !record.annulled,
+        )
         .reduce((sum, record) => sum + record.females, 0)
       const purchasedMales = currentSource.purchaseRecords
-        .filter((record) => record.purchaseType === "Animales" && !record.annulled)
+        .filter(
+          (record) => record.purchaseType === "Animales" && !record.annulled,
+        )
         .reduce((sum, record) => sum + record.males, 0)
       const soldFemales = currentSource.saleRecords
         .filter((record) => !record.annulled)
@@ -16405,9 +17407,8 @@ export default function App() {
       const baseCode = currentSource.code
         .replace(/^PC-/i, "LV-")
         .replace(/^PR-/i, "LV-")
-      let destinationCode = baseCode === currentSource.code
-        ? `${currentSource.code}-LV`
-        : baseCode
+      let destinationCode =
+        baseCode === currentSource.code ? `${currentSource.code}-LV` : baseCode
       let suffix = 2
       while (
         current.some(
@@ -16528,13 +17529,13 @@ export default function App() {
                   ? "Tableros"
                   : page === "reports"
                     ? "Reportes"
-                  : page === "calendar"
-                    ? "Calendario"
-                    : page === "history"
-                      ? "Historial"
-                      : page === "settings"
-                        ? "Configuración"
-                        : activeCycle
+                    : page === "calendar"
+                      ? "Calendario"
+                      : page === "history"
+                        ? "Historial"
+                        : page === "settings"
+                          ? "Configuración"
+                          : activeCycle
   const goBack = () => {
     if (page === "lot") {
       setSelectedLot(null)
@@ -16594,6 +17595,7 @@ export default function App() {
             page={page}
             cycle={activeCycle}
             farmName={selectedFarm.name}
+            farmQuery={farmQuery}
             onAdd={() => {
               setEditing(null)
               setModal("add")
@@ -16605,6 +17607,7 @@ export default function App() {
               window.scrollTo({ top: 0, behavior: "smooth" })
             }}
             onCreateLot={() => setLotModal(true)}
+            onFarmQueryChange={setFarmQuery}
             onVoice={() => setVoiceOpen(true)}
           />
         )}
@@ -16642,13 +17645,21 @@ export default function App() {
             )}
             {loading ? (
               <Skeletons />
-            ) : farms.length ? (
+            ) : farms.length && visibleFarms.length ? (
               <div className="farm-grid">
-                {farms.map((farm) => (
+                {visibleFarms.map((farm) => (
                   <FarmCard
                     key={farm.id}
                     farm={farm}
+                    favorite={favoriteFarmIds.includes(farm.id)}
                     onEdit={() => openEdit(farm)}
+                    onFavorite={() =>
+                      setFavoriteFarmIds((current) =>
+                        current.includes(farm.id)
+                          ? current.filter((id) => id !== farm.id)
+                          : [...current, farm.id],
+                      )
+                    }
                     onSummary={() => changeFarm(farm)}
                     onCycle={(cycle) => openCycle(farm, cycle)}
                     onTool={(tool) => openTool(farm, tool)}
@@ -16667,6 +17678,20 @@ export default function App() {
                     }}
                   />
                 ))}
+              </div>
+            ) : farms.length ? (
+              <div className="farm-search-empty" role="status">
+                <span>
+                  <Icon name="search" size={24} />
+                </span>
+                <h2>No encontramos granjas</h2>
+                <p>Prueba con otro nombre o limpia la búsqueda.</p>
+                <button
+                  className="button secondary"
+                  onClick={() => setFarmQuery("")}
+                >
+                  Limpiar búsqueda
+                </button>
               </div>
             ) : (
               <EmptyState onAdd={() => setModal("add")} />
@@ -16704,7 +17729,7 @@ export default function App() {
             key={selectedFarm.id}
             farmName={selectedFarm.name}
             onNotice={setToast}
-            onMigrate={migrateLotToLevante}
+            onAlertCountChange={setBreedingAlertCount}
           />
         ) : page === "reproducer" ? (
           <ReproducerPage
