@@ -14,7 +14,7 @@ import {
 import { createPortal } from "react-dom"
 import porcitrackLogo from "./assets/porcitrack-logo.svg"
 
-type IconName = "home" | "sow" | "boar" | "piglet" | "pigFace" | "growth" | "crown" | "sprout" | "box" | "table" | "chart" | "calendar" | "settings" | "mic" | "plus" | "edit" | "pin" | "alert" | "pig" | "trend" | "chevron" | "logout" | "menu" | "x" | "check" | "trash" | "arrow" | "dots" | "list" | "grid" | "weight" | "clock" | "info" | "syringe" | "bell" | "download" | "search" | "heart" | "baby" | "droplet" | "filter" | "sort" | "star" | "building" | "clipboard" | "document" | "userPlus" | "profile" | "layout" | "move" | "type" | "palette" | "image" | "upload" | "play" | "minus" | "undo" | "panel" | "flame" | "transfer" | "gauge"
+type IconName = "home" | "sow" | "boar" | "piglet" | "pigFace" | "growth" | "crown" | "sprout" | "box" | "table" | "chart" | "calendar" | "settings" | "mic" | "plus" | "edit" | "pin" | "alert" | "pig" | "trend" | "chevron" | "logout" | "menu" | "x" | "check" | "trash" | "arrow" | "dots" | "list" | "grid" | "weight" | "clock" | "info" | "syringe" | "bell" | "download" | "search" | "heart" | "baby" | "droplet" | "filter" | "sort" | "star" | "building" | "clipboard" | "document" | "userPlus" | "profile" | "layout" | "move" | "type" | "palette" | "image" | "upload" | "play" | "minus" | "undo" | "panel" | "flame" | "transfer" | "gauge" | "chatSmile" | "camera" | "send"
 
 function Icon({
   name,
@@ -338,6 +338,24 @@ function Icon({
       <>
         <path d="M4 16a8 8 0 1 1 16 0" />
         <path d="m12 16 4-5M4 20h16" />
+      </>
+    ),
+    chatSmile: (
+      <>
+        <path d="M20 15a4 4 0 0 1-4 4H9l-5 3v-7a4 4 0 0 1-1-2.6V7a4 4 0 0 1 4-4h9a4 4 0 0 1 4 4Z" />
+        <path d="M8.5 9h.01M15.5 9h.01M8.5 13c1.8 1.4 5.2 1.4 7 0" />
+      </>
+    ),
+    camera: (
+      <>
+        <path d="M4 7h3l1.5-2h7L17 7h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" />
+        <circle cx="12" cy="13" r="4" />
+      </>
+    ),
+    send: (
+      <>
+        <path d="m22 2-7 20-4-9-9-4Z" />
+        <path d="M22 2 11 13" />
       </>
     ),
   }
@@ -6686,6 +6704,7 @@ type RegisterOption = {
   label: string
   icon: IconName
   event?: BreedingEventType
+  operational?: "Camada" | "Destete"
   health?: boolean
 }
 
@@ -6699,9 +6718,9 @@ const registerOptionCatalog: Record<string, RegisterOption> = {
   Camada: {
     label: "Camada",
     icon: "baby",
-    event: "Parto y lactancia",
+    operational: "Camada",
   },
-  Destetar: { label: "Destetar", icon: "piglet", event: "Destete" },
+  Destetar: { label: "Destetar", icon: "piglet", operational: "Destete" },
   Parto: {
     label: "Parto",
     icon: "baby",
@@ -6736,12 +6755,14 @@ function RegisterMenu({
   sow,
   onClose,
   onEvent,
+  onOperational,
   onHealth,
   onNotice,
 }: {
   sow: Sow | null
   onClose: () => void
   onEvent: (event: BreedingEventType) => void
+  onOperational: (type: "Camada" | "Destete") => void
   onHealth: () => void
   onNotice: (text: string) => void
 }) {
@@ -6759,6 +6780,7 @@ function RegisterMenu({
       key={option.label}
       onClick={() => {
         if (option.health) onHealth()
+        else if (option.operational) onOperational(option.operational)
         else if (option.event) onEvent(option.event)
         else onNotice(`${option.label}${sow ? ` · ${sow.number}` : ""}`)
         onClose()
@@ -6896,6 +6918,8 @@ function SowCard({
   menuOpen,
   onMenu,
   onRegister,
+  onLitter,
+  onWean,
   onHealth,
   onView,
   onDiscard,
@@ -6909,6 +6933,8 @@ function SowCard({
   menuOpen: boolean
   onMenu: () => void
   onRegister: () => void
+  onLitter: () => void
+  onWean: () => void
   onHealth: () => void
   onView: () => void
   onDiscard: () => void
@@ -7033,12 +7059,34 @@ function SowCard({
           {stageFooter[sow.stage]} ·{" "}
           {countLabel(sow.daysInStatus, "DÍA", "DÍAS")}
         </strong>
-        <div className="sow-card-register-wrap">
-          <button className="sow-register-button" onClick={onRegister}>
-            <Icon name="plus" size={15} />
-            Registrar evento
-          </button>
-          {registerMenu}
+        <div className="sow-card-footer-actions">
+          {sow.stage === "Lactancia" && (
+            <>
+              <button
+                className="sow-quick-action"
+                title="Camada"
+                aria-label="Camada"
+                onClick={onLitter}
+              >
+                <Icon name="baby" size={18} />
+              </button>
+              <button
+                className="sow-quick-action"
+                title="Migrar y cerrar parto"
+                aria-label="Migrar y cerrar parto"
+                onClick={onWean}
+              >
+                <Icon name="transfer" size={18} />
+              </button>
+            </>
+          )}
+          <div className="sow-card-register-wrap">
+            <button className="sow-register-button" onClick={onRegister}>
+              <Icon name="plus" size={15} />
+              Registrar evento
+            </button>
+            {registerMenu}
+          </div>
         </div>
       </div>
     </article>
@@ -7821,28 +7869,90 @@ type MainRegisterItem = {
   label: string
   icon: IconName
   group: "CERDA" | "CAMADA"
-  description?: string
+  description: string
+  registrationType?: string
 }
 
 const mainRegisterItems: MainRegisterItem[] = [
-  { label: "Nueva cerda", icon: "plus", group: "CERDA" },
-  { label: "Servicio", icon: "heart", group: "CERDA" },
-  { label: "Celo", icon: "flame", group: "CERDA" },
-  { label: "Parto", icon: "baby", group: "CERDA" },
-  { label: "Novedad", icon: "clipboard", group: "CERDA" },
-  { label: "Vacunación", icon: "syringe", group: "CERDA" },
-  { label: "Peso", icon: "weight", group: "CERDA" },
-  { label: "Condición corporal", icon: "gauge", group: "CERDA" },
-  { label: "Consumo", icon: "droplet", group: "CERDA" },
+  {
+    label: "Nueva cerda",
+    icon: "userPlus",
+    group: "CERDA",
+    description: "Ingreso al plantel",
+  },
+  {
+    label: "Servicio",
+    icon: "heart",
+    group: "CERDA",
+    description: "Inseminación o monta",
+  },
+  {
+    label: "Celo",
+    icon: "flame",
+    group: "CERDA",
+    description: "Observación de celo",
+  },
+  {
+    label: "Parto",
+    icon: "baby",
+    group: "CERDA",
+    description: "Registrar nacimiento",
+  },
+  {
+    label: "Novedad",
+    icon: "bell",
+    group: "CERDA",
+    description: "Observación operativa",
+  },
+  {
+    label: "Vacunación",
+    icon: "syringe",
+    group: "CERDA",
+    description: "Vacuna o tratamiento",
+  },
+  {
+    label: "Peso",
+    icon: "weight",
+    group: "CERDA",
+    description: "Peso de la cerda",
+  },
+  {
+    label: "CC",
+    icon: "gauge",
+    group: "CERDA",
+    description: "Condición Corporal",
+    registrationType: "Condición corporal",
+  },
+  {
+    label: "Consumo",
+    icon: "droplet",
+    group: "CERDA",
+    description: "Consumo",
+  },
   {
     label: "Gestión de cerda",
     icon: "transfer",
     group: "CERDA",
     description: "Transferencia, descarte o baja",
   },
-  { label: "Camada", icon: "piglet", group: "CAMADA" },
-  { label: "Destete", icon: "piglet", group: "CAMADA" },
-  { label: "Vacunación camada", icon: "syringe", group: "CAMADA" },
+  {
+    label: "Camada",
+    icon: "piglet",
+    group: "CAMADA",
+    description: "Gestión de la camada",
+  },
+  {
+    label: "Destete",
+    icon: "transfer",
+    group: "CAMADA",
+    description: "Cierre de lactancia",
+  },
+  {
+    label: "Vacunación camada",
+    icon: "syringe",
+    group: "CAMADA",
+    description: "Vacuna o tratamiento",
+  },
 ]
 
 function MainRegisterPanel({
@@ -7857,37 +7967,36 @@ function MainRegisterPanel({
   const filteredItems = mainRegisterItems.filter(
     (item) =>
       !normalizedQuery ||
-      `${item.label} ${item.description ?? ""}`
+      `${item.label} ${item.description} ${item.registrationType ?? ""}`
         .toLocaleLowerCase("es")
         .includes(normalizedQuery),
   )
   return (
     <div
-      className="side-panel-backdrop"
+      className="side-panel-backdrop main-register-backdrop"
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
       <aside
         className="sow-panel main-register-panel"
         role="dialog"
         aria-modal="true"
+        aria-label="Registrar"
       >
-        <div className="panel-heading">
-          <div>
-            <span>Acción rápida</span>
-            <h2>Registrar</h2>
-          </div>
-          <button className="icon-button" aria-label="Cerrar" onClick={onClose}>
-            <Icon name="x" size={20} />
-          </button>
-        </div>
+        <button
+          className="main-register-close"
+          aria-label="Cerrar"
+          onClick={onClose}
+        >
+          <Icon name="x" size={18} />
+        </button>
         <div className="panel-body">
           <label className="register-panel-search">
-            <Icon name="search" size={20} />
+            <Icon name="search" size={27} />
             <input
               autoFocus
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="¿Qué quieres registrar? parto, pesaje, vacuna…"
+              placeholder="¿Qué quieres registrar? parto, pesaje, vacuna..."
             />
           </label>
           {(["CERDA", "CAMADA"] as const).map((group) => {
@@ -7902,16 +8011,17 @@ function MainRegisterPanel({
                   {groupItems.map((item) => (
                     <button
                       key={item.label}
-                      onClick={() => onSelect(item.label)}
+                      onClick={() =>
+                        onSelect(item.registrationType ?? item.label)
+                      }
                     >
                       <span>
-                        <Icon name={item.icon} size={19} />
+                        <Icon name={item.icon} size={24} />
                       </span>
                       <span>
                         <strong>{item.label}</strong>
-                        {item.description && <small>{item.description}</small>}
+                        <small>{item.description}</small>
                       </span>
-                      <Icon name="chevron" size={17} />
                     </button>
                   ))}
                 </div>
@@ -7944,6 +8054,12 @@ type OperationalRegistrationResult = {
   targetStage?: SowStage
   closeParto?: boolean
   migratedPiglets?: number
+  migratedMales?: number
+  migratedFemales?: number
+  destinationLotId?: number
+  averageWeight?: number
+  totalWeight?: number
+  date?: string
 }
 
 const addCalendarDays = (value: string, days: number) => {
@@ -7956,11 +8072,15 @@ const addCalendarDays = (value: string, days: number) => {
 function OperationalRegistrationModal({
   type,
   sows,
+  sow,
+  destinationLots,
   onClose,
   onSave,
 }: {
   type: string
   sows: Sow[]
+  sow?: Sow | null
+  destinationLots: Lot[]
   onClose: () => void
   onSave: (result: OperationalRegistrationResult) => void
 }) {
@@ -7969,7 +8089,7 @@ function OperationalRegistrationModal({
   const isWeaning = type === "Destete"
   const isLitter = type === "Camada"
   const isManagement = type === "Gestión de cerda"
-  const [sowNumber, setSowNumber] = useState("")
+  const [sowNumber, setSowNumber] = useState(sow?.number ?? "")
   const [entryType, setEntryType] = useState("")
   const [identifier, setIdentifier] = useState("")
   const [entryDate, setEntryDate] = useState(TODAY_ISO)
@@ -8021,6 +8141,8 @@ function OperationalRegistrationModal({
   const selectedSow = findSowByNumber(sows, sowNumber)
   const pigletsAvailable = selectedSow?.piglets ?? 12
   const migratedPiglets = (Number(males) || 0) + (Number(females) || 0)
+  const invalidWeaningCount =
+    isWeaning && (migratedPiglets <= 0 || migratedPiglets > pigletsAvailable)
   const firstServiceDate = services[0]?.date ?? ""
   const probableFarrowing = addCalendarDays(firstServiceDate, 114)
   const maternityEntry = addCalendarDays(firstServiceDate, 107)
@@ -8031,7 +8153,14 @@ function OperationalRegistrationModal({
         ? "Gestación"
         : "Vacía"
   const dirty =
-    Boolean(sowNumber || entryType || identifier || genetics || band || lot) ||
+    Boolean(
+      sowNumber !== (sow?.number ?? "") ||
+        entryType ||
+        identifier ||
+        genetics ||
+        band ||
+        lot,
+    ) ||
     notes.length > 0 ||
     date !== TODAY_ISO ||
     responsible !== CONNECTED_USER
@@ -8087,6 +8216,7 @@ function OperationalRegistrationModal({
       (isWeaning &&
         (!males ||
           !females ||
+          invalidWeaningCount ||
           !destinationLot ||
           !bodyCondition ||
           !sowWeight)) ||
@@ -8123,6 +8253,19 @@ function OperationalRegistrationModal({
       targetStage,
       closeParto: isWeaning && migratedPiglets === pigletsAvailable,
       migratedPiglets: isWeaning ? migratedPiglets : undefined,
+      migratedMales: isWeaning ? Number(males) : undefined,
+      migratedFemales: isWeaning ? Number(females) : undefined,
+      destinationLotId:
+        isWeaning && destinationLot ? Number(destinationLot) : undefined,
+      averageWeight:
+        isWeaning && averageWeight
+          ? Number(averageWeight.replace(",", "."))
+          : undefined,
+      totalWeight:
+        isWeaning && totalWeight
+          ? Number(totalWeight.replace(",", "."))
+          : undefined,
+      date: isWeaning ? date : undefined,
     })
     if (!closeAfterSave.current) {
       setNotes("")
@@ -8528,7 +8671,9 @@ function OperationalRegistrationModal({
                     label="Fecha de destete"
                   />
                 </label>
-                <label className={`field ${error(!males)}`}>
+                <label
+                  className={`field ${error(!males || invalidWeaningCount)}`}
+                >
                   <span>
                     Machos <em>* obligatorio</em>
                   </span>
@@ -8540,7 +8685,9 @@ function OperationalRegistrationModal({
                     }
                   />
                 </label>
-                <label className={`field ${error(!females)}`}>
+                <label
+                  className={`field ${error(!females || invalidWeaningCount)}`}
+                >
                   <span>
                     Hembras <em>* obligatorio</em>
                   </span>
@@ -8605,9 +8752,11 @@ function OperationalRegistrationModal({
                       }
                     >
                       <option value="">Selecciona</option>
-                      <option>Precebo P-18</option>
-                      <option>Precebo P-19</option>
-                      <option>Crear lote nuevo</option>
+                      {destinationLots.map((lot) => (
+                        <option key={lot.id} value={lot.id}>
+                          {lot.code}
+                        </option>
+                      ))}
                     </select>
                   </label>
                   <label className="field">
@@ -8649,6 +8798,12 @@ function OperationalRegistrationModal({
                 <div className="auto-close-notice">
                   <Icon name="check" size={17} /> Se migran todos los lechones.
                   El parto se cerrará automáticamente.
+                </div>
+              )}
+              {submitted && invalidWeaningCount && (
+                <div className="field-error-notice">
+                  La cantidad a migrar debe estar entre 1 y {pigletsAvailable}{" "}
+                  lechones.
                 </div>
               )}
               <label className="field">
@@ -9614,10 +9769,14 @@ const withdrawalStatusForReason = (reason: string): SowRecordStatus => {
 
 function BreedingPage({
   farmName,
+  preceboLots,
+  onWeanToLot,
   onNotice,
   onAlertCountChange,
 }: {
   farmName: string
+  preceboLots: Lot[]
+  onWeanToLot: (result: OperationalRegistrationResult) => void
   onNotice: (text: string) => void
   onAlertCountChange: (count: number) => void
 }) {
@@ -9660,9 +9819,10 @@ function BreedingPage({
   const [registerOpen, setRegisterOpen] = useState(false)
   const [registerSow, setRegisterSow] = useState<Sow | null>(null)
   const [mainRegisterOpen, setMainRegisterOpen] = useState(false)
-  const [quickRegistration, setQuickRegistration] = useState<string | null>(
-    null,
-  )
+  const [quickRegistration, setQuickRegistration] = useState<{
+    type: string
+    sow: Sow | null
+  } | null>(null)
   const [bellOpen, setBellOpen] = useState(false)
   const [alerts, setAlerts] = useState(() =>
     initialBreedingAlerts.map((alert, index) => ({
@@ -9717,7 +9877,7 @@ function BreedingPage({
     setMainRegisterOpen(false)
     if (label === "Parto") setBirthModal({ sow: null })
     else if (label === "Vacunación") setHealthModal({ sow: null })
-    else setQuickRegistration(label)
+    else setQuickRegistration({ type: label, sow: null })
   }
   const resolveAlert = (alert: BreedingAlert) => {
     const sow = sows.find((item) => item.number === alert.sowNumber) ?? null
@@ -9769,6 +9929,8 @@ function BreedingPage({
       menuOpen={menuOpen === sow.id}
       onMenu={() => setMenuOpen(menuOpen === sow.id ? null : sow.id)}
       onRegister={() => openRegister(sow)}
+      onLitter={() => setQuickRegistration({ type: "Camada", sow })}
+      onWean={() => setQuickRegistration({ type: "Destete", sow })}
       onHealth={() => {
         setMenuOpen(null)
         setHealthModal({ sow })
@@ -9814,6 +9976,7 @@ function BreedingPage({
               if (type === "Parto y lactancia") setBirthModal({ sow })
               else setEventModal({ sow, type })
             }}
+            onOperational={(type) => setQuickRegistration({ type, sow })}
             onHealth={() => setHealthModal({ sow })}
             onNotice={onNotice}
           />
@@ -10199,8 +10362,10 @@ function BreedingPage({
       )}
       {quickRegistration && (
         <OperationalRegistrationModal
-          type={quickRegistration}
+          type={quickRegistration.type}
           sows={sows.filter((sow) => sow.recordStatus === "Activas")}
+          sow={quickRegistration.sow}
+          destinationLots={preceboLots}
           onClose={() => setQuickRegistration(null)}
           onSave={(result) => {
             if (result.newSow) {
@@ -10223,7 +10388,7 @@ function BreedingPage({
                 ...current,
               ])
             }
-            if (result.sow && quickRegistration === "Servicio") {
+            if (result.sow && quickRegistration.type === "Servicio") {
               setSows((current) =>
                 current.map((sow) =>
                   sow.id === result.sow!.id
@@ -10232,7 +10397,7 @@ function BreedingPage({
                 ),
               )
             }
-            if (result.sow && quickRegistration === "Destete") {
+            if (result.sow && quickRegistration.type === "Destete") {
               setSows((current) =>
                 current.map((sow) =>
                   sow.id === result.sow!.id
@@ -10248,6 +10413,7 @@ function BreedingPage({
                     : sow,
                 ),
               )
+              onWeanToLot(result)
             }
             if (result.sow && result.managementAction) {
               if (result.managementAction === "discard") {
@@ -10288,7 +10454,7 @@ function BreedingPage({
                 )
               }
             }
-            onNotice(`${quickRegistration} registrado`)
+            onNotice(`${quickRegistration.type} registrado`)
             if (result.closeAfterSave) setQuickRegistration(null)
           }}
         />
@@ -12380,11 +12546,18 @@ const initialInventoryAttention: InventoryAttention[] = [
 
 function InventoryHeader({
   farmName,
+  attention,
   onPurchase,
+  onAlertAction,
 }: {
   farmName: string
+  attention: InventoryAttention[]
   onPurchase: () => void
+  onAlertAction: (item: InventoryAttention) => void
 }) {
+  const [alertsOpen, setAlertsOpen] = useState(false)
+  const alertsRef = useDismissibleMenu(alertsOpen, () => setAlertsOpen(false))
+
   return (
     <header className="page-header inventory-header">
       <div>
@@ -12399,6 +12572,52 @@ function InventoryHeader({
         <p>Alimentos, medicamentos y movimientos de la granja</p>
       </div>
       <div className="header-actions">
+        <div className="bell-wrap" ref={alertsRef}>
+          <button
+            className="icon-button alert-bell"
+            aria-label="Alertas de inventario"
+            aria-expanded={alertsOpen}
+            onClick={() => setAlertsOpen(!alertsOpen)}
+          >
+            <Icon name="bell" size={20} />
+            {attention.length > 0 && <span>{attention.length}</span>}
+          </button>
+          {alertsOpen && (
+            <div className="alerts-popover inventory-alerts-popover">
+              <div className="popover-heading">
+                <strong>Alertas de inventario</strong>
+                <span>{attention.length} requieren atención</span>
+              </div>
+              {attention.length ? (
+                attention.map((item) => (
+                  <div className="popover-alert" key={item.id}>
+                    <span
+                      className={`alert-dot urgency-${item.critical ? 1 : 2}`}
+                    />
+                    <div>
+                      <strong>
+                        {item.product} · {item.title}
+                      </strong>
+                      <p>{item.detail}</p>
+                      <button
+                        onClick={() => {
+                          setAlertsOpen(false)
+                          onAlertAction(item)
+                        }}
+                      >
+                        {item.action}
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="popover-empty">
+                  No tienes alertas de inventario pendientes.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
         <button className="button primary" onClick={onPurchase}>
           <Icon name="plus" size={18} />
           Registrar compra
@@ -13164,7 +13383,22 @@ function InventoryPage({
       <div className="inventory-page">
         <InventoryHeader
           farmName={farmName}
+          attention={attention}
           onPurchase={() => setPurchase({ category })}
+          onAlertAction={(item) => {
+            setCategory(item.category)
+            if (item.action === "Registrar compra") {
+              setPurchase({
+                category: item.category,
+                product: item.product,
+              })
+            } else {
+              setPendingRemoval({
+                category: item.category,
+                product: item.product,
+              })
+            }
+          }}
         />
         <div className="inventory-kpis">
           <div>
@@ -23579,6 +23813,106 @@ function getFarmAlerts(
   return alerts.sort((a, b) => a.urgency - b.urgency)
 }
 
+function PorkIAAssistant({ farmName }: { farmName: string }) {
+  const [open, setOpen] = useState(false)
+  const [message, setMessage] = useState("")
+
+  useEffect(() => {
+    if (!open) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false)
+    }
+    window.addEventListener("keydown", closeOnEscape)
+    return () => window.removeEventListener("keydown", closeOnEscape)
+  }, [open])
+
+  return (
+    <div className={`porkia-assistant ${open ? "is-open" : ""}`}>
+      {open && (
+        <section
+          id="porkia-panel"
+          className="porkia-panel"
+          role="dialog"
+          aria-label="PorkIA"
+        >
+          <header className="porkia-header">
+            <span className="porkia-brand-icon">
+              <Icon name="chatSmile" size={22} />
+            </span>
+            <div className="porkia-heading">
+              <div>
+                <strong>PorkIA</strong>
+                <span>BETA</span>
+              </div>
+              <small>{farmName}</small>
+            </div>
+            <div className="porkia-header-actions">
+              <button
+                type="button"
+                title="Nueva conversación"
+                aria-label="Nueva conversación"
+              >
+                <Icon name="plus" size={19} />
+              </button>
+              <button type="button" title="Historial" aria-label="Historial">
+                <Icon name="clock" size={18} />
+              </button>
+            </div>
+          </header>
+          <div className="porkia-empty">
+            <span>
+              <Icon name="chatSmile" size={40} />
+            </span>
+            <strong>Pregúntale a PorkIA.</strong>
+            <p>Tu granja tiene respuestas.</p>
+          </div>
+          <form
+            className="porkia-footer"
+            onSubmit={(event) => event.preventDefault()}
+          >
+            <label className="sr-only" htmlFor="porkia-message">
+              Mensaje para PorkIA
+            </label>
+            <input
+              id="porkia-message"
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+              placeholder="Ej.: aplica 2 ml de AMOXI a la cerda 1304"
+            />
+            <div className="porkia-composer-actions">
+              <button type="button" title="Cámara" aria-label="Cámara">
+                <Icon name="camera" size={19} />
+              </button>
+              <button type="button" title="Micrófono" aria-label="Micrófono">
+                <Icon name="mic" size={19} />
+              </button>
+              <button
+                type="submit"
+                className="porkia-send"
+                disabled={!message.trim()}
+                title="Enviar"
+                aria-label="Enviar"
+              >
+                <Icon name="send" size={18} />
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
+      <button
+        type="button"
+        className="porkia-launcher"
+        aria-label={open ? "Cerrar PorkIA" : "Abrir PorkIA"}
+        aria-expanded={open}
+        aria-controls="porkia-panel"
+        onClick={() => setOpen(!open)}
+      >
+        <Icon name={open ? "x" : "chatSmile"} size={24} strokeWidth={2} />
+      </button>
+    </div>
+  )
+}
+
 export default function App() {
   const [farms, setFarms] = useState(initialFarms)
   const [farmQuery, setFarmQuery] = useState("")
@@ -24429,6 +24763,68 @@ export default function App() {
           <BreedingPage
             key={selectedFarm.id}
             farmName={selectedFarm.name}
+            preceboLots={lots.filter(
+              (lot) =>
+                lot.farmId === selectedFarm.id &&
+                lot.cycle === "Precebo" &&
+                lot.status === "Activo",
+            )}
+            onWeanToLot={(result) => {
+              if (
+                !result.destinationLotId ||
+                !result.migratedPiglets ||
+                result.migratedMales === undefined ||
+                result.migratedFemales === undefined
+              ) {
+                return
+              }
+              setLots((current) =>
+                current.map((lot) => {
+                  if (lot.id !== result.destinationLotId) return lot
+                  const figures = calculateLotFigures(lot)
+                  const incomingWeight =
+                    result.totalWeight ??
+                    result.migratedPiglets * (result.averageWeight ?? 0)
+                  const combinedAnimals =
+                    figures.currentAnimals + result.migratedPiglets
+                  const combinedWeight =
+                    figures.currentAnimals * lot.averageWeight + incomingWeight
+                  const transfer: LotTransfer = {
+                    id: Date.now(),
+                    date: formatDate(
+                      new Date(`${result.date ?? TODAY_ISO}T12:00:00`),
+                    ),
+                    direction: "Entrada",
+                    kind: "Migración",
+                    otherLot: result.sow
+                      ? `Camada ${result.sow.number}`
+                      : "Plantel reproductivo",
+                    animals: result.migratedPiglets,
+                    females: result.migratedFemales,
+                    males: result.migratedMales,
+                    averageWeight: result.averageWeight ?? 0,
+                    totalWeight: incomingWeight,
+                    responsible: CONNECTED_USER,
+                    reason: "Destete",
+                  }
+                  return {
+                    ...lot,
+                    females: lot.females + result.migratedFemales,
+                    males: lot.males + result.migratedMales,
+                    initialAnimals: lot.initialAnimals + result.migratedPiglets,
+                    averageWeight:
+                      combinedAnimals > 0
+                        ? combinedWeight / combinedAnimals
+                        : lot.averageWeight,
+                    initialTotalWeight:
+                      (lot.initialTotalWeight ??
+                        lot.initialAnimals * lot.averageWeight) +
+                      incomingWeight,
+                    transferRecords: [transfer, ...(lot.transferRecords ?? [])],
+                  }
+                }),
+              )
+            }}
             onNotice={setToast}
             onAlertCountChange={(count) =>
               setBreedingAlertCountByFarm((current) =>
@@ -24614,6 +25010,7 @@ export default function App() {
           {toast}
         </div>
       )}
+      <PorkIAAssistant farmName={selectedFarm.name} />
     </div>
   )
 }
