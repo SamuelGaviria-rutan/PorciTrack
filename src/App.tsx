@@ -1,6 +1,10 @@
 import {
+  CSSProperties,
   FormEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+  PointerEvent as ReactPointerEvent,
   ReactNode,
+  RefObject,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -10,7 +14,7 @@ import {
 import { createPortal } from "react-dom"
 import porcitrackLogo from "./assets/porcitrack-logo.svg"
 
-type IconName = "home" | "sow" | "boar" | "piglet" | "pigFace" | "growth" | "crown" | "sprout" | "box" | "table" | "chart" | "calendar" | "settings" | "mic" | "plus" | "edit" | "pin" | "alert" | "pig" | "trend" | "chevron" | "logout" | "menu" | "x" | "check" | "trash" | "arrow" | "dots" | "list" | "grid" | "weight" | "clock" | "info" | "syringe" | "bell" | "download" | "search" | "heart" | "baby" | "droplet" | "filter" | "sort" | "star" | "building" | "clipboard" | "document" | "userPlus" | "profile"
+type IconName = "home" | "sow" | "boar" | "piglet" | "pigFace" | "growth" | "crown" | "sprout" | "box" | "table" | "chart" | "calendar" | "settings" | "mic" | "plus" | "edit" | "pin" | "alert" | "pig" | "trend" | "chevron" | "logout" | "menu" | "x" | "check" | "trash" | "arrow" | "dots" | "list" | "grid" | "weight" | "clock" | "info" | "syringe" | "bell" | "download" | "search" | "heart" | "baby" | "droplet" | "filter" | "sort" | "star" | "building" | "clipboard" | "document" | "userPlus" | "profile" | "layout" | "move" | "type" | "palette" | "image" | "upload" | "play" | "minus" | "undo" | "panel" | "flame" | "transfer" | "gauge"
 
 function Icon({
   name,
@@ -273,6 +277,67 @@ function Icon({
       <>
         <circle cx="12" cy="8" r="4" />
         <path d="M4 21a8 8 0 0 1 16 0" />
+      </>
+    ),
+    layout: (
+      <>
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <path d="M3 9h18M9 21V9" />
+      </>
+    ),
+    move: (
+      <>
+        <path d="M12 3v18M3 12h18" />
+        <path d="m9 6 3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3" />
+      </>
+    ),
+    type: <path d="M5 7V4h14v3M12 4v16M9 20h6" />,
+    palette: (
+      <>
+        <path d="M12 3a9 9 0 0 0 0 18c1.3 0 2-.8 2-1.9 0-1.4-1-1.7-1-3.1 0-1 .8-2 2-2h2a4 4 0 0 0 4-4c0-3.9-4-7-9-7Z" />
+        <path d="M7.5 11h.01M10 7h.01M15 7.5h.01" />
+      </>
+    ),
+    image: (
+      <>
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <circle cx="9" cy="10" r="2" />
+        <path d="m21 16-5-5-9 9" />
+      </>
+    ),
+    upload: (
+      <>
+        <path d="M12 16V4m-5 5 5-5 5 5" />
+        <path d="M4 20h16" />
+      </>
+    ),
+    play: <path d="M7 4.5v15l12-7.5Z" />,
+    minus: <path d="M5 12h14" />,
+    undo: (
+      <>
+        <path d="M9 14 4 9l5-5" />
+        <path d="M4 9h11a5 5 0 0 1 0 10h-3" />
+      </>
+    ),
+    panel: (
+      <>
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <path d="M15 4v16" />
+      </>
+    ),
+    flame: (
+      <path d="M12 3c.8 3.2 5 5.2 5 10a5 5 0 0 1-10 0c0-2.1 1-3.6 2.2-4.7.2 2 1 3.2 2.2 3.2 0-2.9-1.2-5 .6-8.5Z" />
+    ),
+    transfer: (
+      <>
+        <path d="M4 8h14l-3-3" />
+        <path d="M20 16H6l3 3" />
+      </>
+    ),
+    gauge: (
+      <>
+        <path d="M4 16a8 8 0 1 1 16 0" />
+        <path d="m12 16 4-5M4 20h16" />
       </>
     ),
   }
@@ -708,6 +773,8 @@ function Sidebar({
   onInvite: () => void
 }) {
   const [farmMenuOpen, setFarmMenuOpen] = useState(false)
+  const [hoverExpanded, setHoverExpanded] = useState(false)
+  const visuallyCollapsed = collapsed && !hoverExpanded
   const accountRef = useDismissibleMenu(accountOpen, () =>
     setAccountOpen(false),
   )
@@ -722,7 +789,17 @@ function Sidebar({
     action()
   }
   return (
-    <aside className={`sidebar ${collapsed ? "collapsed" : ""}`}>
+    <aside
+      className={`sidebar ${visuallyCollapsed ? "collapsed" : ""} ${
+        collapsed && !visuallyCollapsed ? "auto-expanded" : ""
+      }`}
+      onMouseEnter={() => setHoverExpanded(true)}
+      onMouseLeave={() => {
+        setHoverExpanded(false)
+        setFarmMenuOpen(false)
+        setAccountOpen(false)
+      }}
+    >
       <button
         className="brand-button"
         aria-label="Ir a Inicio"
@@ -730,9 +807,9 @@ function Sidebar({
           setFarmMenuOpen(false)
           onNavigate("Inicio")
         }}
-        title={collapsed ? "PorciTrack" : undefined}
+        title={visuallyCollapsed ? "PorciTrack" : undefined}
       >
-        <Logo compact={collapsed} />
+        <Logo compact={visuallyCollapsed} />
       </button>
       <div className="sidebar-scroll">
         {farmContext && (
@@ -751,11 +828,11 @@ function Sidebar({
           <button
             className={`farm-selector ${farmContext ? "compact" : "choose"}`}
             onClick={() => {
-              if (collapsed) setCollapsed(false)
+              if (visuallyCollapsed) setCollapsed(false)
               else if (farms.length > 1) setFarmMenuOpen(!farmMenuOpen)
             }}
             aria-expanded={farmMenuOpen}
-            title={collapsed ? "Elegir granja" : undefined}
+            title={visuallyCollapsed ? "Elegir granja" : undefined}
           >
             <span className="farm-selector-icon">
               <Icon name="building" size={20} />
@@ -802,7 +879,7 @@ function Sidebar({
               <button
                 className={`nav-item ${active === "Inicio" ? "active" : ""}`}
                 onClick={() => onNavigate("Inicio")}
-                title={collapsed ? "Inicio" : undefined}
+                title={visuallyCollapsed ? "Inicio" : undefined}
               >
                 <Icon name="home" size={20} />
                 <span>Inicio</span>
@@ -816,7 +893,7 @@ function Sidebar({
               <button
                 className={`nav-item ${active === "Resumen" ? "active" : ""}`}
                 onClick={() => onNavigate("Resumen")}
-                title={collapsed ? "Resumen" : undefined}
+                title={visuallyCollapsed ? "Resumen" : undefined}
               >
                 <Icon name="chart" size={20} />
                 <span>Resumen</span>
@@ -831,12 +908,14 @@ function Sidebar({
                   }`}
                   key={item.label}
                   onClick={() => onNavigate(item.label)}
-                  title={collapsed ? item.label : undefined}
+                  title={visuallyCollapsed ? item.label : undefined}
                 >
                   <Icon name={item.icon} size={20} />
                   <span>{item.label}</span>
                   {(alertCounts[item.label] ?? 0) > 0 && (
-                    <b className="nav-alert-count">{alertCounts[item.label]}</b>
+                    <b className="nav-alert-count">
+                      <span>{alertCounts[item.label]}</span>
+                    </b>
                   )}
                 </button>
               ))}
@@ -850,12 +929,14 @@ function Sidebar({
                   }`}
                   key={item.label}
                   onClick={() => onNavigate(item.label)}
-                  title={collapsed ? item.label : undefined}
+                  title={visuallyCollapsed ? item.label : undefined}
                 >
                   <Icon name={item.icon} size={20} />
                   <span>{item.label}</span>
                   {(alertCounts[item.label] ?? 0) > 0 && (
-                    <b className="nav-alert-count">{alertCounts[item.label]}</b>
+                    <b className="nav-alert-count">
+                      <span>{alertCounts[item.label]}</span>
+                    </b>
                   )}
                 </button>
               ))}
@@ -925,8 +1006,8 @@ function Sidebar({
           <button
             className="sidebar-footer-button"
             onClick={() => setCollapsed(!collapsed)}
-            aria-label={collapsed ? "Expandir menú" : "Contraer menú"}
-            title={collapsed ? "Expandir menú" : "Contraer menú"}
+            aria-label={collapsed ? "Mantener menú expandido" : "Contraer menú"}
+            title={collapsed ? "Mantener menú expandido" : "Contraer menú"}
           >
             <Icon name={collapsed ? "menu" : "chevron"} size={21} />
           </button>
@@ -1082,7 +1163,9 @@ function MobileNavigation({
                   <Icon name={item.icon} size={19} />
                   {item.label}
                   {(alertCounts[item.label] ?? 0) > 0 && (
-                    <b className="nav-alert-count">{alertCounts[item.label]}</b>
+                    <b className="nav-alert-count">
+                      <span>{alertCounts[item.label]}</span>
+                    </b>
                   )}
                 </button>
               ))}
@@ -1099,7 +1182,9 @@ function MobileNavigation({
                   <Icon name={item.icon} size={19} />
                   {item.label}
                   {(alertCounts[item.label] ?? 0) > 0 && (
-                    <b className="nav-alert-count">{alertCounts[item.label]}</b>
+                    <b className="nav-alert-count">
+                      <span>{alertCounts[item.label]}</span>
+                    </b>
                   )}
                 </button>
               ))}
@@ -1192,7 +1277,6 @@ type HeaderProps = {
   onConsolidated: () => void
   onCreateLot: () => void
   onFarmQueryChange: (query: string) => void
-  onVoice: () => void
 }
 
 function Header({
@@ -1204,7 +1288,6 @@ function Header({
   onConsolidated,
   onCreateLot,
   onFarmQueryChange,
-  onVoice,
 }: HeaderProps) {
   return (
     <header
@@ -1239,10 +1322,6 @@ function Header({
       )}
       {page === "home" && (
         <div className="header-actions home-header-actions">
-          <button className="button secondary voice" onClick={onVoice}>
-            <Icon name="mic" size={19} />
-            Registro por voz
-          </button>
           <button className="button secondary" onClick={onConsolidated}>
             <Icon name="chart" size={19} />
             Ver tableros consolidados
@@ -1262,48 +1341,6 @@ function Header({
         </div>
       )}
     </header>
-  )
-}
-
-function VoiceRegistrationModal({
-  onClose,
-  onStart,
-}: {
-  onClose: () => void
-  onStart: () => void
-}) {
-  return (
-    <DialogShell title="Registro por voz" onClose={onClose}>
-      <div className="voice-modal-content">
-        <span className="voice-modal-icon">
-          <Icon name="mic" size={27} />
-        </span>
-        <h3>Cuéntanos qué pasó en la granja</h3>
-        <p>
-          Puedes registrar movimientos, mortalidad, pesos, tratamientos, compras
-          y ventas usando una frase completa.
-        </p>
-        <div className="voice-examples">
-          <span>Ejemplos</span>
-          <q>Registrar 2 bajas en el lote DP-202604</q>
-          <q>Aplicar vacuna de Circovirus a la cerda #1305</q>
-          <q>Registrar compra de 420,5 kg de concentrado</q>
-        </div>
-        <div className="voice-tip">
-          <Icon name="info" size={17} />
-          Incluye el número del animal o el código del lote cuando aplique.
-        </div>
-      </div>
-      <div className="modal-actions">
-        <button className="button secondary" onClick={onClose}>
-          Cerrar
-        </button>
-        <button className="button primary" onClick={onStart}>
-          <Icon name="mic" size={18} />
-          Comenzar a hablar
-        </button>
-      </div>
-    </DialogShell>
   )
 }
 
@@ -1356,13 +1393,16 @@ function FarmCard({
   onResolveAlert: (module: string) => void
 }) {
   const [alertsOpen, setAlertsOpen] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   const alertWrapRef = useDismissibleMenu(alertsOpen, () =>
     setAlertsOpen(false),
   )
   const cardCycles = cycleOrder.filter((cycle) => farm.cycles.includes(cycle))
   return (
     <article
-      className={`farm-card clickable ${alertsOpen ? "alerts-open" : ""}`}
+      className={`farm-card clickable ${expanded ? "expanded" : "compact"} ${
+        alertsOpen ? "alerts-open" : ""
+      }`}
       onClick={(event) => {
         if ((event.target as Element).closest("button, .alerts-popover")) return
         onSummary()
@@ -1372,22 +1412,16 @@ function FarmCard({
         <div>
           <div className="farm-name-line">
             <h2>{farm.name}</h2>
-            <button
-              className="edit-button"
-              onClick={onEdit}
-              aria-label={`Editar ${farm.name}`}
-            >
-              <Icon name="edit" size={17} />
-            </button>
+            {expanded && (
+              <button
+                className="edit-button"
+                onClick={onEdit}
+                aria-label={`Editar ${farm.name}`}
+              >
+                <Icon name="edit" size={17} />
+              </button>
+            )}
           </div>
-          <p>
-            <Icon name="pin" size={15} />
-            {farm.municipality}
-          </p>
-          <button className="farm-summary-link" onClick={onSummary}>
-            Ver resumen
-            <Icon name="arrow" size={15} />
-          </button>
         </div>
         <div className="farm-heading-actions">
           <button
@@ -1438,38 +1472,55 @@ function FarmCard({
               </div>
             )}
           </div>
+          <button
+            className="farm-expand-button"
+            onClick={() => setExpanded(!expanded)}
+            aria-expanded={expanded}
+            aria-label={`${expanded ? "Contraer" : "Ampliar"} ${farm.name}`}
+            title={expanded ? "Contraer tarjeta" : "Ampliar tarjeta"}
+          >
+            <Icon name="chevron" size={18} />
+          </button>
         </div>
       </div>
-      <div className="farm-section cycles-section">
-        <span className="section-label">Ciclos activos</span>
-        <div className="cycle-list">
-          {cardCycles.map((cycle) => (
-            <button
-              key={cycle}
-              onClick={() => onCycle(cycle)}
-              aria-label={`Abrir ${cycle}`}
-            >
-              <span className="cycle-icon">
-                <Icon name={homeCycleIcons[cycle]} size={12} strokeWidth={2} />
-              </span>
-              <span className="cycle-label">{cycle}</span>
-              <span className="cycle-arrow" aria-hidden="true">
-                <Icon name="arrow" size={10} strokeWidth={2.2} />
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="farm-section tools-section">
-        <div className="tool-list">
-          {toolItems.map((item) => (
-            <button key={item.label} onClick={() => onTool(item.label)}>
-              <Icon name={item.icon} size={22} />
-              {item.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      {expanded && (
+        <>
+          <div className="farm-section cycles-section">
+            <span className="section-label">Ciclos activos</span>
+            <div className="cycle-list">
+              {cardCycles.map((cycle) => (
+                <button
+                  key={cycle}
+                  onClick={() => onCycle(cycle)}
+                  aria-label={`Abrir ${cycle}`}
+                >
+                  <span className="cycle-icon">
+                    <Icon
+                      name={homeCycleIcons[cycle]}
+                      size={12}
+                      strokeWidth={2}
+                    />
+                  </span>
+                  <span className="cycle-label">{cycle}</span>
+                  <span className="cycle-arrow" aria-hidden="true">
+                    <Icon name="arrow" size={10} strokeWidth={2.2} />
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="farm-section tools-section">
+            <div className="tool-list">
+              {toolItems.map((item) => (
+                <button key={item.label} onClick={() => onTool(item.label)}>
+                  <Icon name={item.icon} size={22} />
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </article>
   )
 }
@@ -1708,16 +1759,18 @@ function FarmModal({
               </small>
             )}
           </label>
-          <label className="field">
-            <span>Municipio</span>
-            <input
-              value={draft.municipality}
-              onChange={(e) =>
-                setDraft({ ...draft, municipality: e.target.value })
-              }
-              placeholder="Ej. Santa Rosa de Osos"
-            />
-          </label>
+          {farm && (
+            <label className="field">
+              <span>Municipio</span>
+              <input
+                value={draft.municipality}
+                onChange={(e) =>
+                  setDraft({ ...draft, municipality: e.target.value })
+                }
+                placeholder="Ej. Santa Rosa de Osos"
+              />
+            </label>
+          )}
           <CycleSelector
             selected={draft.cycles}
             onChange={(cycles) => setDraft({ ...draft, cycles })}
@@ -1816,7 +1869,7 @@ const formatDecimal = (value: number, decimals = 1) =>
 const TODAY_ISO = "2026-03-16"
 const CONNECTED_USER = "Andrés Mejía"
 // Tablet widths start with the icon-only sidebar so content keeps enough room.
-const compactSidebarQuery = "(min-width: 761px) and (max-width: 900px)"
+const desktopSidebarQuery = "(min-width: 761px)"
 
 const focusFirstError = (form: HTMLFormElement) => {
   window.setTimeout(() => {
@@ -6397,6 +6450,7 @@ type SowRecordStatus = "Activas" | "Pendiente de venta" | "Fallecidas" | "Descar
 type Sow = {
   id: number
   number: string
+  lot: string
   stage: SowStage
   recordStatus: SowRecordStatus
   band: number
@@ -6405,6 +6459,9 @@ type Sow = {
   piglets?: number
   weightKg?: number
   parity: number
+  bornAliveAverage: number
+  pha: number
+  cycleWeek: string
   attention?: "overdue" | "vaccine"
   withdrawalDate?: string
   withdrawalReason?: string
@@ -6447,6 +6504,24 @@ const initialSowVaccines: SowVaccine[] = [
 ]
 
 const sowStages: SowStage[] = ["Gestación", "Lactancia", "Vacía", "Reemplazo"]
+const sowStageLabels: Record<SowStage, string> = {
+  Lactancia: "Maternidad / Lactancia",
+  Gestación: "Gestación",
+  Vacía: "Disponibles",
+  Reemplazo: "Reemplazos",
+}
+const sowStageOrder: SowStage[] = [
+  "Lactancia",
+  "Gestación",
+  "Vacía",
+  "Reemplazo",
+]
+const sowStageClasses: Record<SowStage, string> = {
+  Lactancia: "maternity",
+  Gestación: "gestation",
+  Vacía: "available",
+  Reemplazo: "replacement",
+}
 const sowRecordStatuses: SowRecordStatus[] = [
   "Activas",
   "Pendiente de venta",
@@ -6456,38 +6531,40 @@ const sowRecordStatuses: SowRecordStatus[] = [
   "Eliminadas",
 ]
 
-const initialSows: Sow[] = Array.from({ length: 26 }, (_, index) => {
-  const stage: SowStage =
-    index < 10
-      ? "Gestación"
-      : index < 17
-        ? "Lactancia"
-        : index < 22
-          ? "Vacía"
-          : "Reemplazo"
+const initialSows: Sow[] = Array.from({ length: 60 }, (_, index) => {
+  const stage = sowStages[index % sowStages.length]
   return {
     id: 1304 + index,
     number: `#${1304 + index}`,
+    lot: index === 1 ? "Lote R-38" : `Lote R-${37 + (index % 4)}`,
     stage,
     recordStatus: "Activas",
-    band: 37 + (index % 4),
+    band: index === 1 ? 51 : 37 + (index % 4),
     daysInStatus:
-      stage === "Gestación"
-        ? 94 + index * 2
-        : stage === "Lactancia"
-          ? 4 + (index % 7)
-          : stage === "Vacía"
-            ? 3 + (index % 8)
-            : 210 + (index - 22) * 7,
+      index === 1
+        ? 27
+        : stage === "Gestación"
+          ? 94 + index * 2
+          : stage === "Lactancia"
+            ? 4 + (index % 7)
+            : stage === "Vacía"
+              ? 3 + (index % 8)
+              : 210 + (index - 22) * 7,
     probableFarrowing:
-      stage === "Gestación"
-        ? index === 0
-          ? "14/03/2026"
-          : `${String(15 - (index % 9)).padStart(2, "0")}/03/2026`
-        : undefined,
+      index === 0
+        ? "14/03/2026"
+        : index === 1
+          ? "17/10/2026"
+          : `${String(17 + (index % 9)).padStart(2, "0")}/10/2026`,
     piglets: stage === "Lactancia" ? 10 + (index % 4) : undefined,
-    weightKg: stage === "Reemplazo" ? 135 + (index - 22) * 4 : undefined,
+    weightKg: stage === "Reemplazo" ? 135 + (index % 8) * 4 : undefined,
     parity: 1 + (index % 6),
+    bornAliveAverage: 11 + (index % 3),
+    pha: index === 1 ? 2.2 : 2 + (index % 4) / 10,
+    cycleWeek:
+      index === 1
+        ? "22/06–28/06"
+        : `${String(22 + (index % 5)).padStart(2, "0")}/06–${String(28 + (index % 5)).padStart(2, "0")}/06`,
     attention: index === 0 ? "overdue" : index === 1 ? "vaccine" : undefined,
   }
 })
@@ -6608,7 +6685,51 @@ function TermInfo({
 type RegisterOption = {
   label: string
   icon: IconName
-  action?: () => void
+  event?: BreedingEventType
+  health?: boolean
+}
+
+const registerOptionCatalog: Record<string, RegisterOption> = {
+  "Servir cerda": {
+    label: "Servir cerda",
+    icon: "heart",
+    event: "Servicio y celo",
+  },
+  Celo: { label: "Celo", icon: "heart", event: "Servicio y celo" },
+  Camada: {
+    label: "Camada",
+    icon: "baby",
+    event: "Parto y lactancia",
+  },
+  Destetar: { label: "Destetar", icon: "piglet", event: "Destete" },
+  Parto: {
+    label: "Parto",
+    icon: "baby",
+    event: "Parto y lactancia",
+  },
+  Gestación: {
+    label: "Gestación",
+    icon: "calendar",
+    event: "Gestación",
+  },
+  Peso: {
+    label: "Peso",
+    icon: "weight",
+    event: "Peso y condición corporal",
+  },
+  "Condición corporal": {
+    label: "Condición corporal",
+    icon: "gauge",
+    event: "Peso y condición corporal",
+  },
+  Sanidad: { label: "Sanidad", icon: "syringe", health: true },
+}
+
+const stageRegisterOptions: Record<SowStage, string[]> = {
+  Lactancia: ["Camada", "Destetar", "Peso", "Condición corporal", "Sanidad"],
+  Vacía: ["Servir cerda", "Celo", "Peso", "Condición corporal", "Sanidad"],
+  Gestación: ["Parto", "Peso", "Condición corporal", "Sanidad"],
+  Reemplazo: ["Servir cerda", "Celo", "Peso", "Sanidad"],
 }
 
 function RegisterMenu({
@@ -6624,34 +6745,32 @@ function RegisterMenu({
   onHealth: () => void
   onNotice: (text: string) => void
 }) {
-  const options: RegisterOption[] = [
-    {
-      label: "Servicio y celo",
-      icon: "heart",
-      action: () => onEvent("Servicio y celo"),
-    },
-    {
-      label: "Gestación",
-      icon: "calendar",
-      action: () => onEvent("Gestación"),
-    },
-    {
-      label: "Parto y lactancia",
-      icon: "baby",
-      action: () => onEvent("Parto y lactancia"),
-    },
-    {
-      label: "Destete",
-      icon: "piglet",
-      action: () => onEvent("Destete"),
-    },
-    { label: "Sanidad", icon: "syringe", action: onHealth },
-    {
-      label: "Peso y condición corporal",
-      icon: "weight",
-      action: () => onEvent("Peso y condición corporal"),
-    },
-  ]
+  const primaryKeys = sow
+    ? stageRegisterOptions[sow.stage]
+    : ["Servir cerda", "Gestación", "Parto", "Destetar", "Peso", "Sanidad"]
+  const primaryOptions = primaryKeys.map((key) => registerOptionCatalog[key])
+  const moreOptions = sow
+    ? Object.values(registerOptionCatalog).filter(
+        (option) => !primaryKeys.includes(option.label),
+      )
+    : []
+  const renderOption = (option: RegisterOption) => (
+    <button
+      key={option.label}
+      onClick={() => {
+        if (option.health) onHealth()
+        else if (option.event) onEvent(option.event)
+        else onNotice(`${option.label}${sow ? ` · ${sow.number}` : ""}`)
+        onClose()
+      }}
+    >
+      <span>
+        <Icon name={option.icon} size={18} />
+      </span>
+      {option.label}
+      <Icon name="chevron" size={15} />
+    </button>
+  )
   return (
     <div className="register-menu">
       <div className="register-menu-heading">
@@ -6661,22 +6780,13 @@ function RegisterMenu({
         </span>
       </div>
       <div className="register-options">
-        {options.map((option) => (
-          <button
-            key={option.label}
-            onClick={() => {
-              if (option.action) option.action()
-              else onNotice(`${option.label}${sow ? ` · ${sow.number}` : ""}`)
-              onClose()
-            }}
-          >
-            <span>
-              <Icon name={option.icon} size={19} />
-            </span>
-            {option.label}
-            <Icon name="chevron" size={15} />
-          </button>
-        ))}
+        {primaryOptions.map(renderOption)}
+        {moreOptions.length > 0 && (
+          <>
+            <div className="register-options-label">Más eventos</div>
+            {moreOptions.map(renderOption)}
+          </>
+        )}
       </div>
     </div>
   )
@@ -6684,32 +6794,18 @@ function RegisterMenu({
 
 function BreedingHeader({
   farmName,
-  sowCount,
-  alerts,
-  bellOpen,
-  setBellOpen,
-  registerOpen,
-  setRegisterOpen,
-  registerMenu,
-  onResolve,
+  sows,
+  recordStatus,
+  onStatusChange,
 }: {
   farmName: string
-  sowCount: number
-  alerts: BreedingAlert[]
-  bellOpen: boolean
-  setBellOpen: (value: boolean) => void
-  registerOpen: boolean
-  setRegisterOpen: (value: boolean) => void
-  registerMenu: ReactNode
-  onResolve: (alert: BreedingAlert) => void
+  sows: Sow[]
+  recordStatus: SowRecordStatus
+  onStatusChange: (status: SowRecordStatus) => void
 }) {
-  const bellRef = useDismissibleMenu(bellOpen, () => setBellOpen(false))
-  const registerRef = useDismissibleMenu(registerOpen, () =>
-    setRegisterOpen(false),
-  )
   return (
     <header className="page-header breeding-header">
-      <div>
+      <div className="breeding-heading-copy">
         <div className="breadcrumbs">
           <span>Inicio</span>
           <Icon name="chevron" size={14} />
@@ -6717,131 +6813,34 @@ function BreedingHeader({
           <Icon name="chevron" size={14} />
           <strong>Plantel reproductivo</strong>
         </div>
-        <h1>Plantel reproductivo · {farmName}</h1>
-        <p>
-          {sowCount} cerdas activas ·{" "}
-          {farmName === "Granja El Porvenir"
-            ? "Bandas 41 a 43"
-            : farmName === "Granja San José"
-              ? "Bandas 45 a 47"
-              : "Bandas 37 a 40"}
-        </p>
-      </div>
-      <div className="header-actions breeding-actions">
-        <div className="bell-wrap" ref={bellRef}>
-          <button
-            className="icon-button alert-bell"
-            aria-label="Alertas del plantel"
-            onClick={() => {
-              setRegisterOpen(false)
-              setBellOpen(!bellOpen)
-            }}
+        <div className="breeding-title-line">
+          <div>
+            <h1>Plantel reproductivo · {farmName}</h1>
+            <p>Gestión operativa del ciclo de vida animal</p>
+          </div>
+          <div
+            className="breeding-status-switch"
+            role="tablist"
+            aria-label="Estado del plantel"
           >
-            <Icon name="bell" size={20} />
-            {alerts.length > 0 && <span>{alerts.length}</span>}
-          </button>
-          {bellOpen && (
-            <div className="alerts-popover">
-              <div className="popover-heading">
-                <strong>Alertas</strong>
-                <span>Ordenadas por urgencia</span>
-              </div>
-              {alerts.length ? (
-                alerts
-                  .slice()
-                  .sort((a, b) => a.urgency - b.urgency)
-                  .map((alert) => (
-                    <div className="popover-alert" key={alert.id}>
-                      <span className={`alert-dot urgency-${alert.urgency}`} />
-                      <div>
-                        <strong>
-                          {alert.sowNumber} · {alert.title}
-                        </strong>
-                        <p>{alert.detail}</p>
-                        <button onClick={() => onResolve(alert)}>
-                          Resolver ahora
-                        </button>
-                      </div>
-                    </div>
-                  ))
-              ) : (
-                <div className="popover-empty">
-                  No tienes alertas pendientes.
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="register-wrap" ref={registerRef}>
-          <button
-            className="button primary"
-            onClick={() => {
-              setBellOpen(false)
-              setRegisterOpen(!registerOpen)
-            }}
-          >
-            <Icon name="plus" size={18} />
-            Registrar
-          </button>
-          {registerMenu}
+            {sowRecordStatuses.map((status) => (
+              <button
+                key={status}
+                role="tab"
+                aria-selected={recordStatus === status}
+                className={recordStatus === status ? "active" : ""}
+                onClick={() => onStatusChange(status)}
+              >
+                <span>{status}</span>
+                <b>
+                  {sows.filter((sow) => sow.recordStatus === status).length}
+                </b>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </header>
-  )
-}
-
-function AttendToday({
-  alerts,
-  onAction,
-}: {
-  alerts: BreedingAlert[]
-  onAction: (alert: BreedingAlert) => void
-}) {
-  if (!alerts.length) return null
-  return (
-    <section className="attend-today">
-      <div className="attend-heading">
-        <div>
-          <span className="attend-icon">
-            <Icon name="alert" size={18} />
-          </span>
-          <div>
-            <h2>Atender hoy</h2>
-            <p>
-              {alerts.length === 1
-                ? "1 acción requiere tu atención"
-                : `${alerts.length} acciones requieren tu atención`}
-            </p>
-          </div>
-        </div>
-        <span className="status warning">Prioridad del día</span>
-      </div>
-      <div className="attend-list">
-        {alerts
-          .slice()
-          .sort((a, b) => a.urgency - b.urgency)
-          .map((alert) => (
-            <div className="attend-row" key={alert.id}>
-              <span className={`alert-dot urgency-${alert.urgency}`} />
-              <strong>{alert.sowNumber}</strong>
-              <div>
-                <b>{alert.title}</b>
-                <span>{alert.detail}</span>
-              </div>
-              <button
-                className="button secondary"
-                onClick={() => onAction(alert)}
-              >
-                {alert.type === "parto"
-                  ? "Registrar parto"
-                  : alert.type === "vacuna"
-                    ? "Aplicar vacuna"
-                    : "Registrar servicio"}
-              </button>
-            </div>
-          ))}
-      </div>
-    </section>
   )
 }
 
@@ -6850,12 +6849,14 @@ function SowMenu({
   onHealth,
   onDiscard,
   onWithdrawal,
+  onTransfer,
   onDelete,
 }: {
   onView: () => void
   onHealth: () => void
   onDiscard: () => void
   onWithdrawal: () => void
+  onTransfer: () => void
   onDelete: () => void
 }) {
   return (
@@ -6864,6 +6865,10 @@ function SowMenu({
         <Icon name="arrow" size={16} />
         Ver ficha
       </button>
+      <button onClick={onHealth}>
+        <Icon name="syringe" size={16} />
+        Sanidad
+      </button>
       <div className="menu-divider" />
       <button onClick={onDiscard}>
         <Icon name="alert" size={16} />
@@ -6871,12 +6876,16 @@ function SowMenu({
       </button>
       <button onClick={onWithdrawal}>
         <Icon name="logout" size={16} />
-        Registrar baja
+        Registrar baja (muerte / descarte)
+      </button>
+      <button onClick={onTransfer}>
+        <Icon name="transfer" size={16} />
+        Transferencia a otra fase
       </button>
       <div className="menu-divider" />
       <button className="danger-menu-item" onClick={onDelete}>
         <Icon name="trash" size={16} />
-        Eliminar
+        Eliminar cerda
       </button>
     </div>
   )
@@ -6891,8 +6900,10 @@ function SowCard({
   onView,
   onDiscard,
   onWithdrawal,
+  onTransfer,
   onDelete,
   alert,
+  registerMenu,
 }: {
   sow: Sow
   menuOpen: boolean
@@ -6902,35 +6913,34 @@ function SowCard({
   onView: () => void
   onDiscard: () => void
   onWithdrawal: () => void
+  onTransfer: () => void
   onDelete: () => void
   alert?: BreedingAlert
+  registerMenu?: ReactNode
 }) {
   const delayed = sow.attention === "overdue"
-  // Each segment stays on one line; the row wraps between segments when space is tight.
-  const keyData =
-    sow.stage === "Gestación" ? (
-      <>
-        <span>{countLabel(sow.daysInStatus, "día", "días")} ·</span>{" "}
-        <span>
-          <TermInfo abbreviation="FPP" meaning="fecha probable de parto" />{" "}
-          <span className={delayed ? "overdue-date" : ""}>
-            {sow.probableFarrowing}
-          </span>
-        </span>
-      </>
-    ) : sow.stage === "Lactancia" ? (
-      <>
-        <span>{countLabel(sow.daysInStatus, "día", "días")} ·</span>{" "}
-        <span>{sow.piglets ?? 0} lechones</span>
-      </>
-    ) : sow.stage === "Vacía" ? (
-      <span>{countLabel(sow.daysInStatus, "día", "días")} vacía</span>
-    ) : (
-      <>
-        <span>{countLabel(sow.daysInStatus, "día", "días")} ·</span>{" "}
-        <span>{sow.weightKg ?? 0} kg</span>
-      </>
-    )
+  const stageIcon: Record<SowStage, IconName> = {
+    Lactancia: "baby",
+    Gestación: "calendar",
+    Vacía: "heart",
+    Reemplazo: "sprout",
+  }
+  const stageFooter: Record<SowStage, string> = {
+    Lactancia: "LACTANCIA",
+    Gestación: "GESTANDO",
+    Vacía: "VACÍA",
+    Reemplazo: "REEMPLAZO",
+  }
+  const expectedDays: Record<SowStage, number> = {
+    Lactancia: 28,
+    Gestación: 114,
+    Vacía: 14,
+    Reemplazo: 240,
+  }
+  const progress = Math.min(
+    100,
+    Math.max(8, (sow.daysInStatus / expectedDays[sow.stage]) * 100),
+  )
   return (
     <article
       className="sow-card compact"
@@ -6950,8 +6960,12 @@ function SowCard({
     >
       <div className="sow-card-row sow-card-primary">
         <div className="sow-card-identity">
+          <span
+            className={`sow-stage-icon stage-${sowStageClasses[sow.stage]}`}
+          >
+            <Icon name={stageIcon[sow.stage]} size={17} />
+          </span>
           <strong>{sow.number}</strong>
-          <span>Banda {sow.band}</span>
         </div>
         <div className="sow-card-menu">
           {alert && (
@@ -6973,17 +6987,59 @@ function SowCard({
               onHealth={onHealth}
               onDiscard={onDiscard}
               onWithdrawal={onWithdrawal}
+              onTransfer={onTransfer}
               onDelete={onDelete}
             />
           )}
         </div>
       </div>
-      <div className="sow-card-row sow-card-secondary">
-        <span className="sow-key-data">{keyData}</span>
-        <button className="sow-register-button" onClick={onRegister}>
-          <Icon name="plus" size={15} />
-          Registrar evento
-        </button>
+      <div className="sow-card-row sow-card-context">
+        <span>
+          {sow.lot.replace("Lote R-", "")} · Banda {sow.band} · {sow.cycleWeek}
+        </span>
+        <span>
+          <TermInfo abbreviation="FPP" meaning="fecha probable de parto" />{" "}
+          <b className={delayed ? "overdue-date" : ""}>
+            {sow.probableFarrowing}
+          </b>
+        </span>
+      </div>
+      <div className="sow-card-metrics">
+        <div>
+          <strong>{sow.bornAliveAverage}</strong>
+          <span>
+            · NV prom.{" "}
+            <TermInfo abbreviation="" meaning="nacidos vivos promedio" />
+          </span>
+        </div>
+        <div>
+          <strong>
+            {sow.pha.toLocaleString("es-CO", { minimumFractionDigits: 1 })}
+          </strong>
+          <span>
+            · PHA{" "}
+            <TermInfo abbreviation="" meaning="partos por hembra al año" />
+          </span>
+        </div>
+      </div>
+      <div
+        className={`sow-stage-progress ${delayed ? "is-overdue" : ""}`}
+        aria-label={`Avance de etapa: ${Math.round(progress)}%`}
+      >
+        <span style={{ width: `${progress}%` }} />
+      </div>
+      <div className="sow-card-row sow-card-footer">
+        <strong>
+          {stageFooter[sow.stage]} ·{" "}
+          {countLabel(sow.daysInStatus, "DÍA", "DÍAS")}
+        </strong>
+        <div className="sow-card-register-wrap">
+          <button className="sow-register-button" onClick={onRegister}>
+            <Icon name="plus" size={15} />
+            Registrar evento
+          </button>
+          {registerMenu}
+        </div>
       </div>
     </article>
   )
@@ -6993,10 +7049,12 @@ function SowTable({
   sows,
   onView,
   inactive = false,
+  onSale,
 }: {
   sows: Sow[]
   onView: (sow: Sow) => void
   inactive?: boolean
+  onSale?: (sow: Sow) => void
 }) {
   return (
     <div className="table-wrap">
@@ -7065,9 +7123,19 @@ function SowTable({
                 </>
               )}
               <td>
-                <button className="text-button" onClick={() => onView(sow)}>
-                  Ver ficha
-                </button>
+                <div className="inactive-row-actions">
+                  <button className="text-button" onClick={() => onView(sow)}>
+                    Ver ficha
+                  </button>
+                  {onSale && (
+                    <button
+                      className="button primary compact-button"
+                      onClick={() => onSale(sow)}
+                    >
+                      Registrar venta
+                    </button>
+                  )}
+                </div>
               </td>
             </tr>
           ))}
@@ -7081,7 +7149,11 @@ const findSowByNumber = (sows: Sow[], value: string) => {
   const normalized = value.trim()
   const number =
     normalized && !normalized.startsWith("#") ? `#${normalized}` : normalized
-  return sows.find((sow) => sow.number.toLowerCase() === number.toLowerCase())
+  return sows.find(
+    (sow) =>
+      sow.number.toLowerCase() === number.toLowerCase() ||
+      sow.lot.toLowerCase() === normalized.toLowerCase(),
+  )
 }
 
 function SowSearchField({
@@ -7112,7 +7184,7 @@ function SowSearchField({
         <input
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          placeholder="Buscar por número, ej. #1305"
+          placeholder="Buscar por número o lote"
           list={listId}
           autoFocus
           autoComplete="off"
@@ -7121,11 +7193,19 @@ function SowSearchField({
         <datalist id={listId}>
           {sows.map((sow) => (
             <option key={sow.id} value={sow.number}>
-              {sow.stage} · Banda {sow.band}
+              {sow.lot} · {sow.stage} · Banda {sow.band}
             </option>
           ))}
         </datalist>
       </div>
+      {validSow && (
+        <span className="selected-sow-context">
+          <span className={`status stage-${sowStageClasses[validSow.stage]}`}>
+            {validSow.stage}
+          </span>
+          {validSow.number} · {validSow.lot} · Banda {validSow.band}
+        </span>
+      )}
       {submitted && !validSow && (
         <small>
           <Icon name="alert" size={14} />
@@ -7145,7 +7225,7 @@ function BirthModal({
   sow: Sow | null
   sows: Sow[]
   onClose: () => void
-  onSave: (event: SowEvent) => void
+  onSave: (event: SowEvent, closeAfterSave: boolean) => void
 }) {
   const [sowNumber, setSowNumber] = useState(sow?.number ?? "")
   const [form, setForm] = useState({
@@ -7159,6 +7239,7 @@ function BirthModal({
   })
   const [submitted, setSubmitted] = useState(false)
   const [confirmExit, setConfirmExit] = useState(false)
+  const closeAfterSave = useRef(true)
   const selectedSow = sow ?? findSowByNumber(sows, sowNumber)
   const dirty =
     (!sow && Boolean(sowNumber)) ||
@@ -7187,14 +7268,18 @@ function BirthModal({
       !form.responsible.trim()
     )
       return
-    onSave({
-      id: Date.now(),
-      sowId: selectedSow.id,
-      type: "Parto y lactancia",
-      date: form.date,
-      responsible: form.responsible.trim(),
-      detail: `${total} nacidos · ${alive} vivos · CC ${form.bodyCondition}`,
-    })
+    onSave(
+      {
+        id: Date.now(),
+        sowId: selectedSow.id,
+        type: "Parto y lactancia",
+        date: form.date,
+        responsible: form.responsible.trim(),
+        detail: `${total} nacidos · ${alive} vivos · CC ${form.bodyCondition}`,
+      },
+      closeAfterSave.current,
+    )
+    if (!closeAfterSave.current) setSubmitted(false)
   }
   if (confirmExit) {
     return (
@@ -7378,8 +7463,19 @@ function BirthModal({
           >
             Cancelar
           </button>
-          <button className="button primary" type="submit">
-            Registrar parto
+          <button
+            className="button secondary"
+            type="submit"
+            onClick={() => (closeAfterSave.current = false)}
+          >
+            Guardar y continuar
+          </button>
+          <button
+            className="button primary"
+            type="submit"
+            onClick={() => (closeAfterSave.current = true)}
+          >
+            Guardar y cerrar
           </button>
         </div>
       </form>
@@ -7398,7 +7494,7 @@ function BreedingEventModal({
   sows: Sow[]
   eventType: Exclude<BreedingEventType, "Parto y lactancia">
   onClose: () => void
-  onSave: (event: SowEvent) => void
+  onSave: (event: SowEvent, closeAfterSave: boolean) => void
 }) {
   const [sowNumber, setSowNumber] = useState(sow?.number ?? "")
   const [form, setForm] = useState({
@@ -7416,6 +7512,7 @@ function BreedingEventModal({
   })
   const [submitted, setSubmitted] = useState(false)
   const [confirmExit, setConfirmExit] = useState(false)
+  const closeAfterSave = useRef(true)
   const selectedSow = sow ?? findSowByNumber(sows, sowNumber)
   const activeReproducers = initialReproducers.filter(
     (reproducer) =>
@@ -7457,14 +7554,18 @@ function BreedingEventModal({
           : eventType === "Destete"
             ? `${form.weanedPiglets} lechones · ${form.litterWeight} kg`
             : `${form.weight} kg · Condición corporal ${form.bodyCondition}`
-    onSave({
-      id: Date.now(),
-      sowId: selectedSow.id,
-      type: eventType,
-      date: form.date,
-      responsible: form.responsible.trim(),
-      detail,
-    })
+    onSave(
+      {
+        id: Date.now(),
+        sowId: selectedSow.id,
+        type: eventType,
+        date: form.date,
+        responsible: form.responsible.trim(),
+        detail,
+      },
+      closeAfterSave.current,
+    )
+    if (!closeAfterSave.current) setSubmitted(false)
   }
 
   if (confirmExit) {
@@ -7696,10 +7797,1273 @@ function BreedingEventModal({
           >
             Cancelar
           </button>
-          <button className="button primary" type="submit">
-            Registrar {eventType.toLowerCase()}
+          <button
+            className="button secondary"
+            type="submit"
+            onClick={() => (closeAfterSave.current = false)}
+          >
+            Guardar y continuar
+          </button>
+          <button
+            className="button primary"
+            type="submit"
+            onClick={() => (closeAfterSave.current = true)}
+          >
+            Guardar y cerrar
           </button>
         </div>
+      </form>
+    </DialogShell>
+  )
+}
+
+type MainRegisterItem = {
+  label: string
+  icon: IconName
+  group: "CERDA" | "CAMADA"
+  description?: string
+}
+
+const mainRegisterItems: MainRegisterItem[] = [
+  { label: "Nueva cerda", icon: "plus", group: "CERDA" },
+  { label: "Servicio", icon: "heart", group: "CERDA" },
+  { label: "Celo", icon: "flame", group: "CERDA" },
+  { label: "Parto", icon: "baby", group: "CERDA" },
+  { label: "Novedad", icon: "clipboard", group: "CERDA" },
+  { label: "Vacunación", icon: "syringe", group: "CERDA" },
+  { label: "Peso", icon: "weight", group: "CERDA" },
+  { label: "Condición corporal", icon: "gauge", group: "CERDA" },
+  { label: "Consumo", icon: "droplet", group: "CERDA" },
+  {
+    label: "Gestión de cerda",
+    icon: "transfer",
+    group: "CERDA",
+    description: "Transferencia, descarte o baja",
+  },
+  { label: "Camada", icon: "piglet", group: "CAMADA" },
+  { label: "Destete", icon: "piglet", group: "CAMADA" },
+  { label: "Vacunación camada", icon: "syringe", group: "CAMADA" },
+]
+
+function MainRegisterPanel({
+  onClose,
+  onSelect,
+}: {
+  onClose: () => void
+  onSelect: (label: string) => void
+}) {
+  const [query, setQuery] = useState("")
+  const normalizedQuery = query.trim().toLocaleLowerCase("es")
+  const filteredItems = mainRegisterItems.filter(
+    (item) =>
+      !normalizedQuery ||
+      `${item.label} ${item.description ?? ""}`
+        .toLocaleLowerCase("es")
+        .includes(normalizedQuery),
+  )
+  return (
+    <div
+      className="side-panel-backdrop"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <aside
+        className="sow-panel main-register-panel"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="panel-heading">
+          <div>
+            <span>Acción rápida</span>
+            <h2>Registrar</h2>
+          </div>
+          <button className="icon-button" aria-label="Cerrar" onClick={onClose}>
+            <Icon name="x" size={20} />
+          </button>
+        </div>
+        <div className="panel-body">
+          <label className="register-panel-search">
+            <Icon name="search" size={20} />
+            <input
+              autoFocus
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="¿Qué quieres registrar? parto, pesaje, vacuna…"
+            />
+          </label>
+          {(["CERDA", "CAMADA"] as const).map((group) => {
+            const groupItems = filteredItems.filter(
+              (item) => item.group === group,
+            )
+            if (!groupItems.length) return null
+            return (
+              <section className="register-panel-group" key={group}>
+                <h3>{group}</h3>
+                <div>
+                  {groupItems.map((item) => (
+                    <button
+                      key={item.label}
+                      onClick={() => onSelect(item.label)}
+                    >
+                      <span>
+                        <Icon name={item.icon} size={19} />
+                      </span>
+                      <span>
+                        <strong>{item.label}</strong>
+                        {item.description && <small>{item.description}</small>}
+                      </span>
+                      <Icon name="chevron" size={17} />
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )
+          })}
+          {!filteredItems.length && (
+            <div className="register-panel-empty">
+              No encontramos un registro con ese nombre.
+            </div>
+          )}
+        </div>
+      </aside>
+    </div>
+  )
+}
+
+type OperationalRegistrationResult = {
+  closeAfterSave: boolean
+  sow?: Sow
+  newSow?: {
+    number: string
+    stage: SowStage
+    band: number
+    lot: string
+  }
+  managementAction?: "discard" | "withdrawal" | "transfer" | "delete"
+  withdrawalDate?: string
+  withdrawalReason?: string
+  targetStage?: SowStage
+  closeParto?: boolean
+  migratedPiglets?: number
+}
+
+const addCalendarDays = (value: string, days: number) => {
+  if (!value) return ""
+  const date = new Date(`${value}T12:00:00`)
+  date.setDate(date.getDate() + days)
+  return date.toISOString().slice(0, 10)
+}
+
+function OperationalRegistrationModal({
+  type,
+  sows,
+  onClose,
+  onSave,
+}: {
+  type: string
+  sows: Sow[]
+  onClose: () => void
+  onSave: (result: OperationalRegistrationResult) => void
+}) {
+  const isNewSow = type === "Nueva cerda"
+  const isService = type === "Servicio"
+  const isWeaning = type === "Destete"
+  const isLitter = type === "Camada"
+  const isManagement = type === "Gestión de cerda"
+  const [sowNumber, setSowNumber] = useState("")
+  const [entryType, setEntryType] = useState("")
+  const [identifier, setIdentifier] = useState("")
+  const [entryDate, setEntryDate] = useState(TODAY_ISO)
+  const [genetics, setGenetics] = useState("")
+  const [band, setBand] = useState("")
+  const [lot, setLot] = useState("")
+  const [date, setDate] = useState(TODAY_ISO)
+  const [responsible, setResponsible] = useState(CONNECTED_USER)
+  const [notes, setNotes] = useState("")
+  const [cycleType, setCycleType] = useState("")
+  const [services, setServices] = useState([
+    {
+      method: "IA",
+      date: TODAY_ISO,
+      source: "",
+      time: "08:00",
+      responsible: CONNECTED_USER,
+    },
+  ])
+  const [males, setMales] = useState("")
+  const [females, setFemales] = useState("")
+  const [averageWeight, setAverageWeight] = useState("")
+  const [totalWeight, setTotalWeight] = useState("")
+  const [destinationFarm, setDestinationFarm] = useState("Granja La Esperanza")
+  const [destinationLot, setDestinationLot] = useState("")
+  const [targetWeight, setTargetWeight] = useState("30")
+  const [bodyCondition, setBodyCondition] = useState("")
+  const [sowWeight, setSowWeight] = useState("")
+  const [litterTab, setLitterTab] = useState("Movimientos")
+  const [litterMovements, setLitterMovements] = useState(0)
+  const [serviceVaccinesApplied, setServiceVaccinesApplied] =
+    useState<string[]>([])
+  const [managementAction, setManagementAction] =
+    useState<OperationalRegistrationResult["managementAction"]>()
+  const [withdrawalReason, setWithdrawalReason] = useState("")
+  const [targetStage, setTargetStage] = useState<SowStage>("Gestación")
+  const [time, setTime] = useState("08:00")
+  const [intensity, setIntensity] = useState("")
+  const [noveltyType, setNoveltyType] = useState("")
+  const [description, setDescription] = useState("")
+  const [feed, setFeed] = useState("")
+  const [kg, setKg] = useState("")
+  const [product, setProduct] = useState("")
+  const [dose, setDose] = useState("")
+  const [route, setRoute] = useState("")
+  const [submitted, setSubmitted] = useState(false)
+  const [confirmExit, setConfirmExit] = useState(false)
+  const closeAfterSave = useRef(true)
+  const selectedSow = findSowByNumber(sows, sowNumber)
+  const pigletsAvailable = selectedSow?.piglets ?? 12
+  const migratedPiglets = (Number(males) || 0) + (Number(females) || 0)
+  const firstServiceDate = services[0]?.date ?? ""
+  const probableFarrowing = addCalendarDays(firstServiceDate, 114)
+  const maternityEntry = addCalendarDays(firstServiceDate, 107)
+  const newStage: SowStage =
+    entryType === "Reemplazo" || entryType === "Reposición interna"
+      ? "Reemplazo"
+      : entryType === "Madre gestante"
+        ? "Gestación"
+        : "Vacía"
+  const dirty =
+    Boolean(sowNumber || entryType || identifier || genetics || band || lot) ||
+    notes.length > 0 ||
+    date !== TODAY_ISO ||
+    responsible !== CONNECTED_USER
+  const attemptClose = () => (dirty ? setConfirmExit(true) : onClose())
+  const updateService = (
+    index: number,
+    field: keyof typeof services[number],
+    value: string,
+  ) =>
+    setServices((current) =>
+      current.map((service, serviceIndex) =>
+        serviceIndex === index ? { ...service, [field]: value } : service,
+      ),
+    )
+  const updateAverageWeight = (value: string) => {
+    setAverageWeight(value)
+    if (migratedPiglets && value) {
+      setTotalWeight(
+        (Number(value.replace(",", ".")) * migratedPiglets).toFixed(1),
+      )
+    }
+  }
+  const updateTotalWeight = (value: string) => {
+    setTotalWeight(value)
+    if (migratedPiglets && value) {
+      setAverageWeight(
+        (Number(value.replace(",", ".")) / migratedPiglets).toFixed(1),
+      )
+    }
+  }
+  const requiredMissing = isNewSow
+    ? !entryType ||
+      !identifier.trim() ||
+      !entryDate ||
+      !genetics ||
+      !band ||
+      !lot.trim() ||
+      !responsible.trim()
+    : !selectedSow ||
+      !date ||
+      !responsible.trim() ||
+      (isService &&
+        (!cycleType ||
+          !band ||
+          !lot.trim() ||
+          services.some(
+            (service) =>
+              !service.date ||
+              !service.source.trim() ||
+              !service.time ||
+              !service.responsible.trim(),
+          ))) ||
+      (isWeaning &&
+        (!males ||
+          !females ||
+          !destinationLot ||
+          !bodyCondition ||
+          !sowWeight)) ||
+      (isManagement &&
+        (!managementAction ||
+          (managementAction === "withdrawal" && !withdrawalReason))) ||
+      (type === "Celo" && !intensity) ||
+      (type === "Novedad" && (!noveltyType || !description.trim())) ||
+      (type === "Consumo" && (!feed || !kg)) ||
+      (type === "Vacunación camada" && (!product || !dose || !route)) ||
+      (type === "Peso" && !kg) ||
+      (type === "Condición corporal" && !bodyCondition)
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setSubmitted(true)
+    if (requiredMissing) {
+      focusFirstError(event.currentTarget)
+      return
+    }
+    onSave({
+      closeAfterSave: closeAfterSave.current,
+      sow: selectedSow,
+      newSow: isNewSow
+        ? {
+            number: identifier.startsWith("#") ? identifier : `#${identifier}`,
+            stage: newStage,
+            band: Number(band),
+            lot,
+          }
+        : undefined,
+      managementAction,
+      withdrawalDate: date,
+      withdrawalReason,
+      targetStage,
+      closeParto: isWeaning && migratedPiglets === pigletsAvailable,
+      migratedPiglets: isWeaning ? migratedPiglets : undefined,
+    })
+    if (!closeAfterSave.current) {
+      setNotes("")
+      setDescription("")
+      setSubmitted(false)
+    }
+  }
+  if (confirmExit) {
+    return (
+      <DiscardChangesDialog
+        onDiscard={onClose}
+        onKeepEditing={() => setConfirmExit(false)}
+      />
+    )
+  }
+  const error = (missing: boolean) => (submitted && missing ? "has-error" : "")
+  const entryTypes = [
+    ["Reemplazo", "Hembra joven comprada para iniciar su vida reproductiva."],
+    ["Madre vacía", "Madre activa que ingresa disponible para servicio."],
+    ["Madre gestante", "Madre que ingresa con gestación confirmada."],
+    ["Reposición interna", "Hembra seleccionada dentro de la misma granja."],
+  ]
+  return (
+    <DialogShell
+      title={
+        isWeaning
+          ? "Migrar y cerrar parto"
+          : isManagement
+            ? "Gestión de cerda"
+            : `Registrar ${type.toLowerCase()}`
+      }
+      onClose={attemptClose}
+      size="wide"
+    >
+      <form onSubmit={submit}>
+        <div className="form-content breeding-operational-form">
+          {isNewSow ? (
+            <>
+              <section className="form-section">
+                <div className="form-section-heading">
+                  <span>1</span>
+                  <div>
+                    <h3>Tipo de ingreso</h3>
+                    <p>Define cómo entra la hembra al plantel.</p>
+                  </div>
+                </div>
+                <div className={`entry-type-grid ${error(!entryType)}`}>
+                  {entryTypes.map(([label, copy]) => (
+                    <button
+                      type="button"
+                      key={label}
+                      className={entryType === label ? "active" : ""}
+                      onClick={() => setEntryType(label)}
+                    >
+                      <span className="custom-radio">
+                        {entryType === label && <i />}
+                      </span>
+                      <strong>{label}</strong>
+                      <small>{copy}</small>
+                    </button>
+                  ))}
+                </div>
+              </section>
+              <section className="form-section">
+                <div className="form-section-heading">
+                  <span>2</span>
+                  <div>
+                    <h3>Identificación y ubicación</h3>
+                    <p>Información inicial de la nueva cerda.</p>
+                  </div>
+                </div>
+                <div className="form-grid">
+                  <label className={`field ${error(!identifier.trim())}`}>
+                    <span>
+                      Número <em>* obligatorio</em>
+                    </span>
+                    <input
+                      autoFocus
+                      value={identifier}
+                      onChange={(event) => setIdentifier(event.target.value)}
+                      placeholder="#1364"
+                    />
+                  </label>
+                  <label className={`field ${error(!entryDate)}`}>
+                    <span>
+                      Fecha de ingreso <em>* obligatorio</em>
+                    </span>
+                    <DatePicker
+                      value={entryDate}
+                      max={TODAY_ISO}
+                      onChange={setEntryDate}
+                      label="Fecha de ingreso"
+                    />
+                  </label>
+                  <label className={`field ${error(!genetics)}`}>
+                    <span>
+                      Genética <em>* obligatorio</em>
+                    </span>
+                    <select
+                      value={genetics}
+                      onChange={(event) => setGenetics(event.target.value)}
+                    >
+                      <option value="">Selecciona</option>
+                      <option>Topigs Norsvin</option>
+                      <option>DanBred</option>
+                      <option>Choice Genetics</option>
+                      <option>Otra</option>
+                    </select>
+                  </label>
+                  <label className={`field ${error(!band)}`}>
+                    <span>
+                      Banda <em>* obligatorio</em>
+                    </span>
+                    <input
+                      inputMode="numeric"
+                      value={band}
+                      onChange={(event) =>
+                        setBand(event.target.value.replace(/\D/g, ""))
+                      }
+                      placeholder="Ej. 51"
+                    />
+                  </label>
+                  <label className={`field ${error(!lot.trim())}`}>
+                    <span>
+                      Lote <em>* obligatorio</em>
+                    </span>
+                    <input
+                      value={lot}
+                      onChange={(event) => setLot(event.target.value)}
+                      placeholder="Ej. Lote R-42"
+                    />
+                  </label>
+                  <label className={`field ${error(!responsible.trim())}`}>
+                    <span>
+                      Responsable <em>* obligatorio</em>
+                    </span>
+                    <input
+                      value={responsible}
+                      onChange={(event) => setResponsible(event.target.value)}
+                    />
+                  </label>
+                </div>
+              </section>
+            </>
+          ) : (
+            <SowSearchField
+              sows={sows}
+              value={sowNumber}
+              onChange={setSowNumber}
+              submitted={submitted}
+              listId={`operational-${type.replace(/\s/g, "-")}`}
+            />
+          )}
+
+          {isService && (
+            <>
+              <div className="form-grid">
+                <label className={`field ${error(!cycleType)}`}>
+                  <span>
+                    Tipo de ciclo <em>* obligatorio</em>
+                  </span>
+                  <select
+                    value={cycleType}
+                    onChange={(event) => setCycleType(event.target.value)}
+                  >
+                    <option value="">Selecciona</option>
+                    <option>Nuevo servicio</option>
+                    <option>Parto #{selectedSow?.parity ?? 4}</option>
+                    <option>Repetición de servicio</option>
+                  </select>
+                </label>
+                <div />
+              </div>
+              <section className="service-block">
+                <div className="service-block-heading">
+                  <div>
+                    <h3>Servicios</h3>
+                    <p>Registra una o varias cubriciones del ciclo.</p>
+                  </div>
+                  <button
+                    type="button"
+                    className="button secondary compact-button"
+                    onClick={() =>
+                      setServices([
+                        ...services,
+                        {
+                          method: "IA",
+                          date: TODAY_ISO,
+                          source: "",
+                          time: "08:00",
+                          responsible: CONNECTED_USER,
+                        },
+                      ])
+                    }
+                  >
+                    <Icon name="plus" size={15} /> Agregar servicio
+                  </button>
+                </div>
+                {services.map((service, index) => (
+                  <div className="service-entry" key={index}>
+                    <strong>S{index + 1}</strong>
+                    <label className="field">
+                      <span>Método</span>
+                      <select
+                        value={service.method}
+                        onChange={(event) =>
+                          updateService(index, "method", event.target.value)
+                        }
+                      >
+                        <option>IA</option>
+                        <option>Monta</option>
+                      </select>
+                    </label>
+                    <label className={`field ${error(!service.date)}`}>
+                      <span>Fecha</span>
+                      <DatePicker
+                        value={service.date}
+                        max={TODAY_ISO}
+                        onChange={(value) =>
+                          updateService(index, "date", value)
+                        }
+                        label={`Fecha S${index + 1}`}
+                      />
+                    </label>
+                    <label className={`field ${error(!service.source.trim())}`}>
+                      <span>
+                        {service.method === "IA" ? "Pajilla" : "Macho"}
+                      </span>
+                      <input
+                        value={service.source}
+                        onChange={(event) =>
+                          updateService(index, "source", event.target.value)
+                        }
+                        placeholder={
+                          service.method === "IA"
+                            ? "Código de pajilla"
+                            : "Macho"
+                        }
+                      />
+                    </label>
+                    <label className={`field ${error(!service.time)}`}>
+                      <span>Hora</span>
+                      <input
+                        type="time"
+                        value={service.time}
+                        onChange={(event) =>
+                          updateService(index, "time", event.target.value)
+                        }
+                      />
+                    </label>
+                    <label
+                      className={`field ${error(!service.responsible.trim())}`}
+                    >
+                      <span>
+                        Encargado <em>*</em>
+                      </span>
+                      <input
+                        value={service.responsible}
+                        onChange={(event) =>
+                          updateService(
+                            index,
+                            "responsible",
+                            event.target.value,
+                          )
+                        }
+                      />
+                    </label>
+                  </div>
+                ))}
+              </section>
+              <div className="calculated-dates">
+                <div>
+                  <span>Fecha probable de parto</span>
+                  <strong>
+                    {probableFarrowing
+                      ? formatDate(new Date(`${probableFarrowing}T12:00:00`))
+                      : "—"}
+                  </strong>
+                </div>
+                <div>
+                  <span>Ingreso a maternidad</span>
+                  <strong>
+                    {maternityEntry
+                      ? formatDate(new Date(`${maternityEntry}T12:00:00`))
+                      : "—"}
+                  </strong>
+                </div>
+              </div>
+              <div className="form-grid">
+                <label className={`field ${error(!band)}`}>
+                  <span>
+                    Banda <em>* obligatorio</em>
+                  </span>
+                  <input
+                    value={band}
+                    onChange={(event) =>
+                      setBand(event.target.value.replace(/\D/g, ""))
+                    }
+                  />
+                </label>
+                <label className={`field ${error(!lot.trim())}`}>
+                  <span>
+                    Lote <em>* obligatorio</em>
+                  </span>
+                  <input
+                    value={lot}
+                    onChange={(event) => setLot(event.target.value)}
+                  />
+                </label>
+              </div>
+              <section className="service-template">
+                <div className="service-block-heading">
+                  <div>
+                    <h3>Plantilla sanitaria</h3>
+                    <p>Programación basada en la fecha del primer servicio.</p>
+                  </div>
+                </div>
+                {[
+                  ["SUISENG", 80],
+                  ["ERYSENG", 124],
+                ].map(([vaccine, day]) => (
+                  <article key={vaccine}>
+                    <span>
+                      <Icon name="syringe" size={17} />
+                    </span>
+                    <div>
+                      <strong>{vaccine}</strong>
+                      <small>
+                        Día +{day} ·{" "}
+                        {formatDate(
+                          new Date(
+                            `${addCalendarDays(firstServiceDate, Number(day))}T12:00:00`,
+                          ),
+                        )}
+                      </small>
+                    </div>
+                    <button
+                      type="button"
+                      className={`button compact-button ${
+                        serviceVaccinesApplied.includes(String(vaccine))
+                          ? "secondary applied"
+                          : "secondary"
+                      }`}
+                      onClick={() =>
+                        setServiceVaccinesApplied((current) =>
+                          current.includes(String(vaccine))
+                            ? current.filter((item) => item !== vaccine)
+                            : [...current, String(vaccine)],
+                        )
+                      }
+                    >
+                      {serviceVaccinesApplied.includes(String(vaccine))
+                        ? "Aplicada"
+                        : "Aplicar"}
+                    </button>
+                  </article>
+                ))}
+              </section>
+              <section className="pregnancy-checks">
+                <h3>Control de preñez</h3>
+                {[28, 42, 70].map((day) => (
+                  <div key={day}>
+                    <Icon name="calendar" size={16} />
+                    <span>Chequeo automático · Día +{day}</span>
+                    <strong>
+                      {formatDate(
+                        new Date(
+                          `${addCalendarDays(firstServiceDate, day)}T12:00:00`,
+                        ),
+                      )}
+                    </strong>
+                  </div>
+                ))}
+              </section>
+            </>
+          )}
+
+          {isWeaning && (
+            <>
+              <div className="litter-summary">
+                <div>
+                  <span>Camada</span>
+                  <strong>
+                    {selectedSow
+                      ? `C-${selectedSow.number.replace("#", "")}-${selectedSow.parity}`
+                      : "—"}
+                  </strong>
+                </div>
+                <div>
+                  <span>Lechones disponibles</span>
+                  <strong>{pigletsAvailable}</strong>
+                </div>
+              </div>
+              <div className="form-grid">
+                <label className={`field ${error(!date)}`}>
+                  <span>
+                    Fecha <em>* obligatorio</em>
+                  </span>
+                  <DatePicker
+                    value={date}
+                    max={TODAY_ISO}
+                    onChange={setDate}
+                    label="Fecha de destete"
+                  />
+                </label>
+                <label className={`field ${error(!males)}`}>
+                  <span>
+                    Machos <em>* obligatorio</em>
+                  </span>
+                  <input
+                    inputMode="numeric"
+                    value={males}
+                    onChange={(event) =>
+                      setMales(event.target.value.replace(/\D/g, ""))
+                    }
+                  />
+                </label>
+                <label className={`field ${error(!females)}`}>
+                  <span>
+                    Hembras <em>* obligatorio</em>
+                  </span>
+                  <input
+                    inputMode="numeric"
+                    value={females}
+                    onChange={(event) =>
+                      setFemales(event.target.value.replace(/\D/g, ""))
+                    }
+                  />
+                </label>
+                <label className="field">
+                  <span>Peso promedio (kg)</span>
+                  <input
+                    value={averageWeight}
+                    onChange={(event) =>
+                      updateAverageWeight(event.target.value)
+                    }
+                    placeholder="Ej. 6,4"
+                  />
+                </label>
+                <label className="field">
+                  <span>Peso total (kg)</span>
+                  <input
+                    value={totalWeight}
+                    onChange={(event) => updateTotalWeight(event.target.value)}
+                    placeholder="Se calcula automáticamente"
+                  />
+                </label>
+              </div>
+              <section className="destination-block">
+                <div className="form-section-heading">
+                  <span>
+                    <Icon name="transfer" size={17} />
+                  </span>
+                  <div>
+                    <h3>Destino · Precebo</h3>
+                    <p>Define dónde continuará la camada.</p>
+                  </div>
+                </div>
+                <div className="form-grid">
+                  <label className="field">
+                    <span>Granja</span>
+                    <select
+                      value={destinationFarm}
+                      onChange={(event) =>
+                        setDestinationFarm(event.target.value)
+                      }
+                    >
+                      <option>Granja La Esperanza</option>
+                      <option>Granja El Porvenir</option>
+                    </select>
+                  </label>
+                  <label className={`field ${error(!destinationLot)}`}>
+                    <span>
+                      Lote <em>* obligatorio</em>
+                    </span>
+                    <select
+                      value={destinationLot}
+                      onChange={(event) =>
+                        setDestinationLot(event.target.value)
+                      }
+                    >
+                      <option value="">Selecciona</option>
+                      <option>Precebo P-18</option>
+                      <option>Precebo P-19</option>
+                      <option>Crear lote nuevo</option>
+                    </select>
+                  </label>
+                  <label className="field">
+                    <span>Peso objetivo (kg)</span>
+                    <input
+                      value={targetWeight}
+                      onChange={(event) => setTargetWeight(event.target.value)}
+                    />
+                  </label>
+                </div>
+              </section>
+              <div className="form-grid">
+                <label className={`field ${error(!bodyCondition)}`}>
+                  <span>
+                    Condición corporal <em>* obligatorio</em>
+                  </span>
+                  <select
+                    value={bodyCondition}
+                    onChange={(event) => setBodyCondition(event.target.value)}
+                  >
+                    <option value="">Selecciona</option>
+                    <option>1 · Muy delgada</option>
+                    <option>2 · Delgada</option>
+                    <option>3 · Ideal</option>
+                    <option>4 · Gorda</option>
+                  </select>
+                </label>
+                <label className={`field ${error(!sowWeight)}`}>
+                  <span>
+                    Peso de la cerda (kg) <em>* obligatorio</em>
+                  </span>
+                  <input
+                    value={sowWeight}
+                    onChange={(event) => setSowWeight(event.target.value)}
+                  />
+                </label>
+              </div>
+              {migratedPiglets === pigletsAvailable && migratedPiglets > 0 && (
+                <div className="auto-close-notice">
+                  <Icon name="check" size={17} /> Se migran todos los lechones.
+                  El parto se cerrará automáticamente.
+                </div>
+              )}
+              <label className="field">
+                <span>Notas</span>
+                <textarea
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                />
+              </label>
+            </>
+          )}
+
+          {isLitter && (
+            <>
+              <div className="litter-kpis">
+                <div>
+                  <span>NV</span>
+                  <strong>{selectedSow?.bornAliveAverage ?? 12}</strong>
+                </div>
+                <div>
+                  <span>Actuales</span>
+                  <strong>{selectedSow?.piglets ?? 11}</strong>
+                </div>
+                <div>
+                  <span>Mortalidad</span>
+                  <strong>1</strong>
+                </div>
+                <div>
+                  <span>Ventas</span>
+                  <strong>0</strong>
+                </div>
+                <div>
+                  <span>Supervivencia</span>
+                  <strong>91,7%</strong>
+                </div>
+              </div>
+              <div className="litter-tabs">
+                {[
+                  "Movimientos",
+                  "Mortalidad",
+                  "Ventas",
+                  "Sanitario",
+                  "Consumo",
+                ].map((tab) => (
+                  <button
+                    type="button"
+                    key={tab}
+                    className={litterTab === tab ? "active" : ""}
+                    onClick={() => setLitterTab(tab)}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+              <div className="litter-tab-content">
+                <div>
+                  <span className="activity-icon">
+                    <Icon
+                      name={litterTab === "Sanitario" ? "syringe" : "piglet"}
+                      size={18}
+                    />
+                  </span>
+                  <div>
+                    <strong>{litterTab}</strong>
+                    <p>
+                      {litterMovements
+                        ? `${litterMovements} movimiento(s) agregado(s) en esta sesión.`
+                        : "No hay registros adicionales en esta categoría."}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="button secondary"
+                  onClick={() => setLitterMovements((current) => current + 1)}
+                >
+                  <Icon name="plus" size={16} /> Agregar movimiento
+                </button>
+              </div>
+            </>
+          )}
+
+          {isManagement && (
+            <div className="management-options">
+              {[
+                [
+                  "discard",
+                  "Marcar para descarte",
+                  "alert",
+                  "Pasa a pendiente de venta.",
+                ],
+                [
+                  "withdrawal",
+                  "Registrar baja",
+                  "logout",
+                  "Registra fecha y motivo de salida.",
+                ],
+                [
+                  "transfer",
+                  "Transferencia a otra fase",
+                  "transfer",
+                  "Actualiza la etapa productiva.",
+                ],
+                [
+                  "delete",
+                  "Eliminar cerda",
+                  "trash",
+                  "Retira el registro del plantel activo.",
+                ],
+              ].map(([value, label, icon, copy]) => (
+                <button
+                  type="button"
+                  key={value}
+                  className={`${managementAction === value ? "active" : ""} ${
+                    value === "delete" ? "danger-option" : ""
+                  }`}
+                  onClick={() =>
+                    setManagementAction(
+                      value as OperationalRegistrationResult["managementAction"],
+                    )
+                  }
+                >
+                  <span>
+                    <Icon name={icon as IconName} size={19} />
+                  </span>
+                  <span>
+                    <strong>{label}</strong>
+                    <small>{copy}</small>
+                  </span>
+                  <span className="custom-radio">
+                    {managementAction === value && <i />}
+                  </span>
+                </button>
+              ))}
+              {managementAction === "withdrawal" && (
+                <div className="form-grid management-details">
+                  <label className="field">
+                    <span>
+                      Fecha de baja <em>* obligatorio</em>
+                    </span>
+                    <DatePicker
+                      value={date}
+                      max={TODAY_ISO}
+                      onChange={setDate}
+                      label="Fecha de baja"
+                    />
+                  </label>
+                  <label className={`field ${error(!withdrawalReason)}`}>
+                    <span>
+                      Motivo <em>* obligatorio</em>
+                    </span>
+                    <select
+                      value={withdrawalReason}
+                      onChange={(event) =>
+                        setWithdrawalReason(event.target.value)
+                      }
+                    >
+                      <option value="">Selecciona</option>
+                      <option>Descarte productivo</option>
+                      <option>Problema reproductivo</option>
+                      <option>Enfermedad</option>
+                      <option>Mortalidad</option>
+                      <option>Venta</option>
+                      <option>Otro</option>
+                    </select>
+                  </label>
+                </div>
+              )}
+              {managementAction === "transfer" && (
+                <label className="field management-details">
+                  <span>Nueva fase</span>
+                  <select
+                    value={targetStage}
+                    onChange={(event) =>
+                      setTargetStage(event.target.value as SowStage)
+                    }
+                  >
+                    {sowStageOrder.map((stage) => (
+                      <option key={stage}>{stage}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </div>
+          )}
+
+          {!isNewSow &&
+            !isService &&
+            !isWeaning &&
+            !isLitter &&
+            !isManagement && (
+              <>
+                <div className="form-grid">
+                  <label className={`field ${error(!date)}`}>
+                    <span>
+                      Fecha <em>* obligatorio</em>
+                    </span>
+                    <DatePicker
+                      value={date}
+                      max={TODAY_ISO}
+                      onChange={setDate}
+                      label={`Fecha de ${type}`}
+                    />
+                  </label>
+                  {type === "Celo" && (
+                    <label className="field">
+                      <span>Hora</span>
+                      <input
+                        type="time"
+                        value={time}
+                        onChange={(event) => setTime(event.target.value)}
+                      />
+                    </label>
+                  )}
+                  {type === "Celo" && (
+                    <label className={`field ${error(!intensity)}`}>
+                      <span>
+                        Intensidad <em>* obligatorio</em>
+                      </span>
+                      <select
+                        value={intensity}
+                        onChange={(event) => setIntensity(event.target.value)}
+                      >
+                        <option value="">Selecciona</option>
+                        <option>Débil</option>
+                        <option>Normal</option>
+                        <option>Fuerte</option>
+                      </select>
+                    </label>
+                  )}
+                  {type === "Novedad" && (
+                    <label className={`field ${error(!noveltyType)}`}>
+                      <span>
+                        Tipo <em>* obligatorio</em>
+                      </span>
+                      <select
+                        value={noveltyType}
+                        onChange={(event) => setNoveltyType(event.target.value)}
+                      >
+                        <option value="">Selecciona</option>
+                        <option>Productiva</option>
+                        <option>Conductual</option>
+                        <option>Alimentaria</option>
+                        <option>Otra</option>
+                      </select>
+                    </label>
+                  )}
+                  {type === "Consumo" && (
+                    <label className={`field ${error(!feed)}`}>
+                      <span>
+                        Alimento <em>* obligatorio</em>
+                      </span>
+                      <select
+                        value={feed}
+                        onChange={(event) => setFeed(event.target.value)}
+                      >
+                        <option value="">Selecciona</option>
+                        <option>Gestación</option>
+                        <option>Lactancia</option>
+                        <option>Reemplazos</option>
+                      </select>
+                    </label>
+                  )}
+                  {(type === "Consumo" || type === "Peso") && (
+                    <label className={`field ${error(!kg)}`}>
+                      <span>
+                        {type === "Peso" ? "Peso" : "Cantidad"} (kg){" "}
+                        <em>* obligatorio</em>
+                      </span>
+                      <input
+                        value={kg}
+                        onChange={(event) => setKg(event.target.value)}
+                      />
+                    </label>
+                  )}
+                  {type === "Condición corporal" && (
+                    <label className={`field ${error(!bodyCondition)}`}>
+                      <span>
+                        Condición corporal <em>* obligatorio</em>
+                      </span>
+                      <select
+                        value={bodyCondition}
+                        onChange={(event) =>
+                          setBodyCondition(event.target.value)
+                        }
+                      >
+                        <option value="">Selecciona</option>
+                        <option>1 · Muy delgada</option>
+                        <option>2 · Delgada</option>
+                        <option>3 · Ideal</option>
+                        <option>4 · Gorda</option>
+                        <option>5 · Muy gorda</option>
+                      </select>
+                    </label>
+                  )}
+                  {type === "Vacunación camada" && (
+                    <>
+                      <label className="field">
+                        <span>Camada</span>
+                        <input
+                          readOnly
+                          value={
+                            selectedSow
+                              ? `C-${selectedSow.number.replace("#", "")}-${selectedSow.parity}`
+                              : ""
+                          }
+                          placeholder="Selecciona primero la cerda"
+                        />
+                      </label>
+                      <label className={`field ${error(!product)}`}>
+                        <span>
+                          Producto <em>* obligatorio</em>
+                        </span>
+                        <input
+                          value={product}
+                          onChange={(event) => setProduct(event.target.value)}
+                        />
+                      </label>
+                      <label className={`field ${error(!dose)}`}>
+                        <span>
+                          Dosis <em>* obligatorio</em>
+                        </span>
+                        <input
+                          value={dose}
+                          onChange={(event) => setDose(event.target.value)}
+                        />
+                      </label>
+                      <label className={`field ${error(!route)}`}>
+                        <span>
+                          Vía <em>* obligatorio</em>
+                        </span>
+                        <select
+                          value={route}
+                          onChange={(event) => setRoute(event.target.value)}
+                        >
+                          <option value="">Selecciona</option>
+                          <option>Intramuscular</option>
+                          <option>Subcutánea</option>
+                          <option>Oral</option>
+                        </select>
+                      </label>
+                    </>
+                  )}
+                  <label className={`field ${error(!responsible.trim())}`}>
+                    <span>
+                      Responsable <em>* obligatorio</em>
+                    </span>
+                    <input
+                      value={responsible}
+                      onChange={(event) => setResponsible(event.target.value)}
+                    />
+                  </label>
+                </div>
+                {type === "Novedad" ? (
+                  <label className={`field ${error(!description.trim())}`}>
+                    <span>
+                      Descripción <em>* obligatorio</em>
+                    </span>
+                    <textarea
+                      value={description}
+                      onChange={(event) => setDescription(event.target.value)}
+                    />
+                  </label>
+                ) : (
+                  <label className="field">
+                    <span>Notas</span>
+                    <textarea
+                      value={notes}
+                      onChange={(event) => setNotes(event.target.value)}
+                    />
+                  </label>
+                )}
+              </>
+            )}
+        </div>
+        {!isLitter && (
+          <div className="modal-actions large-actions">
+            <button
+              type="button"
+              className="button secondary"
+              onClick={attemptClose}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="button secondary"
+              onClick={() => (closeAfterSave.current = false)}
+            >
+              Guardar y continuar
+            </button>
+            <button
+              type="submit"
+              className={
+                managementAction === "delete"
+                  ? "button danger"
+                  : "button primary"
+              }
+              onClick={() => (closeAfterSave.current = true)}
+            >
+              Guardar y cerrar
+            </button>
+          </div>
+        )}
+        {isLitter && (
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="button secondary"
+              onClick={attemptClose}
+            >
+              Cerrar
+            </button>
+          </div>
+        )}
       </form>
     </DialogShell>
   )
@@ -8265,14 +9629,13 @@ function BreedingPage({
     const idOffset = isElPorvenir ? 200 : 400
     const numberStart = isElPorvenir ? 1501 : 1701
     const bandStart = isElPorvenir ? 41 : 45
-    const activeSows = initialSows
-      .slice(0, isElPorvenir ? 12 : 18)
-      .map((sow, index) => ({
-        ...sow,
-        id: sow.id + idOffset,
-        number: `#${numberStart + index}`,
-        band: bandStart + (index % 3),
-      }))
+    const activeSows = initialSows.map((sow, index) => ({
+      ...sow,
+      id: sow.id + idOffset,
+      number: `#${numberStart + index}`,
+      band: bandStart + (index % 3),
+      lot: `Lote R-${bandStart + (index % 3)}`,
+    }))
     const inactiveSows = initialInactiveSows.map((sow, index) => ({
       ...sow,
       id: sow.id + idOffset,
@@ -8281,14 +9644,25 @@ function BreedingPage({
     }))
     return [...activeSows, ...inactiveSows]
   })
-  const [stage, setStage] = useState<SowStage>("Gestación")
   const [recordStatus, setRecordStatus] = useState<SowRecordStatus>("Activas")
   const [band, setBand] = useState("Todas")
+  const [lot, setLot] = useState("Todos")
+  const [stageFilter, setStageFilter] = useState<SowStage | "Todas">("Todas")
   const [query, setQuery] = useState("")
-  const [tableView, setTableView] = useState(false)
+  const [collapsedStages, setCollapsedStages] = useState<Set<SowStage>>(
+    () => new Set(),
+  )
+  const [expandedStages, setExpandedStages] = useState<Set<SowStage>>(
+    () => new Set(),
+  )
+  const [tableStages, setTableStages] = useState<Set<SowStage>>(() => new Set())
   const [menuOpen, setMenuOpen] = useState<number | null>(null)
   const [registerOpen, setRegisterOpen] = useState(false)
   const [registerSow, setRegisterSow] = useState<Sow | null>(null)
+  const [mainRegisterOpen, setMainRegisterOpen] = useState(false)
+  const [quickRegistration, setQuickRegistration] = useState<string | null>(
+    null,
+  )
   const [bellOpen, setBellOpen] = useState(false)
   const [alerts, setAlerts] = useState(() =>
     initialBreedingAlerts.map((alert, index) => ({
@@ -8310,6 +9684,10 @@ function BreedingPage({
     sow: Sow | null
   } | null>(null)
   const [withdrawingSow, setWithdrawingSow] = useState<Sow | null>(null)
+  const bellRef = useDismissibleMenu(bellOpen, () => setBellOpen(false))
+  const registerRef = useDismissibleMenu(registerOpen, () =>
+    setRegisterOpen(false),
+  )
 
   const activeAlerts = alerts.filter((alert) =>
     sows.some(
@@ -8323,14 +9701,23 @@ function BreedingPage({
   const filtered = sows.filter(
     (sow) =>
       sow.recordStatus === recordStatus &&
-      (recordStatus !== "Activas" || sow.stage === stage) &&
       (band === "Todas" || sow.band === Number(band)) &&
-      sow.number.includes(query.trim()),
+      (lot === "Todos" || sow.lot === lot) &&
+      (stageFilter === "Todas" || sow.stage === stageFilter) &&
+      `${sow.number} ${sow.lot}`
+        .toLocaleLowerCase("es")
+        .includes(query.trim().toLocaleLowerCase("es")),
   )
   const openRegister = (sow: Sow | null) => {
     setRegisterSow(sow)
     setRegisterOpen(true)
     setMenuOpen(null)
+  }
+  const openMainRegistration = (label: string) => {
+    setMainRegisterOpen(false)
+    if (label === "Parto") setBirthModal({ sow: null })
+    else if (label === "Vacunación") setHealthModal({ sow: null })
+    else setQuickRegistration(label)
   }
   const resolveAlert = (alert: BreedingAlert) => {
     const sow = sows.find((item) => item.number === alert.sowNumber) ?? null
@@ -8364,119 +9751,107 @@ function BreedingPage({
       current.filter((alert) => alert.sowNumber !== sow.number),
     )
   }
+  const toggleStage = (
+    setter: (update: (current: Set<SowStage>) => Set<SowStage>) => void,
+    stage: SowStage,
+  ) =>
+    setter((current) => {
+      const next = new Set(current)
+      if (next.has(stage)) next.delete(stage)
+      else next.add(stage)
+      return next
+    })
+  const sowCard = (sow: Sow) => (
+    <SowCard
+      key={sow.id}
+      sow={sow}
+      alert={activeAlerts.find((alert) => alert.sowNumber === sow.number)}
+      menuOpen={menuOpen === sow.id}
+      onMenu={() => setMenuOpen(menuOpen === sow.id ? null : sow.id)}
+      onRegister={() => openRegister(sow)}
+      onHealth={() => {
+        setMenuOpen(null)
+        setHealthModal({ sow })
+      }}
+      onView={() => {
+        setMenuOpen(null)
+        setPanelSow(sow)
+      }}
+      onDiscard={() => {
+        setMenuOpen(null)
+        moveSowToStatus(sow, "Pendiente de venta", "Marcada para descarte")
+        onNotice(`${sow.number} marcada para descarte`)
+      }}
+      onWithdrawal={() => {
+        setMenuOpen(null)
+        setWithdrawingSow(sow)
+      }}
+      onTransfer={() => {
+        const currentIndex = sowStageOrder.indexOf(sow.stage)
+        const nextStage =
+          sowStageOrder[(currentIndex + 1) % sowStageOrder.length]
+        setMenuOpen(null)
+        setSows((current) =>
+          current.map((item) =>
+            item.id === sow.id
+              ? { ...item, stage: nextStage, daysInStatus: 0 }
+              : item,
+          ),
+        )
+        onNotice(`${sow.number} transferida a ${sowStageLabels[nextStage]}`)
+      }}
+      onDelete={() => {
+        setMenuOpen(null)
+        moveSowToStatus(sow, "Eliminadas", "Eliminación manual del registro")
+        onNotice(`${sow.number} eliminada`)
+      }}
+      registerMenu={
+        registerOpen && registerSow?.id === sow.id ? (
+          <RegisterMenu
+            sow={sow}
+            onClose={() => setRegisterOpen(false)}
+            onEvent={(type) => {
+              if (type === "Parto y lactancia") setBirthModal({ sow })
+              else setEventModal({ sow, type })
+            }}
+            onHealth={() => setHealthModal({ sow })}
+            onNotice={onNotice}
+          />
+        ) : undefined
+      }
+    />
+  )
   return (
     <>
       <div className="breeding-page">
         <BreedingHeader
           farmName={farmName}
-          sowCount={sows.filter((sow) => sow.recordStatus === "Activas").length}
-          alerts={activeAlerts}
-          bellOpen={bellOpen}
-          setBellOpen={setBellOpen}
-          registerOpen={registerOpen}
-          setRegisterOpen={(value) => {
-            setRegisterSow(null)
-            setRegisterOpen(value)
+          sows={sows}
+          recordStatus={recordStatus}
+          onStatusChange={(status) => {
+            setRecordStatus(status)
+            setBand("Todas")
+            setLot("Todos")
+            setStageFilter("Todas")
           }}
-          registerMenu={
-            registerOpen ? (
-              <RegisterMenu
-                sow={registerSow}
-                onClose={() => setRegisterOpen(false)}
-                onEvent={(type) => {
-                  if (type === "Parto y lactancia") {
-                    setBirthModal({ sow: registerSow })
-                  } else {
-                    setEventModal({ sow: registerSow, type })
-                  }
-                }}
-                onHealth={() => setHealthModal({ sow: registerSow })}
-                onNotice={onNotice}
-              />
-            ) : null
-          }
-          onResolve={resolveAlert}
         />
-        <AttendToday alerts={activeAlerts} onAction={resolveAlert} />
         <section className="sow-directory">
-          <div className="sow-toolbar">
-            {recordStatus === "Activas" ? (
-              <div className="sow-tabs">
-                {sowStages.map((item) => (
-                  <button
-                    className={stage === item ? "active" : ""}
-                    onClick={() => setStage(item)}
-                    key={item}
-                  >
-                    {item}
-                    <span>
-                      {
-                        sows.filter(
-                          (sow) =>
-                            sow.recordStatus === "Activas" &&
-                            sow.stage === item,
-                        ).length
-                      }
-                    </span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div />
-            )}
-            <div className="sow-view-actions">
-              <button
-                className="button secondary"
-                onClick={() =>
-                  onNotice(
-                    `Descarga preparada · ${filtered.length} cerdas ${recordStatus.toLowerCase()}`,
-                  )
-                }
-              >
-                <Icon name="download" size={17} />
-                Descargar
-              </button>
-              {recordStatus === "Activas" && (
-                <button
-                  className="button secondary"
-                  onClick={() => setTableView(!tableView)}
-                >
-                  <Icon name={tableView ? "grid" : "table"} size={17} />
-                  {tableView ? "Ver tarjetas" : "Ver en tabla"}
-                </button>
-              )}
-            </div>
-          </div>
-          <div className="sow-filters">
+          <div className="sow-command-bar">
             <label className="search-field">
               <Icon name="search" size={18} />
               <input
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Buscar por número"
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Buscar por número o lote"
               />
             </label>
-            <label className="band-filter sow-status-filter">
-              <span>Estado</span>
+            <label className="sow-select-filter">
+              <span className="sr-only">Banda</span>
               <select
-                value={recordStatus}
-                onChange={(event) => {
-                  setRecordStatus(event.target.value as SowRecordStatus)
-                  setBand("Todas")
-                }}
+                value={band}
+                onChange={(event) => setBand(event.target.value)}
               >
-                {sowRecordStatuses.map((item) => (
-                  <option value={item} key={item}>
-                    {item} (
-                    {sows.filter((sow) => sow.recordStatus === item).length})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="band-filter">
-              <span>Banda</span>
-              <select value={band} onChange={(e) => setBand(e.target.value)}>
-                <option>Todas</option>
+                <option value="Todas">Todas las bandas</option>
                 {[
                   ...new Set(
                     sows
@@ -8486,76 +9861,249 @@ function BreedingPage({
                 ]
                   .sort((a, b) => a - b)
                   .map((value) => (
+                    <option key={value} value={value}>
+                      Banda {value}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label className="sow-select-filter">
+              <span className="sr-only">Lote</span>
+              <select
+                value={lot}
+                onChange={(event) => setLot(event.target.value)}
+              >
+                <option value="Todos">Todos los lotes</option>
+                {[...new Set(sows.map((sow) => sow.lot))]
+                  .sort()
+                  .map((value) => (
                     <option key={value}>{value}</option>
                   ))}
               </select>
             </label>
-          </div>
-          {recordStatus !== "Activas" && (
-            <div className="inactive-sows-notice">
-              <span>
-                Mostrando cerdas <strong>{recordStatus.toLowerCase()}</strong>
-              </span>
-              <button
-                onClick={() => {
-                  setRecordStatus("Activas")
-                  setBand("Todas")
-                }}
+            <label className="sow-select-filter">
+              <span className="sr-only">Etapa</span>
+              <select
+                value={stageFilter}
+                onChange={(event) =>
+                  setStageFilter(event.target.value as SowStage | "Todas")
+                }
               >
-                Volver a activas
+                <option value="Todas">Etapa · Todas</option>
+                {sowStageOrder.map((stage) => (
+                  <option key={stage} value={stage}>
+                    {sowStageLabels[stage]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="sow-command-actions">
+              <button
+                className="icon-button command-icon-button"
+                aria-label="Ubicación del plantel"
+                onClick={() => onNotice("Ubicación del plantel")}
+              >
+                <Icon name="pin" size={18} />
               </button>
-            </div>
-          )}
-          {recordStatus !== "Activas" ? (
-            <SowTable sows={filtered} onView={setPanelSow} inactive />
-          ) : tableView ? (
-            <SowTable sows={filtered} onView={setPanelSow} />
-          ) : (
-            <div className="sow-grid">
-              {filtered.map((sow) => (
-                <SowCard
-                  key={sow.id}
-                  sow={sow}
-                  alert={activeAlerts.find(
-                    (alert) => alert.sowNumber === sow.number,
+              <button
+                className="icon-button command-icon-button"
+                aria-label="Descargar plantel"
+                onClick={() =>
+                  onNotice(
+                    `Descarga preparada · ${filtered.length} cerdas ${recordStatus.toLowerCase()}`,
+                  )
+                }
+              >
+                <Icon name="download" size={18} />
+              </button>
+              <div className="bell-wrap" ref={bellRef}>
+                <button
+                  className="icon-button alert-bell"
+                  aria-label="Alertas del plantel"
+                  onClick={() => {
+                    setRegisterOpen(false)
+                    setBellOpen(!bellOpen)
+                  }}
+                >
+                  <Icon name="bell" size={20} />
+                  {activeAlerts.length > 0 && (
+                    <span>{activeAlerts.length}</span>
                   )}
-                  menuOpen={menuOpen === sow.id}
-                  onMenu={() =>
-                    setMenuOpen(menuOpen === sow.id ? null : sow.id)
-                  }
-                  onRegister={() => openRegister(sow)}
-                  onHealth={() => {
-                    setMenuOpen(null)
-                    setHealthModal({ sow })
+                </button>
+                {bellOpen && (
+                  <div className="alerts-popover">
+                    <div className="popover-heading">
+                      <strong>Alertas</strong>
+                      <span>Ordenadas por urgencia</span>
+                    </div>
+                    {activeAlerts.length ? (
+                      activeAlerts
+                        .slice()
+                        .sort((a, b) => a.urgency - b.urgency)
+                        .map((alert) => (
+                          <div className="popover-alert" key={alert.id}>
+                            <span
+                              className={`alert-dot urgency-${alert.urgency}`}
+                            />
+                            <div>
+                              <strong>
+                                {alert.sowNumber} · {alert.title}
+                              </strong>
+                              <p>{alert.detail}</p>
+                              <button onClick={() => resolveAlert(alert)}>
+                                Resolver ahora
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                    ) : (
+                      <div className="popover-empty">
+                        No tienes alertas pendientes.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="register-wrap" ref={registerRef}>
+                <button
+                  className="button primary"
+                  onClick={() => {
+                    setBellOpen(false)
+                    setRegisterOpen(false)
+                    setMainRegisterOpen(true)
                   }}
-                  onView={() => {
-                    setMenuOpen(null)
-                    setPanelSow(sow)
-                  }}
-                  onDiscard={() => {
-                    setMenuOpen(null)
-                    moveSowToStatus(
-                      sow,
-                      "Pendiente de venta",
-                      "Marcada para descarte",
+                >
+                  <Icon name="plus" size={18} />
+                  Registrar
+                </button>
+              </div>
+            </div>
+          </div>
+          {recordStatus !== "Activas" ? (
+            <div className="inactive-sows-list">
+              <div className="inactive-list-heading">
+                <div>
+                  <h2>{recordStatus}</h2>
+                  <span>
+                    {countLabel(filtered.length, "registro", "registros")}
+                  </span>
+                </div>
+              </div>
+              <SowTable
+                sows={filtered}
+                onView={setPanelSow}
+                inactive
+                onSale={
+                  recordStatus === "Pendiente de venta"
+                    ? (sow) => {
+                        moveSowToStatus(sow, "Transferidas", "Venta registrada")
+                        onNotice("Venta registrada")
+                      }
+                    : undefined
+                }
+              />
+            </div>
+          ) : (
+            <div className="active-sow-content">
+              <div className="sow-stage-sections">
+                {sowStageOrder
+                  .filter(
+                    (stage) => stageFilter === "Todas" || stageFilter === stage,
+                  )
+                  .map((stage) => {
+                    const stageSows = filtered.filter(
+                      (sow) => sow.stage === stage,
                     )
-                    onNotice(`${sow.number} marcada para descarte`)
-                  }}
-                  onWithdrawal={() => {
-                    setMenuOpen(null)
-                    setWithdrawingSow(sow)
-                  }}
-                  onDelete={() => {
-                    setMenuOpen(null)
-                    moveSowToStatus(
-                      sow,
-                      "Eliminadas",
-                      "Eliminación manual del registro",
+                    const collapsed = collapsedStages.has(stage)
+                    const expanded = expandedStages.has(stage)
+                    const tableView = tableStages.has(stage)
+                    const visibleSows = expanded
+                      ? stageSows
+                      : stageSows.slice(0, 12)
+                    const hiddenCount = Math.max(0, stageSows.length - 12)
+                    return (
+                      <section
+                        className={`sow-stage-section stage-${sowStageClasses[stage]}`}
+                        key={stage}
+                      >
+                        <header className="sow-stage-heading">
+                          <div className="sow-stage-title">
+                            <i />
+                            <h2>{sowStageLabels[stage]}</h2>
+                            <span>{stageSows.length}</span>
+                          </div>
+                          <div className="sow-stage-actions">
+                            <button
+                              className="icon-button"
+                              aria-label={`Descargar etapa ${sowStageLabels[stage]}`}
+                              onClick={() =>
+                                onNotice(
+                                  `Descarga preparada · ${sowStageLabels[stage]}`,
+                                )
+                              }
+                            >
+                              <Icon name="download" size={17} />
+                            </button>
+                            <button
+                              className="icon-button"
+                              aria-label={
+                                tableView ? "Ver tarjetas" : "Ver en tabla"
+                              }
+                              onClick={() => toggleStage(setTableStages, stage)}
+                            >
+                              <Icon
+                                name={tableView ? "grid" : "table"}
+                                size={17}
+                              />
+                            </button>
+                            <button
+                              className={`icon-button stage-collapse ${
+                                collapsed ? "collapsed" : ""
+                              }`}
+                              aria-label={
+                                collapsed
+                                  ? `Expandir ${sowStageLabels[stage]}`
+                                  : `Plegar ${sowStageLabels[stage]}`
+                              }
+                              aria-expanded={!collapsed}
+                              onClick={() =>
+                                toggleStage(setCollapsedStages, stage)
+                              }
+                            >
+                              <Icon name="chevron" size={17} />
+                            </button>
+                          </div>
+                        </header>
+                        {!collapsed && (
+                          <div className="sow-stage-body">
+                            {tableView ? (
+                              <SowTable sows={stageSows} onView={setPanelSow} />
+                            ) : (
+                              <>
+                                <div className="sow-grid">
+                                  {visibleSows.map(sowCard)}
+                                </div>
+                                {(hiddenCount > 0 || expanded) && (
+                                  <button
+                                    className="sow-show-more"
+                                    onClick={() =>
+                                      toggleStage(setExpandedStages, stage)
+                                    }
+                                  >
+                                    {expanded
+                                      ? "Ver menos"
+                                      : `Ver más (${hiddenCount})`}
+                                    <Icon name="chevron" size={15} />
+                                  </button>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </section>
                     )
-                    onNotice(`${sow.number} eliminada`)
-                  }}
-                />
-              ))}
+                  })}
+              </div>
             </div>
           )}
         </section>
@@ -8565,10 +10113,17 @@ function BreedingPage({
           sow={birthModal.sow}
           sows={sows}
           onClose={() => setBirthModal(null)}
-          onSave={(event) => {
+          onSave={(event, closeAfterSave) => {
             setSowEvents((current) => [event, ...current])
-            setBirthModal(null)
+            setSows((current) =>
+              current.map((sow) =>
+                sow.id === event.sowId
+                  ? { ...sow, stage: "Lactancia", daysInStatus: 0 }
+                  : sow,
+              ),
+            )
             onNotice("Parto registrado")
+            if (closeAfterSave) setBirthModal(null)
           }}
         />
       )}
@@ -8578,10 +10133,10 @@ function BreedingPage({
           sows={sows}
           eventType={eventModal.type}
           onClose={() => setEventModal(null)}
-          onSave={(event) => {
+          onSave={(event, closeAfterSave) => {
             setSowEvents((current) => [event, ...current])
-            setEventModal(null)
             onNotice(`${event.type} registrado`)
+            if (closeAfterSave) setEventModal(null)
           }}
         />
       )}
@@ -8633,6 +10188,108 @@ function BreedingPage({
             )
             setWithdrawingSow(null)
             onNotice("Baja registrada")
+          }}
+        />
+      )}
+      {mainRegisterOpen && (
+        <MainRegisterPanel
+          onClose={() => setMainRegisterOpen(false)}
+          onSelect={openMainRegistration}
+        />
+      )}
+      {quickRegistration && (
+        <OperationalRegistrationModal
+          type={quickRegistration}
+          sows={sows.filter((sow) => sow.recordStatus === "Activas")}
+          onClose={() => setQuickRegistration(null)}
+          onSave={(result) => {
+            if (result.newSow) {
+              const nextId = Math.max(...sows.map((sow) => sow.id)) + 1
+              setSows((current) => [
+                {
+                  id: nextId,
+                  number: result.newSow!.number,
+                  lot: result.newSow!.lot,
+                  stage: result.newSow!.stage,
+                  recordStatus: "Activas",
+                  band: result.newSow!.band,
+                  daysInStatus: 0,
+                  probableFarrowing: undefined,
+                  parity: 0,
+                  bornAliveAverage: 0,
+                  pha: 0,
+                  cycleWeek: "Sin asignar",
+                },
+                ...current,
+              ])
+            }
+            if (result.sow && quickRegistration === "Servicio") {
+              setSows((current) =>
+                current.map((sow) =>
+                  sow.id === result.sow!.id
+                    ? { ...sow, stage: "Gestación", daysInStatus: 0 }
+                    : sow,
+                ),
+              )
+            }
+            if (result.sow && quickRegistration === "Destete") {
+              setSows((current) =>
+                current.map((sow) =>
+                  sow.id === result.sow!.id
+                    ? {
+                        ...sow,
+                        stage: result.closeParto ? "Vacía" : sow.stage,
+                        daysInStatus: result.closeParto ? 0 : sow.daysInStatus,
+                        piglets: Math.max(
+                          0,
+                          (sow.piglets ?? 0) - (result.migratedPiglets ?? 0),
+                        ),
+                      }
+                    : sow,
+                ),
+              )
+            }
+            if (result.sow && result.managementAction) {
+              if (result.managementAction === "discard") {
+                moveSowToStatus(
+                  result.sow,
+                  "Pendiente de venta",
+                  "Marcada para descarte",
+                )
+              } else if (result.managementAction === "withdrawal") {
+                moveSowToStatus(
+                  result.sow,
+                  withdrawalStatusForReason(result.withdrawalReason ?? ""),
+                  result.withdrawalReason ?? "Baja",
+                  result.withdrawalDate,
+                )
+              } else if (result.managementAction === "delete") {
+                moveSowToStatus(
+                  result.sow,
+                  "Eliminadas",
+                  "Eliminación manual del registro",
+                )
+              } else if (result.managementAction === "transfer") {
+                setSows((current) =>
+                  current.map((sow) =>
+                    sow.id === result.sow!.id
+                      ? {
+                          ...sow,
+                          stage: result.targetStage ?? sow.stage,
+                          daysInStatus: 0,
+                        }
+                      : sow,
+                  ),
+                )
+                setAlerts((current) =>
+                  current.filter(
+                    (alert) => alert.sowNumber !== result.sow!.number,
+                  ),
+                )
+              }
+            }
+            onNotice(`${quickRegistration} registrado`)
+            if (result.closeAfterSave) setQuickRegistration(null)
           }}
         />
       )}
@@ -10751,62 +12408,6 @@ function InventoryHeader({
   )
 }
 
-function InventoryAttentionSection({
-  items,
-  onAction,
-}: {
-  items: InventoryAttention[]
-  onAction: (item: InventoryAttention) => void
-}) {
-  if (!items.length) return null
-  return (
-    <section className="inventory-attention">
-      <div className="inventory-section-heading">
-        <div>
-          <span className="attend-icon">
-            <Icon name="alert" size={18} />
-          </span>
-          <div>
-            <h2>Requiere atención</h2>
-            <p>
-              {items.length === 1
-                ? "1 producto necesita una acción"
-                : `${items.length} productos necesitan una acción`}
-            </p>
-          </div>
-        </div>
-      </div>
-      <div className="inventory-attention-list">
-        {items.map((item) => (
-          <div className="inventory-attention-row" key={item.id}>
-            <span
-              className={`alert-dot ${
-                item.critical ? "urgency-1" : "urgency-2"
-              }`}
-            />
-            <div>
-              <strong>{item.product}</strong>
-              <span>
-                {item.title} · {item.detail}
-              </span>
-            </div>
-            <button
-              className={
-                item.action === "Dar de baja"
-                  ? "button danger-outline"
-                  : "button secondary"
-              }
-              onClick={() => onAction(item)}
-            >
-              {item.action}
-            </button>
-          </div>
-        ))}
-      </div>
-    </section>
-  )
-}
-
 function RemoveInventoryDialog({
   product,
   onClose,
@@ -11565,22 +13166,6 @@ function InventoryPage({
           farmName={farmName}
           onPurchase={() => setPurchase({ category })}
         />
-        <InventoryAttentionSection
-          items={attention}
-          onAction={(item) => {
-            if (item.action === "Registrar compra") {
-              setPurchase({
-                category: item.category,
-                product: item.product,
-              })
-            } else {
-              setPendingRemoval({
-                category: item.category,
-                product: item.product,
-              })
-            }
-          }}
-        />
         <div className="inventory-kpis">
           <div>
             <span className="inventory-kpi-icon food">
@@ -12206,6 +13791,18 @@ type PorciDynamicRecord = {
   id: number
   values: Record<string, string>
 }
+
+type PorciColumnFilter = {
+  text?: string
+  from?: string
+  to?: string
+  selected?: string[]
+}
+
+type PorciTableSort = {
+  columnId: string
+  direction: "asc" | "desc"
+} | null
 
 const porciIconOptions: IconName[] = [
   "table",
@@ -12932,6 +14529,251 @@ function ExportPorciTableDialog({
   )
 }
 
+const porciFilterKind = (column: PorciColumn) => {
+  const normalizedName = column.name.toLocaleLowerCase("es")
+  if (
+    ["área", "area", "estado", "unidad", "responsable"].includes(
+      normalizedName,
+    ) ||
+    column.type === "Lista de opciones" ||
+    column.type === "Estado Hecho/Pendiente"
+  ) {
+    return "list"
+  }
+  if (column.type === "Número") return "number"
+  if (column.type === "Fecha") return "date"
+  if (column.type === "Hora") return "time"
+  return "text"
+}
+
+const porciFilterIsActive = (filter?: PorciColumnFilter) =>
+  Boolean(
+    filter?.text?.trim() ||
+      filter?.from ||
+      filter?.to ||
+      filter?.selected?.length,
+  )
+
+const porciDateToIso = (value: string) => {
+  const [day, month, year] = value.split("/")
+  return year && month && day ? `${year}-${month}-${day}` : value
+}
+
+function PorciColumnFilterPanel({
+  column,
+  records,
+  currentFilter,
+  onApply,
+  onClose,
+}: {
+  column: PorciColumn
+  records: PorciDynamicRecord[]
+  currentFilter?: PorciColumnFilter
+  onApply: (filter: PorciColumnFilter) => void
+  onClose: () => void
+}) {
+  const panelRef = useRef<HTMLDivElement>(null)
+  const [draft, setDraft] = useState<PorciColumnFilter>(currentFilter ?? {})
+  const [search, setSearch] = useState("")
+  const kind = porciFilterKind(column)
+  const options = useMemo(
+    () =>
+      [
+        ...new Set(
+          records
+            .map((record) => record.values[column.id])
+            .filter((value): value is string => Boolean(value?.trim())),
+        ),
+      ].sort((a, b) => a.localeCompare(b, "es", { numeric: true })),
+    [column.id, records],
+  )
+  const visibleOptions = options.filter((option) =>
+    option.toLocaleLowerCase("es").includes(search.toLocaleLowerCase("es")),
+  )
+
+  useEffect(() => {
+    const dismiss = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (
+        !panelRef.current?.contains(target) &&
+        !target.closest(".date-picker-popover")
+      ) {
+        onClose()
+      }
+    }
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose()
+    }
+    document.addEventListener("mousedown", dismiss)
+    document.addEventListener("keydown", escape)
+    return () => {
+      document.removeEventListener("mousedown", dismiss)
+      document.removeEventListener("keydown", escape)
+    }
+  }, [onClose])
+
+  return (
+    <div
+      className="porci-column-filter-panel"
+      ref={panelRef}
+      role="dialog"
+      aria-label={`Filtrar ${column.name}`}
+      onClick={(event) => event.stopPropagation()}
+    >
+      {kind === "text" && (
+        <label>
+          <span>Contiene…</span>
+          <input
+            autoFocus
+            value={draft.text ?? ""}
+            onChange={(event) =>
+              setDraft({ ...draft, text: event.target.value })
+            }
+            placeholder="Contiene…"
+          />
+        </label>
+      )}
+      {kind === "number" && (
+        <div className="porci-filter-range">
+          <label>
+            <span>Desde</span>
+            <input
+              autoFocus
+              inputMode="decimal"
+              value={draft.from ?? ""}
+              onChange={(event) =>
+                setDraft({
+                  ...draft,
+                  from: event.target.value.replace(/[^\d,.-]/g, ""),
+                })
+              }
+            />
+          </label>
+          <label>
+            <span>Hasta</span>
+            <input
+              inputMode="decimal"
+              value={draft.to ?? ""}
+              onChange={(event) =>
+                setDraft({
+                  ...draft,
+                  to: event.target.value.replace(/[^\d,.-]/g, ""),
+                })
+              }
+            />
+          </label>
+        </div>
+      )}
+      {kind === "date" && (
+        <div className="porci-filter-range">
+          <label>
+            <span>Desde</span>
+            <DatePicker
+              value={draft.from ?? ""}
+              max={draft.to}
+              onChange={(from) => setDraft({ ...draft, from })}
+              label={`Fecha desde para ${column.name}`}
+            />
+          </label>
+          <label>
+            <span>Hasta</span>
+            <DatePicker
+              value={draft.to ?? ""}
+              min={draft.from}
+              onChange={(to) => setDraft({ ...draft, to })}
+              label={`Fecha hasta para ${column.name}`}
+            />
+          </label>
+        </div>
+      )}
+      {kind === "time" && (
+        <div className="porci-filter-range">
+          <label>
+            <span>Desde</span>
+            <input
+              type="time"
+              value={draft.from ?? ""}
+              onChange={(event) =>
+                setDraft({ ...draft, from: event.target.value })
+              }
+            />
+          </label>
+          <label>
+            <span>Hasta</span>
+            <input
+              type="time"
+              value={draft.to ?? ""}
+              onChange={(event) =>
+                setDraft({ ...draft, to: event.target.value })
+              }
+            />
+          </label>
+        </div>
+      )}
+      {kind === "list" && (
+        <div className="porci-filter-options">
+          {options.length > 6 && (
+            <label className="porci-filter-search">
+              <Icon name="search" size={15} />
+              <input
+                autoFocus
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Buscar…"
+              />
+            </label>
+          )}
+          <div>
+            {visibleOptions.map((option) => (
+              <label key={option}>
+                <input
+                  type="checkbox"
+                  checked={(draft.selected ?? []).includes(option)}
+                  onChange={(event) => {
+                    const selected = draft.selected ?? []
+                    setDraft({
+                      ...draft,
+                      selected: event.target.checked
+                        ? [...selected, option]
+                        : selected.filter((item) => item !== option),
+                    })
+                  }}
+                />
+                <span>{option}</span>
+              </label>
+            ))}
+            {!visibleOptions.length && (
+              <p className="porci-filter-no-options">Sin opciones</p>
+            )}
+          </div>
+        </div>
+      )}
+      <div className="porci-filter-actions">
+        <button
+          type="button"
+          className="text-button"
+          onClick={() => {
+            onApply({})
+            onClose()
+          }}
+        >
+          Limpiar
+        </button>
+        <button
+          type="button"
+          className="button primary"
+          onClick={() => {
+            onApply(draft)
+            onClose()
+          }}
+        >
+          Aplicar
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function PorciTablePage({
   farmName,
   onNotice,
@@ -12947,11 +14789,11 @@ function PorciTablePage({
   const tableScrollRef = useRef<HTMLDivElement>(null)
   const [recordsByTable, setRecordsByTable] =
     useState<Record<string, PorciDynamicRecord[]>>(initialPorciRecords)
-  const [areaFilter, setAreaFilter] = useState("Todas")
-  const [statusFilter, setStatusFilter] = useState("Todos")
-  const [dateFilter, setDateFilter] = useState("")
-  const [filtersOpen, setFiltersOpen] = useState(true)
-  const [sortAscending, setSortAscending] = useState(false)
+  const [filtersByTable, setFiltersByTable] =
+    useState<Record<string, Record<string, PorciColumnFilter>>>({})
+  const [sortByTable, setSortByTable] =
+    useState<Record<string, PorciTableSort>>({})
+  const [openFilterColumn, setOpenFilterColumn] = useState<string | null>(null)
   const [recordPanelOpen, setRecordPanelOpen] = useState(false)
   const [designerOpen, setDesignerOpen] = useState(false)
   const [editingTable, setEditingTable] = useState<PorciTableDefinition | null>(
@@ -12964,6 +14806,16 @@ function PorciTablePage({
   const selectedTable =
     tables.find((table) => table.id === selectedTableId) ?? tables[0]
   const records = recordsByTable[selectedTable.id] ?? []
+  const tableFilters = filtersByTable[selectedTable.id] ?? {}
+  const tableSort =
+    selectedTable.id in sortByTable
+      ? sortByTable[selectedTable.id]
+      : {
+          columnId:
+            selectedTable.columns.find((column) => column.type === "Fecha")
+              ?.id ?? selectedTable.columns[0]?.id,
+          direction: "desc" as const,
+        }
   useEffect(() => {
     if (tableScrollRef.current) {
       tableScrollRef.current.scrollLeft = 0
@@ -12979,19 +14831,93 @@ function PorciTablePage({
       ),
     })
   }
-  const filtered = records.filter(
-    (record) =>
-      (areaFilter === "Todas" || record.values.area === areaFilter) &&
-      (statusFilter === "Todos" || record.values.status === statusFilter) &&
-      (!dateFilter ||
-        record.values.date?.split("/").reverse().join("-") === dateFilter),
+  const filtered = records.filter((record) =>
+    selectedTable.columns.every((column) => {
+      const filter = tableFilters[column.id]
+      if (!porciFilterIsActive(filter)) return true
+      const value = record.values[column.id] ?? ""
+      const kind = porciFilterKind(column)
+      if (kind === "text") {
+        return value
+          .toLocaleLowerCase("es")
+          .includes((filter.text ?? "").trim().toLocaleLowerCase("es"))
+      }
+      if (kind === "list") {
+        return !filter.selected?.length || filter.selected.includes(value)
+      }
+      if (kind === "date") {
+        const comparable = porciDateToIso(value)
+        return (
+          (!filter.from || comparable >= filter.from) &&
+          (!filter.to || comparable <= filter.to)
+        )
+      }
+      if (kind === "time") {
+        return (
+          (!filter.from || value >= filter.from) &&
+          (!filter.to || value <= filter.to)
+        )
+      }
+      const numericValue = Number(value.replace(",", "."))
+      const from = filter.from ? Number(filter.from.replace(",", ".")) : null
+      const to = filter.to ? Number(filter.to.replace(",", ".")) : null
+      return (
+        (from === null || numericValue >= from) &&
+        (to === null || numericValue <= to)
+      )
+    }),
   )
   const visibleRecords = filtered.slice().sort((a, b) => {
-    const dateDifference =
-      new Date(a.values.date?.split("/").reverse().join("-") ?? 0).getTime() -
-      new Date(b.values.date?.split("/").reverse().join("-") ?? 0).getTime()
-    return sortAscending ? dateDifference : -dateDifference
+    if (!tableSort?.columnId) return 0
+    const column = selectedTable.columns.find(
+      (item) => item.id === tableSort.columnId,
+    )
+    if (!column) return 0
+    const aValue = a.values[column.id] ?? ""
+    const bValue = b.values[column.id] ?? ""
+    let comparison = 0
+    if (column.type === "Número") {
+      comparison =
+        Number(aValue.replace(",", ".")) - Number(bValue.replace(",", "."))
+    } else if (column.type === "Fecha") {
+      comparison = porciDateToIso(aValue).localeCompare(porciDateToIso(bValue))
+    } else {
+      comparison = aValue.localeCompare(bValue, "es", { numeric: true })
+    }
+    return tableSort.direction === "asc" ? comparison : -comparison
   })
+  const activeFilters = selectedTable.columns.filter((column) =>
+    porciFilterIsActive(tableFilters[column.id]),
+  )
+  const updateTableFilter = (columnId: string, filter: PorciColumnFilter) => {
+    setFiltersByTable((current) => ({
+      ...current,
+      [selectedTable.id]: {
+        ...(current[selectedTable.id] ?? {}),
+        [columnId]: filter,
+      },
+    }))
+  }
+  const clearTableFilters = () =>
+    setFiltersByTable((current) => ({
+      ...current,
+      [selectedTable.id]: {},
+    }))
+  const filterLabel = (column: PorciColumn) => {
+    const filter = tableFilters[column.id]
+    const kind = porciFilterKind(column)
+    if (kind === "list") return filter.selected?.join(", ") ?? ""
+    if (kind === "text") return `Contiene “${filter.text?.trim()}”`
+    const formatBound = (value?: string) =>
+      kind === "date" && value
+        ? value.split("-").reverse().slice(0, 2).join("/")
+        : value
+    const from = formatBound(filter.from)
+    const to = formatBound(filter.to)
+    if (from && to) return `${from}–${to}`
+    if (from) return `Desde ${from}`
+    return `Hasta ${to}`
+  }
   const createOrUpdateTable = (definition: PorciTableDefinition) => {
     const exists = tables.some((table) => table.id === definition.id)
     setTables(
@@ -13041,7 +14967,10 @@ function PorciTablePage({
                 table={table}
                 selected={selectedTable.id === table.id}
                 menuOpen={tableMenuOpen === table.id}
-                onSelect={() => setSelectedTableId(table.id)}
+                onSelect={() => {
+                  setSelectedTableId(table.id)
+                  setOpenFilterColumn(null)
+                }}
                 onMenu={() =>
                   setTableMenuOpen(tableMenuOpen === table.id ? null : table.id)
                 }
@@ -13088,37 +15017,36 @@ function PorciTablePage({
             <div className="porci-table-title">
               <div>
                 <h2>{selectedTable.name}</h2>
-                <p>
-                  {countLabel(
-                    filtered.length,
-                    "registro visible",
-                    "registros visibles",
+                <div className="porci-visible-summary">
+                  <p>
+                    {countLabel(
+                      filtered.length,
+                      "registro visible",
+                      "registros visibles",
+                    )}
+                  </p>
+                  {activeFilters.map((column) => (
+                    <span className="porci-filter-chip" key={column.id}>
+                      {column.name}: {filterLabel(column)}
+                      <button
+                        aria-label={`Quitar filtro ${column.name}`}
+                        onClick={() => updateTableFilter(column.id, {})}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                  {activeFilters.length > 0 && (
+                    <button
+                      className="porci-clear-filters"
+                      onClick={clearTableFilters}
+                    >
+                      Limpiar filtros
+                    </button>
                   )}
-                </p>
+                </div>
               </div>
               <div className="porci-table-tools">
-                {selectedTable.id === "pediluvios" && (
-                  <>
-                    <button
-                      className={`icon-button ${filtersOpen ? "active" : ""}`}
-                      aria-label="Filtros"
-                      onClick={() => setFiltersOpen(!filtersOpen)}
-                    >
-                      <Icon name="filter" size={24} />
-                    </button>
-                    <button
-                      className="icon-button"
-                      aria-label={
-                        sortAscending
-                          ? "Ordenar de más reciente a más antiguo"
-                          : "Ordenar de más antiguo a más reciente"
-                      }
-                      onClick={() => setSortAscending(!sortAscending)}
-                    >
-                      <Icon name="sort" size={24} />
-                    </button>
-                  </>
-                )}
                 <button
                   className="button secondary"
                   onClick={() => setExportOpen(true)}
@@ -13128,55 +15056,7 @@ function PorciTablePage({
                 </button>
               </div>
             </div>
-            {selectedTable.id === "pediluvios" && filtersOpen && (
-              <div className="porci-filters">
-                <span>Filtros</span>
-                <label>
-                  <b>Área</b>
-                  <select
-                    value={areaFilter}
-                    onChange={(event) => setAreaFilter(event.target.value)}
-                  >
-                    <option>Todas</option>
-                    {[
-                      ...new Set(records.map((record) => record.values.area)),
-                    ].map((area) => (
-                      <option key={area}>{area}</option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  <b>Estado</b>
-                  <select
-                    value={statusFilter}
-                    onChange={(event) => setStatusFilter(event.target.value)}
-                  >
-                    <option>Todos</option>
-                    <option>Hecho</option>
-                    <option>Pendiente</option>
-                  </select>
-                </label>
-                <label>
-                  <b>Fecha</b>
-                  <DatePicker
-                    value={dateFilter}
-                    onChange={setDateFilter}
-                    label="Filtrar por fecha"
-                  />
-                </label>
-                <button
-                  className="text-button"
-                  onClick={() => {
-                    setAreaFilter("Todas")
-                    setStatusFilter("Todos")
-                    setDateFilter("")
-                  }}
-                >
-                  Limpiar
-                </button>
-              </div>
-            )}
-            {visibleRecords.length ? (
+            {records.length ? (
               <div className="porci-scroll-table" ref={tableScrollRef}>
                 <table
                   style={{
@@ -13196,7 +15076,74 @@ function PorciTablePage({
                           }
                           key={column.id}
                         >
-                          {column.name}
+                          <div className="porci-column-heading">
+                            <span>{column.name}</span>
+                            <div className="porci-column-actions">
+                              <button
+                                className={
+                                  porciFilterIsActive(tableFilters[column.id])
+                                    ? "active"
+                                    : ""
+                                }
+                                aria-label={`Filtrar ${column.name}`}
+                                aria-expanded={openFilterColumn === column.id}
+                                onClick={() =>
+                                  setOpenFilterColumn(
+                                    openFilterColumn === column.id
+                                      ? null
+                                      : column.id,
+                                  )
+                                }
+                              >
+                                <Icon name="filter" size={16} />
+                              </button>
+                              <button
+                                className={
+                                  tableSort?.columnId === column.id
+                                    ? "active"
+                                    : ""
+                                }
+                                aria-label={`Ordenar ${column.name}`}
+                                onClick={() => {
+                                  const nextSort: PorciTableSort =
+                                    tableSort?.columnId !== column.id
+                                      ? {
+                                          columnId: column.id,
+                                          direction: "asc",
+                                        }
+                                      : tableSort.direction === "asc"
+                                        ? {
+                                            columnId: column.id,
+                                            direction: "desc",
+                                          }
+                                        : null
+                                  setSortByTable((current) => ({
+                                    ...current,
+                                    [selectedTable.id]: nextSort,
+                                  }))
+                                }}
+                              >
+                                <span className="porci-sort-glyph">
+                                  {tableSort?.columnId === column.id
+                                    ? tableSort.direction === "asc"
+                                      ? "↑"
+                                      : "↓"
+                                    : "↕"}
+                                </span>
+                              </button>
+                            </div>
+                            {openFilterColumn === column.id && (
+                              <PorciColumnFilterPanel
+                                column={column}
+                                records={records}
+                                currentFilter={tableFilters[column.id]}
+                                onApply={(filter) =>
+                                  updateTableFilter(column.id, filter)
+                                }
+                                onClose={() => setOpenFilterColumn(null)}
+                              />
+                            )}
+                          </div>
                         </th>
                       ))}
                     </tr>
@@ -13248,6 +15195,16 @@ function PorciTablePage({
                         )}
                       </tr>
                     ))}
+                    {!visibleRecords.length && (
+                      <tr>
+                        <td
+                          className="porci-no-results"
+                          colSpan={selectedTable.columns.length}
+                        >
+                          No hay registros que coincidan con los filtros.
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -14220,6 +16177,8 @@ function SettingsPage({
   onInvite,
   onDirtyChange,
   onNotice,
+  reportLogo,
+  onReportLogoChange,
 }: {
   farms: Farm[]
   selectedFarm: Farm
@@ -14228,6 +16187,8 @@ function SettingsPage({
   onInvite: () => void
   onDirtyChange: (dirty: boolean) => void
   onNotice: (text: string) => void
+  reportLogo: string
+  onReportLogoChange: (src: string) => void
 }) {
   const [section, setSection] = useState<SettingsSection>(initialSection)
   const [pendingSection, setPendingSection] = useState<SettingsSection | null>(
@@ -14645,11 +16606,25 @@ function SettingsPage({
           </label>
           <label className="field invoice-upload">
             <span>Logo de la empresa</span>
-            <input type="file" accept="image/*" onChange={markDirty} />
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                if (!file) return
+                onReportLogoChange(URL.createObjectURL(file))
+                markDirty()
+              }}
+            />
             <span className="upload-control">
               <Icon name="download" size={17} />
               Subir imagen
             </span>
+            <img
+              className="report-logo-preview"
+              src={reportLogo}
+              alt="Logo actual"
+            />
           </label>
         </div>
         {saveActions}
@@ -15637,17 +17612,3814 @@ function ReportTemplateCard({
   )
 }
 
+const executiveModuleOrder = [
+  "Reproducción",
+  "Precebo",
+  "Levante / Finalización",
+  "Sanidad",
+  "Ventas",
+  "Inventario",
+  "General",
+]
+
+const executiveTableReports = new Set([
+  "mortalidad-precebo",
+  "consumo-alimento-precebo",
+  "mortalidad-lf",
+  "consumo-alimento-lf",
+  "stock-animal",
+  "analisis-reproductivo",
+  "estado-cobertura-stock",
+  "estado-stock-medicamentos",
+  "informe-ventas",
+  "estado-plantel-reproductivo",
+])
+
+type ExecutiveTone = "positive" | "warning" | "danger" | "neutral"
+
+type ExecutiveMetric = {
+  id: string
+  label: string
+  value: string
+  note: string
+  tone: ExecutiveTone
+  decimals: number
+  prefix?: string
+  suffix?: string
+  aggregate: "sum" | "average"
+}
+
+type ExecutiveChartData = {
+  id: string
+  title: string
+  kind: "bar" | "line"
+  decimals: number
+  points: ChartPoint[]
+  target?: number
+  alertAbove?: boolean
+}
+
+type ExecutiveTableSection = {
+  name: string
+  rows: { label: string values: Record<string, number> }[]
+}
+
+type ExecutiveBoardData = {
+  metrics: ExecutiveMetric[]
+  charts: ExecutiveChartData[]
+  dimension: string
+  sections: ExecutiveTableSection[]
+}
+
+type ExecutiveBoard = ReportCatalogItem & {
+  module: string
+  moduleLabel: string
+  icon: IconName
+  hasTable: boolean
+  data: ExecutiveBoardData
+}
+
+type ExecutiveMetricFormat = Pick<ExecutiveMetric, "decimals" | "prefix" | "suffix">
+
+const formatExecutiveValue = (format: ExecutiveMetricFormat, value: number) =>
+  `${format.prefix ?? ""}${formatDecimal(value, format.decimals)}${format.suffix ?? ""}`
+
+const executiveMetric = (
+  id: string,
+  label: string,
+  value: number,
+  note: string,
+  options: {
+    decimals?: number
+    prefix?: string
+    suffix?: string
+    aggregate?: "sum" | "average"
+    tone?: ExecutiveTone
+  } = {},
+): ExecutiveMetric => {
+  const format = {
+    decimals: options.decimals ?? 0,
+    prefix: options.prefix,
+    suffix: options.suffix,
+  }
+  return {
+    id,
+    label,
+    note,
+    tone: options.tone ?? "neutral",
+    aggregate: options.aggregate ?? "sum",
+    ...format,
+    value: formatExecutiveValue(format, value),
+  }
+}
+
+const executiveWeeks = (values: number[]): ChartPoint[] =>
+  values.map((value, index) => ({ label: `S${index + 1}`, value }))
+
+const executivePoints = (labels: string[], values: number[]): ChartPoint[] =>
+  labels.map((label, index) => ({ label, value: values[index] ?? 0 }))
+
+const executiveRows = (labels: string[], columns: Record<string, number[]>) =>
+  labels.map((label, index) => ({
+    label,
+    values: Object.fromEntries(
+      Object.entries(columns).map(([key, values]) => [key, values[index] ?? 0]),
+    ),
+  }))
+
+const precebaLots = [
+  "PR-2026-07",
+  "PR-2026-08",
+  "PR-2026-09",
+  "PR-2026-10",
+  "PR-2026-11",
+]
+
+// Hand-tuned data for the boards included by default, so totals and rows agree.
+const executiveCraftedData: Record<string, ExecutiveBoardData> = {
+  "consumo-alimento-precebo": {
+    metrics: [
+      executiveMetric("animales", "Animales", 512, "5 lotes en el período"),
+      executiveMetric("consumo", "Consumo total", 13260, "Alimento entregado", {
+        suffix: " kg",
+      }),
+      executiveMetric(
+        "diario",
+        "Consumo por animal/día",
+        0.62,
+        "Curva objetivo 0,60 kg",
+        {
+          decimals: 2,
+          suffix: " kg",
+          aggregate: "average",
+          tone: "warning",
+        },
+      ),
+      executiveMetric("conversion", "Conversión", 1.58, "Meta 1,55", {
+        decimals: 2,
+        aggregate: "average",
+        tone: "warning",
+      }),
+      executiveMetric("costo", "Costo de alimento", 30.5, "$ 2.300 por kg", {
+        decimals: 1,
+        prefix: "$ ",
+        suffix: " M",
+      }),
+    ],
+    charts: [
+      {
+        id: "semanal",
+        title: "Consumo semanal (kg)",
+        kind: "line",
+        decimals: 0,
+        points: executiveWeeks([
+          1080, 1150, 1210, 1260, 1300, 1340, 1380, 1420, 1500, 1620,
+        ]),
+      },
+      {
+        id: "lotes",
+        title: "Consumo por animal al día (kg)",
+        kind: "bar",
+        decimals: 2,
+        target: 0.6,
+        points: executivePoints(precebaLots, [0.58, 0.61, 0.66, 0.63, 0.6]),
+      },
+    ],
+    dimension: "Lote",
+    sections: [
+      {
+        name: "Lotes cerrados",
+        rows: executiveRows(precebaLots.slice(0, 2), {
+          animales: [98, 104],
+          consumo: [2390, 2660],
+          diario: [0.58, 0.61],
+          conversion: [1.54, 1.57],
+          costo: [5.5, 6.1],
+        }),
+      },
+      {
+        name: "Lotes activos",
+        rows: executiveRows(precebaLots.slice(2), {
+          animales: [112, 96, 102],
+          consumo: [3100, 2540, 2570],
+          diario: [0.66, 0.63, 0.6],
+          conversion: [1.63, 1.6, 1.56],
+          costo: [7.2, 5.8, 5.9],
+        }),
+      },
+    ],
+  },
+  "mortalidad-precebo": {
+    metrics: [
+      executiveMetric(
+        "mortalidad",
+        "Mortalidad acumulada",
+        1.8,
+        "Meta ≤ 2,5 %",
+        {
+          decimals: 1,
+          suffix: " %",
+          aggregate: "average",
+          tone: "positive",
+        },
+      ),
+      executiveMetric("muertes", "Animales muertos", 9, "En el período"),
+      executiveMetric("animales", "Animales iniciados", 512, "5 lotes"),
+      executiveMetric(
+        "edad",
+        "Edad promedio a la baja",
+        20,
+        "Días desde el ingreso",
+        {
+          suffix: " días",
+          aggregate: "average",
+        },
+      ),
+      executiveMetric(
+        "peso",
+        "Peso promedio a la baja",
+        8.8,
+        "Al momento de la baja",
+        {
+          decimals: 1,
+          suffix: " kg",
+          aggregate: "average",
+        },
+      ),
+    ],
+    charts: [
+      {
+        id: "lotes",
+        title: "Mortalidad por lote (%)",
+        kind: "bar",
+        decimals: 1,
+        target: 2.5,
+        alertAbove: true,
+        points: executivePoints(precebaLots, [1, 1.9, 2.7, 2.1, 1]),
+      },
+      {
+        id: "causas",
+        title: "Causas de mortalidad (%)",
+        kind: "bar",
+        decimals: 0,
+        points: executivePoints(
+          ["Respiratoria", "Digestiva", "Septicemia", "Estrés", "Otras"],
+          [44, 22, 11, 11, 12],
+        ),
+      },
+    ],
+    dimension: "Lote",
+    sections: [
+      {
+        name: "Lotes cerrados",
+        rows: executiveRows(precebaLots.slice(0, 2), {
+          mortalidad: [1, 1.9],
+          muertes: [1, 2],
+          animales: [98, 104],
+          edad: [18, 22],
+          peso: [8.4, 9.1],
+        }),
+      },
+      {
+        name: "Lotes activos",
+        rows: executiveRows(precebaLots.slice(2), {
+          mortalidad: [2.7, 2.1, 1],
+          muertes: [3, 2, 1],
+          animales: [112, 96, 102],
+          edad: [15, 27, 20],
+          peso: [7.6, 10.2, 8.8],
+        }),
+      },
+    ],
+  },
+  "estado-plantel-reproductivo": {
+    metrics: [
+      executiveMetric("hembras", "Hembras activas", 186, "Plantel productivo"),
+      executiveMetric("gestantes", "Gestantes", 98, "52,7 % del plantel", {
+        tone: "positive",
+      }),
+      executiveMetric("lactantes", "Lactantes", 34, "En maternidad"),
+      executiveMetric("vacias", "Vacías", 22, "Esperando servicio", {
+        tone: "warning",
+      }),
+      executiveMetric("reemplazos", "Reemplazos", 32, "En adaptación"),
+    ],
+    charts: [
+      {
+        id: "estados",
+        title: "Hembras por estado",
+        kind: "bar",
+        decimals: 0,
+        points: executivePoints(
+          ["Gestantes", "Lactantes", "Vacías", "Reemplazos"],
+          [98, 34, 22, 32],
+        ),
+      },
+      {
+        id: "bandas",
+        title: "Hembras por banda",
+        kind: "bar",
+        decimals: 0,
+        points: executivePoints(
+          ["Banda 57", "Banda 58", "Banda 59", "Banda 60", "Sin banda"],
+          [40, 36, 34, 30, 46],
+        ),
+      },
+    ],
+    dimension: "Banda",
+    sections: [
+      {
+        name: "Bandas en producción",
+        rows: executiveRows(["Banda 57", "Banda 58", "Banda 59", "Banda 60"], {
+          hembras: [40, 36, 34, 30],
+          gestantes: [0, 36, 32, 30],
+          lactantes: [34, 0, 0, 0],
+          vacias: [6, 0, 2, 0],
+          reemplazos: [0, 0, 0, 0],
+        }),
+      },
+      {
+        name: "Sin banda asignada",
+        rows: executiveRows(["Reemplazos y vacías"], {
+          hembras: [46],
+          gestantes: [0],
+          lactantes: [0],
+          vacias: [14],
+          reemplazos: [32],
+        }),
+      },
+    ],
+  },
+}
+
+type ExecutiveMetricTemplate = {
+  id: string
+  label: string
+  min: number
+  max: number
+  note: string
+  decimals?: number
+  prefix?: string
+  suffix?: string
+  aggregate?: "sum" | "average"
+  tone?: ExecutiveTone
+}
+
+type ExecutiveModuleTemplate = {
+  dimension: string
+  sections: { name: string rows: string[] }[]
+  metrics: ExecutiveMetricTemplate[]
+}
+
+const executiveModuleTemplates: Record<string, ExecutiveModuleTemplate> = {
+  Reproducción: {
+    dimension: "Banda",
+    sections: [
+      { name: "Bandas cerradas", rows: ["Banda 58", "Banda 59", "Banda 60"] },
+      { name: "Bandas en curso", rows: ["Banda 61", "Banda 62"] },
+    ],
+    metrics: [
+      {
+        id: "hembras",
+        label: "Hembras evaluadas",
+        min: 150,
+        max: 210,
+        note: "En el período",
+      },
+      {
+        id: "paricion",
+        label: "Tasa de parición",
+        min: 80,
+        max: 92,
+        decimals: 1,
+        suffix: " %",
+        note: "Meta 88 %",
+        aggregate: "average",
+        tone: "positive",
+      },
+      {
+        id: "nv",
+        label: "Nacidos vivos por parto",
+        min: 11.6,
+        max: 13.4,
+        decimals: 1,
+        note: "Promedio del período",
+        aggregate: "average",
+      },
+      {
+        id: "destetados",
+        label: "Destetados por camada",
+        min: 10.4,
+        max: 12,
+        decimals: 1,
+        note: "Promedio por camada",
+        aggregate: "average",
+      },
+      {
+        id: "dnp",
+        label: "Días no productivos",
+        min: 9,
+        max: 16,
+        suffix: " días",
+        note: "Meta ≤ 12 días",
+        aggregate: "average",
+        tone: "warning",
+      },
+    ],
+  },
+  Precebo: {
+    dimension: "Lote",
+    sections: [
+      { name: "Lotes cerrados", rows: precebaLots.slice(0, 2) },
+      { name: "Lotes activos", rows: precebaLots.slice(2) },
+    ],
+    metrics: [
+      {
+        id: "animales",
+        label: "Animales",
+        min: 480,
+        max: 560,
+        note: "Inventario del período",
+      },
+      {
+        id: "mortalidad",
+        label: "Mortalidad",
+        min: 1.2,
+        max: 2.6,
+        decimals: 1,
+        suffix: " %",
+        note: "Meta ≤ 2,5 %",
+        aggregate: "average",
+        tone: "positive",
+      },
+      {
+        id: "gpd",
+        label: "Ganancia diaria",
+        min: 390,
+        max: 450,
+        suffix: " g",
+        note: "Promedio por animal",
+        aggregate: "average",
+      },
+      {
+        id: "conversion",
+        label: "Conversión",
+        min: 1.45,
+        max: 1.62,
+        decimals: 2,
+        note: "Meta 1,55",
+        aggregate: "average",
+        tone: "warning",
+      },
+      {
+        id: "peso",
+        label: "Peso de salida",
+        min: 24,
+        max: 29,
+        decimals: 1,
+        suffix: " kg",
+        note: "Promedio por lote",
+        aggregate: "average",
+      },
+    ],
+  },
+  "Levante / Finalización": {
+    dimension: "Lote",
+    sections: [
+      { name: "Lotes cerrados", rows: ["LV-2026-02", "LV-2026-03"] },
+      {
+        name: "Lotes activos",
+        rows: ["LV-2026-04", "LV-2026-05", "LV-2026-06"],
+      },
+    ],
+    metrics: [
+      {
+        id: "animales",
+        label: "Animales",
+        min: 900,
+        max: 1100,
+        note: "Inventario del período",
+      },
+      {
+        id: "mortalidad",
+        label: "Mortalidad",
+        min: 1,
+        max: 2.2,
+        decimals: 1,
+        suffix: " %",
+        note: "Meta ≤ 2,0 %",
+        aggregate: "average",
+        tone: "positive",
+      },
+      {
+        id: "gpd",
+        label: "Ganancia diaria",
+        min: 780,
+        max: 900,
+        suffix: " g",
+        note: "Promedio por animal",
+        aggregate: "average",
+      },
+      {
+        id: "conversion",
+        label: "Conversión",
+        min: 2.35,
+        max: 2.7,
+        decimals: 2,
+        note: "Meta 2,50",
+        aggregate: "average",
+        tone: "warning",
+      },
+      {
+        id: "peso",
+        label: "Peso de salida",
+        min: 104,
+        max: 116,
+        decimals: 1,
+        suffix: " kg",
+        note: "Promedio por lote",
+        aggregate: "average",
+      },
+    ],
+  },
+  Sanidad: {
+    dimension: "Etapa",
+    sections: [
+      { name: "Plantel", rows: ["Gestación", "Maternidad", "Reproductores"] },
+      { name: "Producción", rows: ["Precebo", "Levante"] },
+    ],
+    metrics: [
+      {
+        id: "casos",
+        label: "Casos registrados",
+        min: 24,
+        max: 46,
+        note: "En el período",
+        tone: "warning",
+      },
+      {
+        id: "tratamientos",
+        label: "Tratamientos",
+        min: 30,
+        max: 58,
+        note: "Aplicados",
+      },
+      {
+        id: "efectividad",
+        label: "Efectividad",
+        min: 84,
+        max: 95,
+        decimals: 1,
+        suffix: " %",
+        note: "Casos resueltos",
+        aggregate: "average",
+        tone: "positive",
+      },
+      {
+        id: "vacunas",
+        label: "Vacunas aplicadas",
+        min: 320,
+        max: 520,
+        note: "Según calendario",
+      },
+      {
+        id: "vencidas",
+        label: "Vacunas vencidas",
+        min: 2,
+        max: 9,
+        note: "Pendientes por aplicar",
+        tone: "danger",
+      },
+    ],
+  },
+  Ventas: {
+    dimension: "Cliente",
+    sections: [
+      {
+        name: "Clientes mayoristas",
+        rows: [
+          "Frigorífico Central",
+          "Carnes del Valle",
+          "Distribuidora Andina",
+        ],
+      },
+      {
+        name: "Otros clientes",
+        rows: ["Comercializadora Sur", "Venta directa"],
+      },
+    ],
+    metrics: [
+      {
+        id: "ingresos",
+        label: "Ingresos",
+        min: 180,
+        max: 320,
+        decimals: 1,
+        prefix: "$ ",
+        suffix: " M",
+        note: "En el período",
+        tone: "positive",
+      },
+      {
+        id: "animales",
+        label: "Animales vendidos",
+        min: 420,
+        max: 720,
+        note: "Cabezas",
+      },
+      {
+        id: "kilos",
+        label: "Kilos vendidos",
+        min: 46000,
+        max: 82000,
+        suffix: " kg",
+        note: "Peso en pie",
+      },
+      {
+        id: "precio",
+        label: "Precio por kg",
+        min: 8200,
+        max: 9400,
+        prefix: "$ ",
+        note: "Promedio",
+        aggregate: "average",
+      },
+      {
+        id: "margen",
+        label: "Margen",
+        min: 12,
+        max: 24,
+        decimals: 1,
+        suffix: " %",
+        note: "Sobre ingresos",
+        aggregate: "average",
+        tone: "positive",
+      },
+    ],
+  },
+  Inventario: {
+    dimension: "Referencia",
+    sections: [
+      { name: "Concentrado", rows: ["Preiniciador", "Iniciador", "Levante"] },
+      { name: "Medicamentos", rows: ["Antibióticos", "Vacunas"] },
+    ],
+    metrics: [
+      {
+        id: "existencias",
+        label: "Existencias",
+        min: 18000,
+        max: 36000,
+        suffix: " kg",
+        note: "Al cierre del período",
+      },
+      {
+        id: "valor",
+        label: "Valor del inventario",
+        min: 32,
+        max: 68,
+        decimals: 1,
+        prefix: "$ ",
+        suffix: " M",
+        note: "Costo promedio",
+      },
+      {
+        id: "cobertura",
+        label: "Cobertura",
+        min: 9,
+        max: 21,
+        suffix: " días",
+        note: "Según consumo actual",
+        aggregate: "average",
+        tone: "warning",
+      },
+      {
+        id: "movimientos",
+        label: "Movimientos",
+        min: 60,
+        max: 140,
+        note: "Entradas y salidas",
+      },
+      {
+        id: "criticas",
+        label: "Referencias críticas",
+        min: 1,
+        max: 6,
+        note: "Bajo el mínimo",
+        tone: "danger",
+      },
+    ],
+  },
+  General: {
+    dimension: "Etapa",
+    sections: [
+      { name: "Reproducción", rows: ["Gestación", "Maternidad"] },
+      { name: "Producción", rows: ["Precebo", "Levante", "Finalización"] },
+    ],
+    metrics: [
+      {
+        id: "animales",
+        label: "Animales",
+        min: 1100,
+        max: 1450,
+        note: "Stock activo",
+      },
+      {
+        id: "lotes",
+        label: "Lotes activos",
+        min: 8,
+        max: 14,
+        note: "Todas las etapas",
+      },
+      {
+        id: "mortalidad",
+        label: "Mortalidad",
+        min: 1.3,
+        max: 2.3,
+        decimals: 1,
+        suffix: " %",
+        note: "Meta ≤ 2,0 %",
+        aggregate: "average",
+        tone: "positive",
+      },
+      {
+        id: "supervivencia",
+        label: "Supervivencia",
+        min: 89,
+        max: 96,
+        decimals: 1,
+        suffix: " %",
+        note: "Nacimiento a venta",
+        aggregate: "average",
+        tone: "positive",
+      },
+      {
+        id: "conversion",
+        label: "Conversión global",
+        min: 2.4,
+        max: 2.8,
+        decimals: 2,
+        note: "Meta 2,60",
+        aggregate: "average",
+      },
+    ],
+  },
+}
+
+// Deterministic pseudo-random values keep every board stable between renders.
+const executiveRandom = (seed: string) => {
+  let state = 2166136261
+  for (const character of seed) {
+    state = Math.imul(state ^ character.charCodeAt(0), 16777619)
+  }
+  return () => {
+    state = Math.imul(state ^ (state >>> 15), 2246822507)
+    state = Math.imul(state ^ (state >>> 13), 3266489909)
+    state ^= state >>> 16
+    return (state >>> 0) / 4294967296
+  }
+}
+
+const roundTo = (value: number, decimals: number) =>
+  Number(value.toFixed(decimals))
+
+const createExecutiveBoardData = (
+  report: ReportCatalogItem,
+  moduleName: string,
+): ExecutiveBoardData => {
+  const crafted = executiveCraftedData[report.id]
+  if (crafted) return crafted
+  const template =
+    executiveModuleTemplates[moduleName] ?? executiveModuleTemplates.General
+  const random = executiveRandom(report.id)
+  const labels = template.sections.flatMap((section) => section.rows)
+  const columns = template.metrics.map((spec) => {
+    const decimals = spec.decimals ?? 0
+    const aggregate = spec.aggregate ?? "sum"
+    const base = spec.min + (spec.max - spec.min) * random()
+    const values = labels.map(() => {
+      const factor = 0.84 + random() * 0.32
+      return roundTo(
+        aggregate === "sum"
+          ? (base / labels.length) * factor
+          : base * (0.94 + (factor - 0.84) * 0.38),
+        decimals,
+      )
+    })
+    const sum = values.reduce((total, value) => total + value, 0)
+    return {
+      spec,
+      decimals,
+      aggregate,
+      values,
+      total: aggregate === "sum" ? sum : sum / values.length,
+    }
+  })
+  const titled = (title: string, spec: ExecutiveMetricTemplate) => {
+    const unit = [spec.prefix?.trim(), spec.suffix?.trim()]
+      .filter(Boolean)
+      .join(" ")
+    return unit ? `${title} (${unit})` : title
+  }
+  const trend = columns[1] ?? columns[0]
+  const comparison = columns[0]
+  const weekly = Array.from({ length: 10 }, (_, index) => {
+    const base = trend.aggregate === "sum" ? trend.total / 10 : trend.total
+    return roundTo(
+      base * (0.9 + index * 0.014 + random() * 0.07),
+      trend.decimals,
+    )
+  })
+  return {
+    metrics: columns.map(({ spec, decimals, aggregate, total }) =>
+      executiveMetric(
+        spec.id,
+        spec.label,
+        roundTo(total, decimals),
+        spec.note,
+        {
+          decimals,
+          prefix: spec.prefix,
+          suffix: spec.suffix,
+          aggregate,
+          tone: spec.tone,
+        },
+      ),
+    ),
+    charts: [
+      {
+        id: "evolucion",
+        title: titled(`${trend.spec.label} por semana`, trend.spec),
+        kind: "line",
+        decimals: trend.decimals,
+        points: executiveWeeks(weekly),
+      },
+      {
+        id: "comparacion",
+        title: titled(
+          `${comparison.spec.label} por ${template.dimension.toLocaleLowerCase("es")}`,
+          comparison.spec,
+        ),
+        kind: "bar",
+        decimals: comparison.decimals,
+        points: executivePoints(labels, comparison.values),
+      },
+    ],
+    dimension: template.dimension,
+    sections: template.sections.map((section) => ({
+      name: section.name,
+      rows: section.rows.map((label) => {
+        const index = labels.indexOf(label)
+        return {
+          label,
+          values: Object.fromEntries(
+            columns.map((column) => [
+              column.spec.id,
+              column.values[index] ?? 0,
+            ]),
+          ),
+        }
+      }),
+    })),
+  }
+}
+
+const executiveBoards: ExecutiveBoard[] = executiveModuleOrder.flatMap(
+  (moduleName) => {
+    const category = reportCatalog.find((item) => item.name === moduleName)
+    return (category?.reports ?? []).map((report, index) => ({
+      ...report,
+      module: moduleName,
+      moduleLabel: moduleName === "Ventas" ? "Finanzas" : moduleName,
+      icon: reportIcon(moduleName, index),
+      hasTable: executiveTableReports.has(report.id),
+      data: createExecutiveBoardData(report, moduleName),
+    }))
+  },
+)
+
+const executiveBoardById = new Map(
+  executiveBoards.map((board) => [board.id, board]),
+)
+
+type ExecutiveComposition = "single" | "multiple" | "combined"
+
+type ExecutiveBoardConfig = {
+  includeVisual: boolean
+  includeData: boolean
+  showFirst: "visual" | "data"
+  includeFigures: boolean
+  composition: ExecutiveComposition
+  charts: { id: string active: boolean }[]
+  dataMode: "table" | "indicators"
+  indicators: string[]
+  sectionsOpen: boolean
+}
+
+const executiveCompositionOptions: {
+  id: ExecutiveComposition
+  label: string
+}[] = [
+  { id: "single", label: "Una gráfica por diapositiva" },
+  { id: "multiple", label: "Varias gráficas en una diapositiva" },
+  { id: "combined", label: "Gráfica + datos en la misma diapositiva" },
+]
+
+const defaultExecutiveConfig = (
+  board: ExecutiveBoard,
+): ExecutiveBoardConfig => ({
+  includeVisual: true,
+  includeData: board.hasTable,
+  showFirst: "visual",
+  includeFigures: true,
+  composition: "multiple",
+  charts: board.data.charts.map((chart) => ({ id: chart.id, active: true })),
+  dataMode: "indicators",
+  indicators: board.data.metrics.map((metric) => metric.id),
+  sectionsOpen: true,
+})
+
+type ExecutiveLayout = "cover" | "title-chart" | "chart-data" | "two-charts" | "blank"
+type ExecutiveTheme = "light" | "dark" | "photo"
+type ExecutiveBrand = { theme: ExecutiveTheme photo?: string }
+type DeckBox = { x: number y: number w: number h: number }
+
+type ExecutiveCustomElement = {
+  id: string
+  kind: "text" | "image"
+  box: DeckBox
+  text?: string
+  textStyle?: "title" | "body"
+  src?: string
+  aspect?: number
+  name?: string
+}
+
+type ExecutiveSlideEdit = {
+  name?: string
+  layout?: ExecutiveLayout
+  boxes?: Record<string, DeckBox>
+  texts?: Record<string, string>
+  brand?: ExecutiveBrand
+}
+
+type ExecutiveReportState = {
+  startDate: string
+  endDate: string
+  activeBoards: string[]
+  configs: Record<string, ExecutiveBoardConfig>
+  removedSlides: string[]
+  customSlides: string[]
+  slideEdits: Record<string, ExecutiveSlideEdit>
+  customElements: Record<string, ExecutiveCustomElement[]>
+  brand: ExecutiveBrand
+}
+
+// Shared, never-mutated default: every change creates a new report object.
+const defaultExecutiveReport: ExecutiveReportState = {
+  startDate: "2026-01-01",
+  endDate: TODAY_ISO,
+  activeBoards: ["consumo-alimento-precebo", "mortalidad-precebo"],
+  configs: {},
+  removedSlides: [],
+  customSlides: [],
+  slideEdits: {},
+  customElements: {},
+  brand: { theme: "light" },
+}
+
+const executiveConfigFor = (
+  report: ExecutiveReportState,
+  board: ExecutiveBoard,
+) => report.configs[board.id] ?? defaultExecutiveConfig(board)
+
+const executiveDate = (iso: string) => formatDate(new Date(`${iso}T12:00:00`))
+
+const executivePeriod = (report: ExecutiveReportState) =>
+  `${executiveDate(report.startDate)} al ${executiveDate(report.endDate)}`
+
+const executiveLayouts: {
+  id: ExecutiveLayout
+  name: string
+  blocks: { x: number y: number w: number h: number kind: string }[]
+}[] = [
+  {
+    id: "cover",
+    name: "Portada",
+    blocks: [
+      { x: 8, y: 18, w: 13, h: 23, kind: "logo" },
+      { x: 8, y: 50, w: 62, h: 13, kind: "title" },
+      { x: 8, y: 68, w: 40, h: 6, kind: "line" },
+    ],
+  },
+  {
+    id: "title-chart",
+    name: "Título + gráfica",
+    blocks: [
+      { x: 6, y: 9, w: 50, h: 9, kind: "title" },
+      { x: 6, y: 25, w: 88, h: 14, kind: "figures" },
+      { x: 6, y: 44, w: 88, h: 44, kind: "chart" },
+    ],
+  },
+  {
+    id: "chart-data",
+    name: "Gráfica + datos",
+    blocks: [
+      { x: 6, y: 9, w: 50, h: 9, kind: "title" },
+      { x: 6, y: 25, w: 56, h: 63, kind: "chart" },
+      { x: 66, y: 25, w: 28, h: 63, kind: "data" },
+    ],
+  },
+  {
+    id: "two-charts",
+    name: "Dos gráficas",
+    blocks: [
+      { x: 6, y: 9, w: 50, h: 9, kind: "title" },
+      { x: 6, y: 25, w: 42, h: 63, kind: "chart" },
+      { x: 52, y: 25, w: 42, h: 63, kind: "chart" },
+    ],
+  },
+  {
+    id: "blank",
+    name: "En blanco",
+    blocks: [
+      { x: 6, y: 9, w: 50, h: 9, kind: "title" },
+      { x: 6, y: 22, w: 34, h: 5, kind: "line" },
+    ],
+  },
+]
+
+const executiveLayoutName = (layout: ExecutiveLayout) =>
+  executiveLayouts.find((item) => item.id === layout)?.name ?? "Personalizado"
+
+const executiveThemes: {
+  id: ExecutiveTheme
+  name: string
+  description: string
+}[] = [
+  {
+    id: "light",
+    name: "Ejecutivo claro",
+    description: "Fondo claro y acentos verdes",
+  },
+  {
+    id: "dark",
+    name: "PorciTrack oscuro",
+    description: "Verde profundo con acentos coral",
+  },
+  {
+    id: "photo",
+    name: "Con foto",
+    description: "Tu foto de fondo con un velo oscuro",
+  },
+]
+
+const DECK_WIDTH = 960
+const DECK_HEIGHT = 540
+const DECK_THUMB_SCALE = 0.16
+const DECK_MIN_W = 6
+const DECK_MIN_H = 7
+
+type DeckSlideKind = "cover" | "visual" | "data" | "combined" | "blank"
+
+type DeckTableData = {
+  dimension: string
+  sections: ExecutiveTableSection[]
+  columns: ExecutiveMetric[]
+  open: boolean
+}
+
+type DeckElement = {
+  id: string
+  kind: "eyebrow" | "title" | "subtitle" | "meta" | "logo" | "figures" | "chart" | "table" | "text" | "image"
+  label: string
+  box: DeckBox
+  text?: string
+  editable?: boolean
+  variant?: "display"
+  textStyle?: "title" | "body"
+  chart?: ExecutiveChartData
+  metrics?: ExecutiveMetric[]
+  table?: DeckTableData
+  src?: string
+  aspect?: number
+  custom?: boolean
+}
+
+type DeckSlideSpec = {
+  id: string
+  kind: DeckSlideKind
+  board?: ExecutiveBoard
+  defaultName: string
+  defaultLayout: ExecutiveLayout
+  eyebrow: string
+  title: string
+  subtitle: string
+  figures: ExecutiveMetric[]
+  charts: ExecutiveChartData[]
+  table: boolean
+  tableColumns: ExecutiveMetric[]
+  sectionsOpen: boolean
+}
+
+type DeckSlide = {
+  id: string
+  kind: DeckSlideKind
+  name: string
+  defaultName: string
+  layout: ExecutiveLayout
+  defaultLayout: ExecutiveLayout
+  brand: ExecutiveBrand
+  hasBrandOverride: boolean
+  hasLayoutChanges: boolean
+  elements: DeckElement[]
+}
+
+type DeckFooter = { report: string period: string }
+
+const executiveBoardSlideSpecs = (
+  board: ExecutiveBoard,
+  config: ExecutiveBoardConfig,
+): DeckSlideSpec[] => {
+  const selectedMetrics =
+    config.dataMode === "indicators"
+      ? board.data.metrics.filter((metric) =>
+          config.indicators.includes(metric.id),
+        )
+      : board.data.metrics
+  const figures = config.includeFigures ? selectedMetrics : []
+  const activeCharts = config.charts
+    .filter((chart) => chart.active)
+    .map((chart) => board.data.charts.find((item) => item.id === chart.id))
+    .filter((chart): chart is ExecutiveChartData => Boolean(chart))
+  const withTable = config.includeData && board.hasTable
+  const base = {
+    board,
+    eyebrow: board.moduleLabel,
+    title: board.name,
+    tableColumns: selectedMetrics,
+    sectionsOpen: config.sectionsOpen,
+  }
+  const visual: DeckSlideSpec[] = []
+  if (config.includeVisual && (activeCharts.length || figures.length)) {
+    if (config.composition === "single" && activeCharts.length > 1) {
+      activeCharts.forEach((chart, index) =>
+        visual.push({
+          ...base,
+          id: `${board.id}:visual:${chart.id}`,
+          kind: "visual",
+          defaultName: `${board.name} · ${chart.title}`,
+          defaultLayout: "title-chart",
+          subtitle: chart.title,
+          figures: index === 0 ? figures : [],
+          charts: [chart],
+          table: false,
+        }),
+      )
+    } else if (config.composition === "combined") {
+      visual.push({
+        ...base,
+        id: `${board.id}:combined`,
+        kind: "combined",
+        defaultName: `${board.name} · Gráfica y datos`,
+        defaultLayout: "chart-data",
+        subtitle: board.description,
+        figures,
+        charts: activeCharts.slice(0, 1),
+        table: withTable,
+      })
+    } else {
+      visual.push({
+        ...base,
+        id: `${board.id}:visual`,
+        kind: "visual",
+        defaultName: `${board.name} · Resumen visual`,
+        defaultLayout: activeCharts.length > 1 ? "two-charts" : "title-chart",
+        subtitle: board.description,
+        figures,
+        charts: activeCharts.slice(0, 2),
+        table: false,
+      })
+    }
+  }
+  const tableInVisual = config.composition === "combined" && visual.length > 0
+  const data: DeckSlideSpec[] =
+    withTable && !tableInVisual
+      ? [
+          {
+            ...base,
+            id: `${board.id}:data`,
+            kind: "data",
+            defaultName: `${board.name} · Vista de datos`,
+            defaultLayout: "title-chart",
+            subtitle: `Detalle por ${board.data.dimension.toLocaleLowerCase("es")}`,
+            figures: [],
+            charts: [],
+            table: true,
+          },
+        ]
+      : []
+  return config.showFirst === "data"
+    ? [...data, ...visual]
+    : [...visual, ...data]
+}
+
+const executiveSlideSpecs = (
+  report: ExecutiveReportState,
+  farmTitle: string,
+): DeckSlideSpec[] => {
+  const empty = {
+    figures: [],
+    charts: [],
+    table: false,
+    tableColumns: [],
+    sectionsOpen: true,
+  }
+  const cover: DeckSlideSpec = {
+    ...empty,
+    id: "cover",
+    kind: "cover",
+    defaultName: "Portada",
+    defaultLayout: "cover",
+    eyebrow: "Informe ejecutivo",
+    title: farmTitle,
+    subtitle: executivePeriod(report),
+  }
+  const boards = report.activeBoards.flatMap((id) => {
+    const board = executiveBoardById.get(id)
+    return board
+      ? executiveBoardSlideSpecs(board, executiveConfigFor(report, board))
+      : []
+  })
+  const blanks = report.customSlides.map(
+    (id, index): DeckSlideSpec => ({
+      ...empty,
+      id,
+      kind: "blank",
+      defaultName: index
+        ? `Diapositiva en blanco ${index + 1}`
+        : "Diapositiva en blanco",
+      defaultLayout: "blank",
+      eyebrow: "",
+      title: "Título",
+      subtitle: "Subtítulo",
+    }),
+  )
+  return [cover, ...boards, ...blanks].filter(
+    (spec) => spec.kind === "cover" || !report.removedSlides.includes(spec.id),
+  )
+}
+
+const layoutDeckElements = (
+  spec: DeckSlideSpec,
+  layout: ExecutiveLayout,
+): DeckElement[] => {
+  if (spec.kind === "cover") {
+    return [
+      {
+        id: "logo",
+        kind: "logo",
+        label: "Logo",
+        box: { x: 6.25, y: 12, w: 9.4, h: 16.7 },
+      },
+      {
+        id: "eyebrow",
+        kind: "eyebrow",
+        label: "Antetítulo",
+        box: { x: 6.25, y: 37, w: 60, h: 5 },
+        text: spec.eyebrow,
+        editable: true,
+      },
+      {
+        id: "title",
+        kind: "title",
+        label: "Nombre de la granja",
+        variant: "display",
+        box: { x: 6.25, y: 43, w: 74, h: 15 },
+        text: spec.title,
+        editable: true,
+      },
+      {
+        id: "period",
+        kind: "subtitle",
+        label: "Período",
+        box: { x: 6.25, y: 61, w: 60, h: 6 },
+        text: `Período ${spec.subtitle}`,
+      },
+      {
+        id: "generated",
+        kind: "meta",
+        label: "Fecha de generación",
+        box: { x: 6.25, y: 68, w: 60, h: 5 },
+        text: `Generado el ${executiveDate(TODAY_ISO)}`,
+      },
+    ]
+  }
+  const eyebrow: DeckElement[] = spec.eyebrow
+    ? [
+        {
+          id: "eyebrow",
+          kind: "eyebrow",
+          label: "Antetítulo",
+          box: { x: 5, y: 5.6, w: 70, h: 4.6 },
+          text: spec.eyebrow,
+        },
+      ]
+    : []
+  const title: DeckElement = {
+    id: "title",
+    kind: "title",
+    label: "Título",
+    box: { x: 5, y: 10.2, w: 90, h: 9.6 },
+    text: spec.title,
+    editable: true,
+  }
+  const subtitle: DeckElement = {
+    id: "subtitle",
+    kind: "subtitle",
+    label: "Subtítulo",
+    box: { x: 5, y: 19.8, w: 90, h: 5.4 },
+    text: spec.subtitle,
+    editable: true,
+  }
+  if (layout === "cover") {
+    return [
+      ...eyebrow.map((element) => ({
+        ...element,
+        box: { x: 8, y: 30, w: 70, h: 5 },
+      })),
+      { ...title, variant: "display", box: { x: 8, y: 36, w: 84, h: 18 } },
+      { ...subtitle, box: { x: 8, y: 56, w: 70, h: 8 } },
+    ]
+  }
+  const heading = [...eyebrow, title, subtitle]
+  if (layout === "blank") return heading
+  const empty = { x: 0, y: 0, w: 0, h: 0 }
+  const visuals: DeckElement[] = [
+    ...spec.charts.map(
+      (chart, index): DeckElement => ({
+        id: `chart-${index}`,
+        kind: "chart",
+        label: `Gráfica · ${chart.title}`,
+        box: empty,
+        chart,
+      }),
+    ),
+    ...(spec.table && spec.board
+      ? [
+          {
+            id: "table",
+            kind: "table",
+            label: "Tabla de datos",
+            box: empty,
+            table: {
+              dimension: spec.board.data.dimension,
+              sections: spec.board.data.sections,
+              columns: spec.tableColumns,
+              open: spec.sectionsOpen,
+            },
+          } satisfies DeckElement,
+        ]
+      : []),
+  ].slice(0, 2)
+  const figures: DeckElement | null = spec.figures.length
+    ? {
+        id: "figures",
+        kind: "figures",
+        label: "Cifras clave",
+        box: empty,
+        metrics: spec.figures,
+      }
+    : null
+  const placed: DeckElement[] = []
+  const place = (element: DeckElement, box: DeckBox) =>
+    placed.push({ ...element, box })
+  const areaTop = figures ? 46 : 27.5
+  const areaHeight = 90 - areaTop
+  if (layout === "chart-data" && visuals.length === 1 && figures) {
+    place(visuals[0], { x: 5, y: 27.5, w: 60, h: 62.5 })
+    place(figures, { x: 67, y: 27.5, w: 28, h: 62.5 })
+  } else {
+    if (figures) place(figures, { x: 5, y: 27.5, w: 90, h: 15 })
+    if (visuals.length === 2 && layout !== "title-chart") {
+      const [first, second] =
+        layout === "two-charts"
+          ? [44, 44]
+          : visuals[1].kind === "table"
+            ? [42, 46]
+            : [53, 35]
+      place(visuals[0], { x: 5, y: areaTop, w: first, h: areaHeight })
+      place(visuals[1], {
+        x: 95 - second,
+        y: areaTop,
+        w: second,
+        h: areaHeight,
+      })
+    } else if (visuals.length === 2) {
+      const half = (areaHeight - 2) / 2
+      place(visuals[0], { x: 5, y: areaTop, w: 90, h: half })
+      place(visuals[1], { x: 5, y: areaTop + half + 2, w: 90, h: half })
+    } else if (visuals.length === 1) {
+      place(visuals[0], { x: 5, y: areaTop, w: 90, h: areaHeight })
+    }
+  }
+  return [...heading, ...placed]
+}
+
+const buildExecutiveDeck = (
+  report: ExecutiveReportState,
+  farmTitle: string,
+): DeckSlide[] =>
+  executiveSlideSpecs(report, farmTitle).map((spec) => {
+    const edit = report.slideEdits[spec.id] ?? {}
+    const layout: ExecutiveLayout =
+      spec.kind === "cover" ? "cover" : (edit.layout ?? spec.defaultLayout)
+    const base = layoutDeckElements(spec, layout).map((element) => ({
+      ...element,
+      box: edit.boxes?.[element.id] ?? element.box,
+      text: element.editable
+        ? (edit.texts?.[element.id] ?? element.text)
+        : element.text,
+    }))
+    const custom = (report.customElements[spec.id] ?? []).map(
+      (element): DeckElement => ({
+        id: element.id,
+        kind: element.kind,
+        label:
+          element.kind === "image"
+            ? (element.name ?? "Imagen")
+            : element.textStyle === "title"
+              ? "Título personalizado"
+              : "Cuadro de texto",
+        box: element.box,
+        text: element.text,
+        editable: element.kind === "text",
+        textStyle: element.textStyle,
+        src: element.src,
+        aspect: element.aspect,
+        custom: true,
+      }),
+    )
+    return {
+      id: spec.id,
+      kind: spec.kind,
+      name: edit.name ?? spec.defaultName,
+      defaultName: spec.defaultName,
+      layout,
+      defaultLayout: spec.defaultLayout,
+      brand: edit.brand ?? report.brand,
+      hasBrandOverride: Boolean(edit.brand),
+      hasLayoutChanges: Boolean(edit.boxes && Object.keys(edit.boxes).length),
+      elements: [...base, ...custom],
+    }
+  })
+
+const clampNumber = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value))
+
+const roundBox = (box: DeckBox): DeckBox => ({
+  x: roundTo(box.x, 2),
+  y: roundTo(box.y, 2),
+  w: roundTo(box.w, 2),
+  h: roundTo(box.h, 2),
+})
+
+const moveDeckBox = (box: DeckBox, dx: number, dy: number): DeckBox =>
+  roundBox({
+    ...box,
+    x: clampNumber(box.x + dx, 0, 100 - box.w),
+    y: clampNumber(box.y + dy, 0, 100 - box.h),
+  })
+
+type DeckCorner = "nw" | "ne" | "sw" | "se"
+type DeckPointerMode = "move" | DeckCorner
+
+const resizeDeckBox = (
+  box: DeckBox,
+  corner: DeckCorner,
+  dx: number,
+  dy: number,
+  aspect?: number,
+): DeckBox => {
+  const right = box.x + box.w
+  const bottom = box.y + box.h
+  const left = corner === "nw" || corner === "sw"
+  const top = corner === "nw" || corner === "ne"
+  let x = box.x
+  let y = box.y
+  let w = box.w
+  let h = box.h
+  if (left) {
+    x = clampNumber(box.x + dx, 0, right - DECK_MIN_W)
+    w = right - x
+  } else {
+    w = clampNumber(box.w + dx, DECK_MIN_W, 100 - box.x)
+  }
+  if (top) {
+    y = clampNumber(box.y + dy, 0, bottom - DECK_MIN_H)
+    h = bottom - y
+  } else {
+    h = clampNumber(box.h + dy, DECK_MIN_H, 100 - box.y)
+  }
+  if (aspect) {
+    // Images keep their natural proportion: the height follows the width in pixels.
+    h = (w * DECK_WIDTH) / aspect / DECK_HEIGHT
+    const maxHeight = top ? bottom : 100 - box.y
+    if (h > maxHeight) {
+      h = maxHeight
+      w = (h * DECK_HEIGHT * aspect) / DECK_WIDTH
+      if (left) x = right - w
+    }
+    if (top) y = bottom - h
+  }
+  return roundBox({ x, y, w, h })
+}
+
+const niceAxisMax = (value: number) => {
+  if (value <= 0) return 1
+  const magnitude = 10 ** Math.floor(Math.log10(value))
+  const step =
+    [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find(
+      (candidate) => candidate * magnitude >= value * 1.08,
+    ) ?? 10
+  return step * magnitude
+}
+
+const tickDecimals = (value: number) =>
+  Number.isInteger(value)
+    ? 0
+    : Math.abs(Math.round(value * 10) - value * 10) < 1e-9
+      ? 1
+      : 2
+
+function ExecutiveChart({
+  chart,
+  width,
+  height,
+}: {
+  chart: ExecutiveChartData
+  width: number
+  height: number
+}) {
+  const left = 44
+  const right = 12
+  const top = 18
+  const bottom = 26
+  const plotWidth = Math.max(20, width - left - right)
+  const plotHeight = Math.max(20, height - top - bottom)
+  const peak = Math.max(
+    ...chart.points.map((point) => point.value),
+    chart.target ?? 0,
+  )
+  const axisMax = niceAxisMax(peak)
+  const baseline = top + plotHeight
+  const y = (value: number) => baseline - (value / axisMax) * plotHeight
+  const band = plotWidth / Math.max(1, chart.points.length)
+  const x = (index: number) => left + band * index + band / 2
+  const decimals = tickDecimals(axisMax / 2)
+  const maxCharacters = Math.max(3, Math.floor(band / 6.4))
+  const shortLabel = (label: string) =>
+    label.length > maxCharacters
+      ? `${label.slice(0, Math.max(1, maxCharacters - 1))}…`
+      : label
+  const linePoints = chart.points.map(
+    (point, index) => `${x(index)},${y(point.value)}`,
+  )
+  const showEveryValue = chart.kind === "bar" || chart.points.length <= 6
+  return (
+    <svg
+      className="deck-chart"
+      viewBox={`0 0 ${width} ${height}`}
+      role="img"
+      aria-label={chart.title}
+    >
+      {[0, axisMax / 2, axisMax].map((tick) => (
+        <g key={tick}>
+          <line
+            x1={left}
+            x2={width - right}
+            y1={y(tick)}
+            y2={y(tick)}
+            className="grid"
+          />
+          <text x={left - 8} y={y(tick) + 4} textAnchor="end" className="axis">
+            {formatDecimal(tick, decimals)}
+          </text>
+        </g>
+      ))}
+      {chart.kind === "line" && (
+        <>
+          <polygon
+            className="area"
+            points={`${x(0)},${baseline} ${linePoints.join(" ")} ${x(chart.points.length - 1)},${baseline}`}
+          />
+          <polyline className="line" points={linePoints.join(" ")} />
+        </>
+      )}
+      {chart.target !== undefined && (
+        <g>
+          <line
+            x1={left}
+            x2={width - right}
+            y1={y(chart.target)}
+            y2={y(chart.target)}
+            className="target"
+          />
+          <text
+            x={width - right}
+            y={y(chart.target) - 6}
+            textAnchor="end"
+            className="target-label"
+          >
+            Meta {formatDecimal(chart.target, chart.decimals)}
+          </text>
+        </g>
+      )}
+      {chart.points.map((point, index) => {
+        const barWidth = Math.min(54, band * 0.56)
+        const alert =
+          chart.alertAbove &&
+          chart.target !== undefined &&
+          point.value > chart.target
+        const valueVisible =
+          showEveryValue || index === 0 || index === chart.points.length - 1
+        return (
+          <g key={`${point.label}-${index}`}>
+            {chart.kind === "bar" ? (
+              <rect
+                x={x(index) - barWidth / 2}
+                y={y(point.value)}
+                width={barWidth}
+                height={Math.max(0, baseline - y(point.value))}
+                rx={Math.min(6, barWidth / 4)}
+                className={alert ? "bar alert" : "bar"}
+              />
+            ) : (
+              <circle
+                cx={x(index)}
+                cy={y(point.value)}
+                r={3.5}
+                className="dot"
+              />
+            )}
+            {valueVisible && (
+              <text
+                x={x(index)}
+                y={y(point.value) - 7}
+                textAnchor="middle"
+                className={alert ? "value alert" : "value"}
+              >
+                {formatDecimal(point.value, chart.decimals)}
+              </text>
+            )}
+            <text
+              x={x(index)}
+              y={height - 8}
+              textAnchor="middle"
+              className="axis"
+            >
+              {shortLabel(point.label)}
+            </text>
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
+function DeckTable({ table, width }: { table: DeckTableData width: number }) {
+  // Narrow boxes keep the most important columns instead of squeezing all of them.
+  const maxColumns = Math.max(1, Math.floor((width - 120) / 82))
+  const columns = table.columns.slice(0, maxColumns)
+  const summary = (section: ExecutiveTableSection, metric: ExecutiveMetric) => {
+    const values = section.rows.map((row) => row.values[metric.id] ?? 0)
+    const sum = values.reduce((total, value) => total + value, 0)
+    return formatExecutiveValue(
+      metric,
+      metric.aggregate === "sum" ? sum : sum / Math.max(1, values.length),
+    )
+  }
+  return (
+    <div className="deck-table-wrap">
+      <table className="deck-table">
+        <thead>
+          <tr>
+            <th>{table.dimension}</th>
+            {columns.map((column) => (
+              <th key={column.id}>{column.label}</th>
+            ))}
+          </tr>
+        </thead>
+        {table.sections.map((section) => (
+          <tbody key={section.name}>
+            <tr className="section-row">
+              <td>{section.name}</td>
+              {columns.map((column) => (
+                <td key={column.id}>{summary(section, column)}</td>
+              ))}
+            </tr>
+            {table.open &&
+              section.rows.map((row) => (
+                <tr key={row.label}>
+                  <td>{row.label}</td>
+                  {columns.map((column) => (
+                    <td key={column.id}>
+                      {formatExecutiveValue(column, row.values[column.id] ?? 0)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+          </tbody>
+        ))}
+      </table>
+      {columns.length < table.columns.length && (
+        <span className="deck-table-more">
+          +
+          {countLabel(
+            table.columns.length - columns.length,
+            "indicador",
+            "indicadores",
+          )}{" "}
+          en la vista ampliada
+        </span>
+      )}
+    </div>
+  )
+}
+
+function DeckElementContent({
+  element,
+  width,
+  height,
+  logoSrc,
+}: {
+  element: DeckElement
+  width: number
+  height: number
+  logoSrc: string
+}) {
+  if (element.kind === "logo") {
+    return (
+      <span className="deck-logo">
+        <img src={logoSrc} alt="Logo de la empresa" draggable={false} />
+      </span>
+    )
+  }
+  if (element.kind === "image") {
+    return (
+      <img
+        className="deck-image"
+        src={element.src}
+        alt={element.label}
+        draggable={false}
+      />
+    )
+  }
+  if (element.kind === "figures" && element.metrics) {
+    const vertical = width < height * 1.25
+    return (
+      <div className={`deck-figures ${vertical ? "vertical" : ""}`}>
+        {element.metrics.map((metric) => (
+          <div className={`deck-figure tone-${metric.tone}`} key={metric.id}>
+            <span>{metric.label}</span>
+            <strong>{metric.value}</strong>
+            <small>{metric.note}</small>
+          </div>
+        ))}
+      </div>
+    )
+  }
+  if (element.kind === "chart" && element.chart) {
+    return (
+      <div className="deck-chart-card">
+        <strong>{element.chart.title}</strong>
+        <ExecutiveChart
+          chart={element.chart}
+          width={Math.max(80, width - 30)}
+          height={Math.max(50, height - 54)}
+        />
+      </div>
+    )
+  }
+  if (element.kind === "table" && element.table) {
+    return <DeckTable table={element.table} width={width} />
+  }
+  return <div className="deck-text">{element.text}</div>
+}
+
+type DeckInteraction = {
+  moveMode: boolean
+  textMode: boolean
+  selectedId: string | null
+  dragBox: { id: string box: DeckBox } | null
+  canvasRef: RefObject<HTMLDivElement | null>
+  onCanvasPointerDown: () => void
+  onElementPointerDown: (
+    event: ReactPointerEvent<HTMLElement>,
+    element: DeckElement,
+    mode: DeckPointerMode,
+  ) => void
+  onElementKeyDown: (
+    event: ReactKeyboardEvent<HTMLElement>,
+    element: DeckElement,
+  ) => void
+  onText: (element: DeckElement, text: string) => void
+}
+
+function DeckElementView({
+  element,
+  interaction,
+  logoSrc,
+}: {
+  element: DeckElement
+  interaction?: DeckInteraction
+  logoSrc: string
+}) {
+  const box =
+    interaction?.dragBox?.id === element.id
+      ? interaction.dragBox.box
+      : element.box
+  const width = (box.w / 100) * DECK_WIDTH
+  const height = (box.h / 100) * DECK_HEIGHT
+  const baseClass = `deck-el deck-el-${element.kind}${
+    element.variant ? ` variant-${element.variant}` : ""
+  }${element.textStyle ? ` style-${element.textStyle}` : ""}`
+  const style: CSSProperties = {
+    left: `${box.x}%`,
+    top: `${box.y}%`,
+    width: `${box.w}%`,
+    height: `${box.h}%`,
+  }
+  if (!interaction) {
+    return (
+      <div className={baseClass} style={style}>
+        <DeckElementContent
+          element={element}
+          width={width}
+          height={height}
+          logoSrc={logoSrc}
+        />
+      </div>
+    )
+  }
+  const selected = interaction.selectedId === element.id
+  const movable = interaction.moveMode
+  const textEditable = interaction.textMode && Boolean(element.editable)
+  const editing = selected && textEditable
+  const interactive = movable || textEditable
+  return (
+    <div
+      className={`${baseClass}${movable ? " is-movable" : ""}${
+        textEditable ? " is-text-editable" : ""
+      }${selected && interactive ? " is-selected" : ""}`}
+      style={style}
+      tabIndex={interactive && !editing ? 0 : undefined}
+      role={interactive && !editing ? "button" : undefined}
+      aria-label={
+        interactive && !editing
+          ? `${textEditable ? "Editar" : "Mover"} ${element.label}`
+          : undefined
+      }
+      onPointerDown={(event) =>
+        interaction.onElementPointerDown(event, element, "move")
+      }
+      onKeyDown={(event) => interaction.onElementKeyDown(event, element)}
+    >
+      {editing ? (
+        <textarea
+          className="deck-text deck-text-editor"
+          value={element.text ?? ""}
+          autoFocus
+          aria-label={`Texto de ${element.label}`}
+          onChange={(event) => interaction.onText(element, event.target.value)}
+          onPointerDown={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+        />
+      ) : (
+        <DeckElementContent
+          element={element}
+          width={width}
+          height={height}
+          logoSrc={logoSrc}
+        />
+      )}
+      {selected &&
+        movable &&
+        (["nw", "ne", "sw", "se"] as const).map((corner) => (
+          <span
+            key={corner}
+            className={`deck-handle ${corner}`}
+            onPointerDown={(event) =>
+              interaction.onElementPointerDown(event, element, corner)
+            }
+          />
+        ))}
+    </div>
+  )
+}
+
+function DeckSlideView({
+  slide,
+  index,
+  total,
+  footer,
+  logoSrc,
+  interaction,
+}: {
+  slide: DeckSlide
+  index: number
+  total: number
+  footer: DeckFooter
+  logoSrc: string
+  interaction?: DeckInteraction
+}) {
+  const photo = slide.brand.theme === "photo" ? slide.brand.photo : undefined
+  const theme =
+    slide.brand.theme === "photo" && !photo ? "dark" : slide.brand.theme
+  return (
+    <div
+      ref={interaction?.canvasRef}
+      className={`deck-slide theme-${theme} kind-${slide.kind}`}
+      style={
+        photo
+          ? {
+              backgroundImage: `linear-gradient(180deg, rgba(18,24,13,.6), rgba(18,24,13,.84)), url("${photo}")`,
+            }
+          : undefined
+      }
+      onPointerDown={
+        interaction
+          ? (event) => {
+              if (event.target === event.currentTarget)
+                interaction.onCanvasPointerDown()
+            }
+          : undefined
+      }
+    >
+      {slide.elements.map((element) => (
+        <DeckElementView
+          key={element.id}
+          element={element}
+          interaction={interaction}
+          logoSrc={logoSrc}
+        />
+      ))}
+      <footer className="deck-footer">
+        <span>
+          {footer.report} · {footer.period} · {index + 1} / {total}
+        </span>
+      </footer>
+    </div>
+  )
+}
+
+function DeckScaled({
+  scale,
+  children,
+}: {
+  scale: number
+  children: ReactNode
+}) {
+  return (
+    <div
+      className="deck-scaled"
+      style={{ width: DECK_WIDTH * scale, height: DECK_HEIGHT * scale }}
+    >
+      <div
+        className="deck-scaled-inner"
+        style={
+          {
+            transform: `scale(${scale})`,
+            "--deck-scale": scale,
+          } as CSSProperties
+        }
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function ExecutivePresenter({
+  slides,
+  startIndex,
+  footer,
+  logoSrc,
+  onClose,
+}: {
+  slides: DeckSlide[]
+  startIndex: number
+  footer: DeckFooter
+  logoSrc: string
+  onClose: (index: number) => void
+}) {
+  const [index, setIndex] = useState(() =>
+    clampNumber(startIndex, 0, Math.max(0, slides.length - 1)),
+  )
+  const [viewport, setViewport] = useState(() => ({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }))
+  const rootRef = useRef<HTMLDivElement>(null)
+  const indexRef = useRef(index)
+  const closedRef = useRef(false)
+  const finishRef = useRef(() => {})
+  useEffect(() => {
+    indexRef.current = index
+  }, [index])
+  finishRef.current = () => {
+    if (closedRef.current) return
+    closedRef.current = true
+    if (document.fullscreenElement)
+      document.exitFullscreen().catch(() => undefined)
+    onClose(indexRef.current)
+  }
+  const lastIndex = slides.length - 1
+  const goTo = (next: number) => setIndex(clampNumber(next, 0, lastIndex))
+
+  useEffect(() => {
+    ;(document.activeElement as HTMLElement | null)?.blur()
+    const handleResize = () =>
+      setViewport({ width: window.innerWidth, height: window.innerHeight })
+    let entered = false
+    const handleFullscreen = () => {
+      if (document.fullscreenElement) entered = true
+      else if (entered) finishRef.current()
+    }
+    window.addEventListener("resize", handleResize)
+    document.addEventListener("fullscreenchange", handleFullscreen)
+    try {
+      rootRef.current?.requestFullscreen?.().catch(() => undefined)
+    } catch {
+      // The overlay still works when the browser rejects fullscreen.
+    }
+    return () => {
+      window.removeEventListener("resize", handleResize)
+      document.removeEventListener("fullscreenchange", handleFullscreen)
+    }
+  }, [])
+
+  useEffect(() => {
+    const handleKey = (event: KeyboardEvent) => {
+      if (
+        ["ArrowRight", "ArrowDown", "PageDown", " ", "Enter"].includes(
+          event.key,
+        )
+      ) {
+        event.preventDefault()
+        setIndex((current) => Math.min(lastIndex, current + 1))
+      } else if (
+        ["ArrowLeft", "ArrowUp", "PageUp", "Backspace"].includes(event.key)
+      ) {
+        event.preventDefault()
+        setIndex((current) => Math.max(0, current - 1))
+      } else if (event.key === "Home") {
+        event.preventDefault()
+        setIndex(0)
+      } else if (event.key === "End") {
+        event.preventDefault()
+        setIndex(lastIndex)
+      } else if (event.key === "Escape") {
+        event.preventDefault()
+        finishRef.current()
+      }
+    }
+    window.addEventListener("keydown", handleKey)
+    return () => window.removeEventListener("keydown", handleKey)
+  }, [lastIndex])
+
+  const slide = slides[index] ?? slides[0]
+  const scale = Math.max(
+    0.2,
+    Math.min(
+      (viewport.width - 32) / DECK_WIDTH,
+      (viewport.height - 96) / DECK_HEIGHT,
+    ),
+  )
+  if (!slide) return null
+  return createPortal(
+    <div
+      className="deck-presenter"
+      ref={rootRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Presentación"
+    >
+      <div className="deck-presenter-stage">
+        <DeckScaled scale={scale}>
+          <DeckSlideView
+            slide={slide}
+            index={index}
+            total={slides.length}
+            footer={footer}
+            logoSrc={logoSrc}
+          />
+        </DeckScaled>
+      </div>
+      <button
+        className="deck-presenter-button previous"
+        aria-label="Diapositiva anterior"
+        disabled={index === 0}
+        onClick={() => goTo(index - 1)}
+      >
+        <Icon name="chevron" size={28} />
+      </button>
+      <button
+        className="deck-presenter-button next"
+        aria-label="Diapositiva siguiente"
+        disabled={index === lastIndex}
+        onClick={() => goTo(index + 1)}
+      >
+        <Icon name="chevron" size={28} />
+      </button>
+      <span className="deck-presenter-counter" aria-live="polite">
+        {index + 1} / {slides.length}
+      </span>
+      <button
+        className="deck-presenter-close"
+        onClick={() => finishRef.current()}
+      >
+        <Icon name="x" size={17} />
+        Cerrar
+      </button>
+    </div>,
+    document.body,
+  )
+}
+
+type DeckTool = "layouts" | "elements" | "text" | "brand" | "images"
+
+const deckTools: { id: DeckTool label: string icon: IconName }[] = [
+  { id: "layouts", label: "Diseños", icon: "layout" },
+  { id: "elements", label: "Elementos", icon: "move" },
+  { id: "text", label: "Texto", icon: "type" },
+  { id: "brand", label: "Marca", icon: "palette" },
+  { id: "images", label: "Subir", icon: "upload" },
+]
+
+const deckElementIcon = (element: DeckElement): IconName =>
+  element.kind === "chart"
+    ? "chart"
+    : element.kind === "table"
+      ? "table"
+      : element.kind === "figures"
+        ? "grid"
+        : element.kind === "logo" || element.kind === "image"
+          ? "image"
+          : element.kind === "meta"
+            ? "calendar"
+            : "type"
+
+const deckPhotoTypes = ["image/jpeg", "image/png", "image/webp"]
+const deckImageTypes = [...deckPhotoTypes, "image/svg+xml"]
+
+function ExecutiveDeckEditor({
+  farmTitle,
+  report,
+  onChange,
+  onClose,
+  onNotice,
+  onOpenReportSettings,
+  reportLogo,
+}: {
+  farmTitle: string
+  report: ExecutiveReportState
+  onChange: (
+    update: (report: ExecutiveReportState) => ExecutiveReportState,
+  ) => void
+  onClose: () => void
+  onNotice: (text: string) => void
+  onOpenReportSettings: () => void
+  reportLogo: string
+}) {
+  const slides = useMemo(
+    () => buildExecutiveDeck(report, farmTitle),
+    [report, farmTitle],
+  )
+  const [currentId, setCurrentId] = useState("cover")
+  const [tool, setTool] = useState<DeckTool | null>("layouts")
+  const [moveMode, setMoveMode] = useState(false)
+  const [textMode, setTextMode] = useState(false)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [dragBox, setDragBox] = useState<{ id: string box: DeckBox } | null>(
+    null,
+  )
+  const [zoom, setZoom] = useState<number | "fit">("fit")
+  const [stageSize, setStageSize] = useState({ width: 0, height: 0 })
+  const [brandScope, setBrandScope] = useState<"report" | "slide">("report")
+  const [confirm, setConfirm] = useState<{
+    type: "slide" | "element"
+    id: string
+  } | null>(null)
+  const [undo, setUndo] = useState<{ id: string name: string } | null>(null)
+  const [presenting, setPresenting] = useState(false)
+  const [propertiesOpen, setPropertiesOpen] = useState(false)
+  const stageRef = useRef<HTMLDivElement>(null)
+  const canvasRef = useRef<HTMLDivElement>(null)
+  const photoInputRef = useRef<HTMLInputElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
+
+  const foundIndex = slides.findIndex((slide) => slide.id === currentId)
+  const currentIndex = foundIndex >= 0 ? foundIndex : 0
+  const current = slides[currentIndex]
+  const selected =
+    current.elements.find((element) => element.id === selectedId) ?? null
+  const footer: DeckFooter = {
+    report: "Generado con PorciTrack",
+    period: executivePeriod(report),
+  }
+  const fitScale = stageSize.width
+    ? clampNumber(
+        Math.min(
+          (stageSize.width - 56) / DECK_WIDTH,
+          (stageSize.height - 56) / DECK_HEIGHT,
+        ),
+        0.2,
+        2,
+      )
+    : 0.6
+  const scale = zoom === "fit" ? fitScale : zoom
+  const targetBrand = brandScope === "slide" ? current.brand : report.brand
+  const images = current.elements.filter((element) => element.kind === "image")
+  const editableTexts = current.elements.filter((element) => element.editable)
+
+  useLayoutEffect(() => {
+    const node = stageRef.current
+    if (!node) return
+    const measure = () =>
+      setStageSize({ width: node.clientWidth, height: node.clientHeight })
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const previous = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = previous
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!undo) return
+    const timer = window.setTimeout(() => setUndo(null), 6000)
+    return () => window.clearTimeout(timer)
+  }, [undo])
+
+  const selectSlide = (id: string) => {
+    setCurrentId(id)
+    setSelectedId(null)
+  }
+  const setMode = (mode: "move" | "text", value: boolean) => {
+    setSelectedId(null)
+    if (mode === "move") {
+      setMoveMode(value)
+      if (value) setTextMode(false)
+    } else {
+      setTextMode(value)
+      if (value) setMoveMode(false)
+    }
+  }
+  const chooseTool = (next: DeckTool) => {
+    const compact = window.matchMedia("(max-width: 760px)").matches
+    setTool((active) => (active === next && compact ? null : next))
+    if (next === "elements") setMode("move", true)
+    if (next === "text") setMode("text", true)
+  }
+  const zoomBy = (delta: number) =>
+    setZoom(clampNumber(Math.round((scale + delta) * 10) / 10, 0.3, 2))
+
+  const updateEdit = (
+    slideId: string,
+    change: (edit: ExecutiveSlideEdit) => ExecutiveSlideEdit,
+  ) =>
+    onChange((state) => ({
+      ...state,
+      slideEdits: {
+        ...state.slideEdits,
+        [slideId]: change(state.slideEdits[slideId] ?? {}),
+      },
+    }))
+  const updateCustomElements = (
+    slideId: string,
+    change: (elements: ExecutiveCustomElement[]) => ExecutiveCustomElement[],
+  ) =>
+    onChange((state) => ({
+      ...state,
+      customElements: {
+        ...state.customElements,
+        [slideId]: change(state.customElements[slideId] ?? []),
+      },
+    }))
+  const commitBox = (slideId: string, element: DeckElement, box: DeckBox) => {
+    if (element.custom) {
+      updateCustomElements(slideId, (items) =>
+        items.map((item) => (item.id === element.id ? { ...item, box } : item)),
+      )
+    } else {
+      updateEdit(slideId, (edit) => ({
+        ...edit,
+        boxes: { ...edit.boxes, [element.id]: box },
+      }))
+    }
+  }
+  const setElementText = (element: DeckElement, text: string) => {
+    if (element.custom) {
+      updateCustomElements(current.id, (items) =>
+        items.map((item) =>
+          item.id === element.id ? { ...item, text } : item,
+        ),
+      )
+    } else {
+      updateEdit(current.id, (edit) => ({
+        ...edit,
+        texts: { ...edit.texts, [element.id]: text },
+      }))
+    }
+  }
+  const applyLayout = (layout: ExecutiveLayout) => {
+    setSelectedId(null)
+    updateEdit(current.id, (edit) => ({ ...edit, layout, boxes: undefined }))
+  }
+  const resetLayout = () => {
+    setSelectedId(null)
+    updateEdit(current.id, (edit) => ({ ...edit, boxes: undefined }))
+  }
+  const addBlankSlide = () => {
+    const id = `blank-${Date.now()}`
+    onChange((state) => ({
+      ...state,
+      customSlides: [...state.customSlides, id],
+    }))
+    selectSlide(id)
+  }
+  const removeSlide = (id: string) => {
+    const index = slides.findIndex((slide) => slide.id === id)
+    const slide = slides[index]
+    setConfirm(null)
+    if (!slide || slide.kind === "cover") return
+    onChange((state) => ({
+      ...state,
+      removedSlides: [...state.removedSlides, id],
+    }))
+    if (id === current.id) {
+      selectSlide(slides[index + 1]?.id ?? slides[index - 1]?.id ?? "cover")
+    }
+    setUndo({ id, name: slide.name || slide.defaultName })
+  }
+  const undoRemove = () => {
+    if (!undo) return
+    onChange((state) => ({
+      ...state,
+      removedSlides: state.removedSlides.filter((item) => item !== undo.id),
+    }))
+    selectSlide(undo.id)
+    setUndo(null)
+  }
+  const removeElement = (id: string) => {
+    setConfirm(null)
+    setSelectedId(null)
+    updateCustomElements(current.id, (items) =>
+      items.filter((item) => item.id !== id),
+    )
+  }
+  const applyBrand = (brand: ExecutiveBrand) => {
+    if (brandScope === "report") {
+      onChange((state) => ({
+        ...state,
+        brand,
+        slideEdits: Object.fromEntries(
+          Object.entries(state.slideEdits).map(([id, edit]) => [
+            id,
+            { ...edit, brand: undefined },
+          ]),
+        ),
+      }))
+    } else {
+      updateEdit(current.id, (edit) => ({ ...edit, brand }))
+    }
+  }
+  const chooseTheme = (theme: ExecutiveTheme) => {
+    if (theme === "photo" && !targetBrand.photo) {
+      photoInputRef.current?.click()
+      return
+    }
+    applyBrand({ ...targetBrand, theme })
+  }
+  const readImage = (
+    file: File,
+    accepted: string[],
+    done: (src: string, width: number, height: number) => void,
+  ) => {
+    if (!accepted.includes(file.type)) {
+      onNotice("Formato no compatible")
+      return
+    }
+    const src = URL.createObjectURL(file)
+    const image = new Image()
+    image.onload = () =>
+      done(src, image.naturalWidth || 1, image.naturalHeight || 1)
+    image.onerror = () => {
+      URL.revokeObjectURL(src)
+      onNotice("Formato no compatible")
+    }
+    image.src = src
+  }
+  const addText = (textStyle: "title" | "body") => {
+    const id = `text-${Date.now()}`
+    updateCustomElements(current.id, (items) => [
+      ...items,
+      {
+        id,
+        kind: "text",
+        textStyle,
+        text: textStyle === "title" ? "Nuevo título" : "Escribe aquí tu texto",
+        box:
+          textStyle === "title"
+            ? { x: 10, y: 38, w: 60, h: 11 }
+            : { x: 10, y: 52, w: 46, h: 16 },
+      },
+    ])
+    setMode("text", true)
+    setSelectedId(id)
+  }
+  const addImage = (file: File) =>
+    readImage(file, deckImageTypes, (src, width, height) => {
+      const fit = Math.min(
+        (DECK_WIDTH * 0.42) / width,
+        (DECK_HEIGHT * 0.5) / height,
+      )
+      const w = ((width * fit) / DECK_WIDTH) * 100
+      const h = ((height * fit) / DECK_HEIGHT) * 100
+      const id = `image-${Date.now()}`
+      updateCustomElements(current.id, (items) => [
+        ...items,
+        {
+          id,
+          kind: "image",
+          src,
+          name: file.name,
+          aspect: width / height,
+          box: roundBox({ x: (100 - w) / 2, y: (93 - h) / 2, w, h }),
+        },
+      ])
+      setTool("elements")
+      setMode("move", true)
+      setSelectedId(id)
+    })
+
+  const interaction: DeckInteraction = {
+    moveMode,
+    textMode,
+    selectedId,
+    dragBox,
+    canvasRef,
+    onCanvasPointerDown: () => setSelectedId(null),
+    onText: setElementText,
+    onElementPointerDown: (event, element, mode) => {
+      if (event.button !== 0) return
+      if (textMode) {
+        event.stopPropagation()
+        setSelectedId(element.editable ? element.id : null)
+        return
+      }
+      if (!moveMode) return
+      event.preventDefault()
+      event.stopPropagation()
+      ;(event.currentTarget.closest(".deck-el") as HTMLElement | null)?.focus({
+        preventScroll: true,
+      })
+      setSelectedId(element.id)
+      const canvas = canvasRef.current
+      if (!canvas) return
+      const rect = canvas.getBoundingClientRect()
+      const origin = { x: event.clientX, y: event.clientY }
+      const slideId = current.id
+      const startBox = element.box
+      let latest = startBox
+      const handleMove = (moveEvent: PointerEvent) => {
+        const dx = ((moveEvent.clientX - origin.x) / rect.width) * 100
+        const dy = ((moveEvent.clientY - origin.y) / rect.height) * 100
+        latest =
+          mode === "move"
+            ? moveDeckBox(startBox, dx, dy)
+            : resizeDeckBox(startBox, mode, dx, dy, element.aspect)
+        setDragBox({ id: element.id, box: latest })
+      }
+      const finish = () => {
+        window.removeEventListener("pointermove", handleMove)
+        window.removeEventListener("pointerup", finish)
+        window.removeEventListener("pointercancel", finish)
+        setDragBox(null)
+        if (latest !== startBox) commitBox(slideId, element, latest)
+      }
+      window.addEventListener("pointermove", handleMove)
+      window.addEventListener("pointerup", finish)
+      window.addEventListener("pointercancel", finish)
+    },
+    onElementKeyDown: (event, element) => {
+      if (event.target !== event.currentTarget) return
+      if (moveMode && event.key.startsWith("Arrow")) {
+        event.preventDefault()
+        const step = event.shiftKey ? 5 : 1
+        const dx =
+          event.key === "ArrowLeft"
+            ? -step
+            : event.key === "ArrowRight"
+              ? step
+              : 0
+        const dy =
+          event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0
+        setSelectedId(element.id)
+        commitBox(current.id, element, moveDeckBox(element.box, dx, dy))
+      } else if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault()
+        if (moveMode || (textMode && element.editable))
+          setSelectedId(element.id)
+      } else if (
+        (event.key === "Delete" || event.key === "Backspace") &&
+        moveMode &&
+        element.custom
+      ) {
+        event.preventDefault()
+        setConfirm({ type: "element", id: element.id })
+      }
+    },
+  }
+
+  const confirmSlide =
+    confirm?.type === "slide"
+      ? slides.find((slide) => slide.id === confirm.id)
+      : undefined
+  const confirmElement =
+    confirm?.type === "element"
+      ? current.elements.find((element) => element.id === confirm.id)
+      : undefined
+  const selectedBox = selected
+    ? dragBox?.id === selected.id
+      ? dragBox.box
+      : selected.box
+    : null
+  const switchRow = (
+    label: string,
+    help: string,
+    active: boolean,
+    onToggle: () => void,
+  ) => (
+    <div className="deck-switch-row">
+      <span>
+        <strong>{label}</strong>
+        <small>{help}</small>
+      </span>
+      <button
+        type="button"
+        className={`include-switch ${active ? "active" : ""}`}
+        aria-pressed={active}
+        aria-label={label}
+        onClick={onToggle}
+      >
+        <i />
+      </button>
+    </div>
+  )
+
+  const toolPanel =
+    tool === "layouts" ? (
+      <>
+        <div className="deck-panel-heading">
+          <h2>Diseños</h2>
+          <p>
+            {current.kind === "cover"
+              ? "La portada mantiene su diseño. Selecciona otra diapositiva para cambiarlo."
+              : "Elige cómo se distribuye el contenido de esta diapositiva."}
+          </p>
+        </div>
+        <div className="deck-layout-grid">
+          {executiveLayouts.map((layout) => (
+            <button
+              key={layout.id}
+              className={`deck-layout-option ${
+                current.layout === layout.id ? "active" : ""
+              }`}
+              aria-pressed={current.layout === layout.id}
+              disabled={current.kind === "cover" && layout.id !== "cover"}
+              onClick={() => applyLayout(layout.id)}
+            >
+              <span className="deck-layout-preview" aria-hidden="true">
+                {layout.blocks.map((block, index) => (
+                  <i
+                    key={index}
+                    className={block.kind}
+                    style={{
+                      left: `${block.x}%`,
+                      top: `${block.y}%`,
+                      width: `${block.w}%`,
+                      height: `${block.h}%`,
+                    }}
+                  />
+                ))}
+              </span>
+              <strong>{layout.name}</strong>
+              {current.defaultLayout === layout.id && (
+                <small>Recomendado</small>
+              )}
+            </button>
+          ))}
+        </div>
+      </>
+    ) : tool === "elements" ? (
+      <>
+        <div className="deck-panel-heading">
+          <h2>Elementos</h2>
+          <p>
+            Arrastra para mover y usa los puntos de las esquinas para cambiar el
+            tamaño.
+          </p>
+        </div>
+        {switchRow(
+          "Mover y redimensionar",
+          "Muestra contornos y controles",
+          moveMode,
+          () => setMode("move", !moveMode),
+        )}
+        <ul className="deck-element-list">
+          {current.elements.map((element) => (
+            <li key={element.id}>
+              <button
+                className={
+                  selectedId === element.id && moveMode ? "active" : ""
+                }
+                onClick={() => {
+                  setMode("move", true)
+                  setSelectedId(element.id)
+                }}
+              >
+                <Icon name={deckElementIcon(element)} size={16} />
+                <span>{element.label}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </>
+    ) : tool === "text" ? (
+      <>
+        <div className="deck-panel-heading">
+          <h2>Texto</h2>
+          <p>
+            Haz clic en un texto de la diapositiva para escribir. El período y
+            la fecha de generación se actualizan solos.
+          </p>
+        </div>
+        {switchRow(
+          "Editar texto",
+          "Resalta los textos editables",
+          textMode,
+          () => setMode("text", !textMode),
+        )}
+        <div className="deck-panel-actions">
+          <button className="button secondary" onClick={() => addText("body")}>
+            <Icon name="plus" size={16} />
+            Agregar cuadro de texto
+          </button>
+        </div>
+        <h3 className="deck-panel-subtitle">Textos de esta diapositiva</h3>
+        <ul className="deck-element-list">
+          {editableTexts.map((element) => (
+            <li key={element.id}>
+              <button
+                className={
+                  selectedId === element.id && textMode ? "active" : ""
+                }
+                onClick={() => {
+                  setMode("text", true)
+                  setSelectedId(element.id)
+                }}
+              >
+                <Icon name="type" size={16} />
+                <span>
+                  <b>{element.label}</b>
+                  {element.text || "Sin texto"}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </>
+    ) : tool === "brand" ? (
+      <>
+        <div className="deck-panel-heading">
+          <h2>Marca</h2>
+          <p>Define el estilo visual de la presentación.</p>
+        </div>
+        <div
+          className="deck-scope"
+          role="radiogroup"
+          aria-label="Alcance de la marca"
+        >
+          <button
+            role="radio"
+            aria-checked={brandScope === "report"}
+            className={brandScope === "report" ? "active" : ""}
+            onClick={() => setBrandScope("report")}
+          >
+            Todo el informe
+          </button>
+          <button
+            role="radio"
+            aria-checked={brandScope === "slide"}
+            className={brandScope === "slide" ? "active" : ""}
+            onClick={() => setBrandScope("slide")}
+          >
+            Solo esta diapositiva
+          </button>
+        </div>
+        <div className="deck-theme-list">
+          {executiveThemes.map((theme) => {
+            const active = targetBrand.theme === theme.id
+            return (
+              <button
+                key={theme.id}
+                className={`deck-theme-option ${active ? "active" : ""}`}
+                aria-pressed={active}
+                onClick={() => chooseTheme(theme.id)}
+              >
+                <span
+                  className={`deck-theme-swatch swatch-${theme.id}`}
+                  style={
+                    theme.id === "photo" && targetBrand.photo
+                      ? {
+                          backgroundImage: `linear-gradient(rgba(18,24,13,.5), rgba(18,24,13,.72)), url("${targetBrand.photo}")`,
+                        }
+                      : undefined
+                  }
+                >
+                  <i />
+                  <i />
+                </span>
+                <span>
+                  <strong>{theme.name}</strong>
+                  <small>
+                    {theme.id === "photo" && !targetBrand.photo
+                      ? "Sube una foto JPG, PNG o WebP"
+                      : theme.description}
+                  </small>
+                </span>
+                {active && <Icon name="check" size={16} />}
+              </button>
+            )
+          })}
+        </div>
+        {targetBrand.photo && (
+          <button
+            className="button secondary deck-full-button"
+            onClick={() => photoInputRef.current?.click()}
+          >
+            <Icon name="upload" size={16} />
+            Cambiar foto
+          </button>
+        )}
+        {brandScope === "slide" && current.hasBrandOverride && (
+          <button
+            className="text-button deck-link-button"
+            onClick={() =>
+              updateEdit(current.id, (edit) => ({ ...edit, brand: undefined }))
+            }
+          >
+            Usar la marca del informe
+          </button>
+        )}
+      </>
+    ) : tool === "images" ? (
+      <>
+        <div className="deck-panel-heading">
+          <h2>Subir</h2>
+          <p>Agrega imágenes a esta diapositiva. PNG, JPG, WebP o SVG.</p>
+        </div>
+        <button
+          className="deck-upload-drop"
+          onClick={() => imageInputRef.current?.click()}
+        >
+          <Icon name="upload" size={22} />
+          <strong>Subir imagen</strong>
+          <small>Se agrega al centro y conserva su proporción</small>
+        </button>
+        {images.length > 0 && (
+          <ul className="deck-image-list">
+            {images.map((image) => (
+              <li
+                key={image.id}
+                className={selectedId === image.id ? "active" : ""}
+              >
+                <button
+                  className="deck-image-select"
+                  onClick={() => {
+                    setMode("move", true)
+                    setSelectedId(image.id)
+                  }}
+                >
+                  <img src={image.src} alt="" />
+                  <span>{image.label}</span>
+                </button>
+                <button
+                  className="text-button deck-danger-link"
+                  onClick={() => setConfirm({ type: "element", id: image.id })}
+                >
+                  Quitar
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="deck-logo-note">
+          <img src={porcitrackLogo} alt="" />
+          <div>
+            <strong>Logo de la portada</strong>
+            <small>Se toma de Configuración › Reportes.</small>
+            <button
+              className="text-button deck-link-button"
+              onClick={onOpenReportSettings}
+            >
+              Ir a Configuración › Reportes
+            </button>
+          </div>
+        </div>
+      </>
+    ) : null
+
+  return createPortal(
+    <div
+      className="deck-editor"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Editor de presentación"
+    >
+      <header className="deck-topbar">
+        <div
+          className="deck-view-switch"
+          role="group"
+          aria-label="Modo de presentación"
+        >
+          <button className="active" aria-pressed="true">
+            <Icon name="edit" size={15} />
+            Editar
+          </button>
+          <button aria-pressed="false" onClick={() => setPresenting(true)}>
+            <Icon name="play" size={15} />
+            Presentar
+          </button>
+        </div>
+        <div className="deck-topbar-title">
+          <strong>
+            Editar presentación{" "}
+            <span>· {current.name || current.defaultName}</span>
+          </strong>
+        </div>
+        <div className="deck-zoom" role="group" aria-label="Zoom">
+          <button
+            className="icon-button"
+            aria-label="Alejar"
+            disabled={scale <= 0.3}
+            onClick={() => zoomBy(-0.1)}
+          >
+            <Icon name="minus" size={16} />
+          </button>
+          <button
+            className={`deck-zoom-fit ${zoom === "fit" ? "active" : ""}`}
+            aria-pressed={zoom === "fit"}
+            onClick={() => setZoom("fit")}
+          >
+            Ajustar
+          </button>
+          <button
+            className="icon-button"
+            aria-label="Acercar"
+            disabled={scale >= 2}
+            onClick={() => zoomBy(0.1)}
+          >
+            <Icon name="plus" size={16} />
+          </button>
+          <span className="deck-zoom-value">{Math.round(scale * 100)} %</span>
+        </div>
+        <div className="deck-topbar-actions">
+          <button
+            className="icon-button deck-properties-toggle"
+            aria-label="Propiedades"
+            aria-expanded={propertiesOpen}
+            onClick={() => setPropertiesOpen(!propertiesOpen)}
+          >
+            <Icon name="panel" size={18} />
+          </button>
+          <button
+            className="button primary"
+            onClick={() => onNotice("PDF descargado")}
+          >
+            <Icon name="download" size={16} />
+            <span>Exportar PDF</span>
+          </button>
+          <button className="button secondary" onClick={onClose}>
+            <Icon name="x" size={16} />
+            <span>Cerrar</span>
+          </button>
+        </div>
+      </header>
+
+      <nav className="deck-rail" aria-label="Herramientas del editor">
+        {deckTools.map((item) => (
+          <button
+            key={item.id}
+            className={tool === item.id ? "active" : ""}
+            aria-pressed={tool === item.id}
+            onClick={() => chooseTool(item.id)}
+          >
+            <Icon name={item.icon} size={19} />
+            <span>{item.label}</span>
+          </button>
+        ))}
+      </nav>
+
+      {tool && <aside className="deck-tool-panel">{toolPanel}</aside>}
+
+      <main
+        className={`deck-stage ${moveMode ? "is-moving" : ""} ${
+          textMode ? "is-texting" : ""
+        }`}
+        ref={stageRef}
+        onPointerDown={(event) => {
+          if (event.target === event.currentTarget) setSelectedId(null)
+        }}
+      >
+        <DeckScaled scale={scale}>
+          <DeckSlideView
+            slide={current}
+            index={currentIndex}
+            total={slides.length}
+            footer={footer}
+            logoSrc={reportLogo}
+            interaction={interaction}
+          />
+        </DeckScaled>
+      </main>
+
+      <aside
+        className={`deck-properties ${propertiesOpen ? "open" : ""}`}
+        aria-label="Propiedades"
+      >
+        <div className="deck-properties-heading">
+          <h2>Propiedades</h2>
+          <button
+            className="icon-button deck-properties-close"
+            aria-label="Cerrar propiedades"
+            onClick={() => setPropertiesOpen(false)}
+          >
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+        <label className="field deck-field">
+          <span>Nombre de la diapositiva</span>
+          <input
+            value={current.name}
+            placeholder={current.defaultName}
+            onChange={(event) => {
+              const name = event.target.value
+              updateEdit(current.id, (edit) => ({ ...edit, name }))
+            }}
+            onBlur={() => {
+              if (!current.name.trim()) {
+                updateEdit(current.id, (edit) => ({ ...edit, name: undefined }))
+              }
+            }}
+          />
+          <small className="field-help">
+            Identifica la diapositiva en las miniaturas; no cambia el título
+            visible.
+          </small>
+        </label>
+        <section className="deck-prop-section">
+          <h3>Edición</h3>
+          {switchRow(
+            "Mover y redimensionar",
+            "Arrastra y usa las esquinas",
+            moveMode,
+            () => setMode("move", !moveMode),
+          )}
+          {switchRow(
+            "Editar texto",
+            "Clic en un texto para escribir",
+            textMode,
+            () => setMode("text", !textMode),
+          )}
+          <button
+            className="button secondary deck-full-button"
+            disabled={!current.hasLayoutChanges}
+            onClick={resetLayout}
+          >
+            <Icon name="undo" size={16} />
+            Restablecer disposición
+          </button>
+        </section>
+        <div className="deck-prop-danger">
+          <button
+            className="button danger-outline deck-full-button"
+            disabled={current.kind === "cover"}
+            onClick={() => setConfirm({ type: "slide", id: current.id })}
+          >
+            <Icon name="trash" size={16} />
+            Quitar diapositiva
+          </button>
+          {current.kind === "cover" && (
+            <small>La portada es fija y no se puede quitar.</small>
+          )}
+        </div>
+      </aside>
+
+      <footer className="deck-thumbnails" aria-label="Diapositivas">
+        <div className="deck-thumbnails-track">
+          {slides.map((slide, index) => (
+            <div
+              key={slide.id}
+              className={`deck-thumb ${
+                slide.id === current.id ? "active" : ""
+              }`}
+            >
+              <button
+                className="deck-thumb-button"
+                aria-label={`Ir a la diapositiva ${index + 1}: ${slide.name || slide.defaultName}`}
+                aria-current={slide.id === current.id ? "true" : undefined}
+                onClick={() => selectSlide(slide.id)}
+              >
+                <DeckScaled scale={DECK_THUMB_SCALE}>
+                  <DeckSlideView
+                    slide={slide}
+                    index={index}
+                    total={slides.length}
+                    footer={footer}
+                    logoSrc={reportLogo}
+                  />
+                </DeckScaled>
+              </button>
+              <span className="deck-thumb-meta">
+                <b>
+                  {index + 1} / {slides.length}
+                </b>
+                {slide.name || slide.defaultName}
+              </span>
+              {slide.kind !== "cover" && (
+                <button
+                  className="deck-thumb-remove"
+                  aria-label={`Quitar ${slide.name || slide.defaultName}`}
+                  onClick={() => setConfirm({ type: "slide", id: slide.id })}
+                >
+                  <Icon name="x" size={13} />
+                </button>
+              )}
+            </div>
+          ))}
+          <button
+            className="deck-thumb-add"
+            aria-label="Agregar diapositiva en blanco"
+            onClick={addBlankSlide}
+          >
+            <Icon name="plus" size={22} />
+            <span>Agregar</span>
+          </button>
+        </div>
+      </footer>
+
+      {confirm && (confirmSlide || confirmElement) && (
+        <DialogShell
+          title={
+            confirm.type === "slide"
+              ? "¿Quitar esta diapositiva?"
+              : "¿Quitar este elemento?"
+          }
+          onClose={() => setConfirm(null)}
+          size="small"
+        >
+          <div className="confirm-content">
+            <p>
+              {confirmSlide
+                ? `“${confirmSlide.name || confirmSlide.defaultName}” saldrá de la presentación. Podrás deshacerlo durante unos segundos.`
+                : `“${confirmElement?.label ?? "Elemento"}” se quitará de esta diapositiva.`}
+            </p>
+          </div>
+          <div className="modal-actions">
+            <button
+              className="button secondary"
+              onClick={() => setConfirm(null)}
+            >
+              Cancelar
+            </button>
+            <button
+              className="button danger"
+              onClick={() =>
+                confirm.type === "slide"
+                  ? removeSlide(confirm.id)
+                  : removeElement(confirm.id)
+              }
+            >
+              <Icon name="trash" size={16} />
+              Quitar
+            </button>
+          </div>
+        </DialogShell>
+      )}
+
+      {undo && (
+        <div className="toast undo-toast deck-undo-toast" role="status">
+          <span>
+            <Icon name="check" size={17} />
+          </span>
+          Diapositiva quitada
+          <button onClick={undoRemove}>Deshacer</button>
+        </div>
+      )}
+
+      {presenting && (
+        <ExecutivePresenter
+          slides={slides}
+          startIndex={currentIndex}
+          footer={footer}
+          logoSrc={reportLogo}
+          onClose={(index) => {
+            setPresenting(false)
+            if (slides[index]) selectSlide(slides[index].id)
+          }}
+        />
+      )}
+
+      <input
+        ref={photoInputRef}
+        type="file"
+        accept={deckPhotoTypes.join(",")}
+        hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0]
+          event.target.value = ""
+          if (!file) return
+          readImage(file, deckPhotoTypes, (src) => {
+            applyBrand({ theme: "photo", photo: src })
+            onNotice("Foto de fondo aplicada")
+          })
+        }}
+      />
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept={deckImageTypes.join(",")}
+        hidden
+        onChange={(event) => {
+          const file = event.target.files?.[0]
+          event.target.value = ""
+          if (file) addImage(file)
+        }}
+      />
+    </div>,
+    document.body,
+  )
+}
+
+function ExecutiveAssembly({
+  farmName,
+  report,
+  onChange,
+  onBack,
+  onPresentation,
+}: {
+  farmName: string
+  report: ExecutiveReportState
+  onChange: (
+    update: (report: ExecutiveReportState) => ExecutiveReportState,
+  ) => void
+  onBack: () => void
+  onPresentation: () => void
+}) {
+  const [query, setQuery] = useState("")
+  const [selectedId, setSelectedId] = useState(
+    report.activeBoards[0] ?? executiveBoards[0].id,
+  )
+  const [draggedReportId, setDraggedReportId] = useState<string | null>(null)
+  const [saveStatus, setSaveStatus] = useState<"Guardado" | "Guardando…">(
+    "Guardado",
+  )
+  const lastSavedReport = useRef(report)
+
+  useEffect(() => {
+    if (lastSavedReport.current === report) return
+    lastSavedReport.current = report
+    setSaveStatus("Guardando…")
+    const timer = window.setTimeout(() => setSaveStatus("Guardado"), 650)
+    return () => window.clearTimeout(timer)
+  }, [report])
+
+  const activeReports = report.activeBoards
+  const selectedReport =
+    executiveBoardById.get(selectedId) ?? executiveBoards[0]
+  const selectedActive = activeReports.includes(selectedReport.id)
+  const config = executiveConfigFor(report, selectedReport)
+  const hasTable = selectedReport.hasTable
+  const slideCount = executiveSlideSpecs(report, farmName).length
+  const normalizedQuery = query.trim().toLocaleLowerCase("es")
+  const selectedMetrics =
+    config.dataMode === "indicators"
+      ? selectedReport.data.metrics.filter((metric) =>
+          config.indicators.includes(metric.id),
+        )
+      : selectedReport.data.metrics
+  const activeCharts = config.charts
+    .filter((chart) => chart.active)
+    .map((chart) =>
+      selectedReport.data.charts.find((item) => item.id === chart.id),
+    )
+    .filter((chart): chart is ExecutiveChartData => Boolean(chart))
+  const chartName = (id: string) =>
+    selectedReport.data.charts.find((chart) => chart.id === id)?.title ?? id
+
+  const updateConfig = (patch: Partial<ExecutiveBoardConfig>) => {
+    const board = selectedReport
+    onChange((state) => {
+      const previous = executiveConfigFor(state, board)
+      const next = { ...previous, ...patch }
+      // Turning an option back on explicitly brings back slides removed in the editor.
+      const reenabled =
+        (next.includeVisual && !previous.includeVisual) ||
+        (next.includeData && !previous.includeData) ||
+        next.charts.some(
+          (chart) =>
+            chart.active &&
+            !previous.charts.find((item) => item.id === chart.id)?.active,
+        )
+      return {
+        ...state,
+        configs: { ...state.configs, [board.id]: next },
+        removedSlides: reenabled
+          ? state.removedSlides.filter((id) => !id.startsWith(`${board.id}:`))
+          : state.removedSlides,
+      }
+    })
+  }
+  const setActiveReports = (update: (current: string[]) => string[]) =>
+    onChange((state) => ({
+      ...state,
+      activeBoards: update(state.activeBoards),
+    }))
+  const toggleReport = (id: string) => {
+    onChange((state) => {
+      const active = state.activeBoards.includes(id)
+      return {
+        ...state,
+        activeBoards: active
+          ? state.activeBoards.filter((reportId) => reportId !== id)
+          : [...state.activeBoards, id],
+        removedSlides: active
+          ? state.removedSlides
+          : state.removedSlides.filter(
+              (slideId) => !slideId.startsWith(`${id}:`),
+            ),
+      }
+    })
+    setSelectedId(id)
+  }
+  const moveReport = (id: string, direction: -1 | 1) => {
+    setActiveReports((current) => {
+      const index = current.indexOf(id)
+      const destination = index + direction
+      if (index < 0 || destination < 0 || destination >= current.length)
+        return current
+      const next = [...current]
+      ;[next[index], next[destination]] = [next[destination], next[index]]
+      return next
+    })
+  }
+  const dropReport = (targetId: string) => {
+    if (!draggedReportId || draggedReportId === targetId) return
+    const dragged = draggedReportId
+    setActiveReports((current) => {
+      if (!current.includes(dragged) || !current.includes(targetId))
+        return current
+      const next = current.filter((id) => id !== dragged)
+      next.splice(next.indexOf(targetId), 0, dragged)
+      return next
+    })
+    setDraggedReportId(null)
+  }
+  const moveGraph = (index: number, direction: -1 | 1) => {
+    const destination = index + direction
+    if (destination < 0 || destination >= config.charts.length) return
+    const next = [...config.charts]
+    ;[next[index], next[destination]] = [next[destination], next[index]]
+    updateConfig({ charts: next })
+  }
+  const toggleIndicator = (id: string) => {
+    const active = config.indicators.includes(id)
+    if (active && config.indicators.length === 1) return
+    updateConfig({
+      indicators: active
+        ? config.indicators.filter((item) => item !== id)
+        : selectedReport.data.metrics
+            .map((metric) => metric.id)
+            .filter((item) => item === id || config.indicators.includes(item)),
+    })
+  }
+
+  return (
+    <div className="connected-tool-page executive-assembly-page">
+      <header className="assembly-header">
+        <button className="assembly-back" onClick={onBack}>
+          <Icon name="arrow" size={17} />
+          Volver
+        </button>
+        <div>
+          <h1>Centro Ejecutivo · {farmName}</h1>
+          <span
+            className={`save-status ${
+              saveStatus === "Guardado" ? "saved" : ""
+            }`}
+          >
+            <Icon name="check" size={15} />
+            {saveStatus}
+          </span>
+        </div>
+        <button className="button primary" onClick={onPresentation}>
+          Ver presentación
+          <Icon name="arrow" size={16} />
+        </button>
+      </header>
+
+      <section className="assembly-period">
+        <div>
+          <Icon name="calendar" size={19} />
+          <strong>Período del informe</strong>
+        </div>
+        <label>
+          <span>Desde</span>
+          <DatePicker
+            value={report.startDate}
+            max={report.endDate}
+            onChange={(value) =>
+              onChange((state) => ({ ...state, startDate: value }))
+            }
+            label="Fecha inicial del informe"
+          />
+        </label>
+        <span className="period-separator">–</span>
+        <label>
+          <span>Hasta</span>
+          <DatePicker
+            value={report.endDate}
+            min={report.startDate}
+            max={TODAY_ISO}
+            onChange={(value) =>
+              onChange((state) => ({ ...state, endDate: value }))
+            }
+            label="Fecha final del informe"
+          />
+        </label>
+      </section>
+
+      <div className="assembly-workspace">
+        <aside className="assembly-library">
+          <div className="assembly-library-tools">
+            <label className="search-field">
+              <Icon name="search" size={17} />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Buscar tablero o reporte"
+              />
+            </label>
+            <strong>
+              {countLabel(activeReports.length, "tablero", "tableros")} ·{" "}
+              {countLabel(slideCount, "diapositiva", "diapositivas")}
+            </strong>
+          </div>
+          <div className="assembly-modules">
+            {executiveModuleOrder.map((moduleName) => {
+              const category = reportCatalog.find(
+                (item) => item.name === moduleName,
+              )
+              if (!category) return null
+              const reports = executiveBoards
+                .filter((board) => board.module === moduleName)
+                .filter(
+                  (board) =>
+                    !normalizedQuery ||
+                    `${board.name} ${board.description} ${board.subcategory ?? ""}`
+                      .toLocaleLowerCase("es")
+                      .includes(normalizedQuery),
+                )
+                .sort(
+                  (a, b) =>
+                    Number(activeReports.includes(b.id)) -
+                      Number(activeReports.includes(a.id)) ||
+                    activeReports.indexOf(a.id) - activeReports.indexOf(b.id),
+                )
+              if (!reports.length) return null
+              return (
+                <section className="assembly-module" key={moduleName}>
+                  <h2>{reports[0].moduleLabel}</h2>
+                  {category.subcategories?.length ? (
+                    <p>{category.subcategories.join(" · ")}</p>
+                  ) : moduleName === "Inventario" ? (
+                    <p>Concentrado · Medicamentos</p>
+                  ) : null}
+                  <div>
+                    {reports.map((board) => {
+                      const active = activeReports.includes(board.id)
+                      const activeIndex = activeReports.indexOf(board.id)
+                      return (
+                        <article
+                          key={board.id}
+                          draggable={active}
+                          className={`assembly-report-row ${
+                            selectedId === board.id ? "selected" : ""
+                          } ${active ? "included" : ""} ${
+                            draggedReportId === board.id ? "dragging" : ""
+                          }`}
+                          onClick={() => setSelectedId(board.id)}
+                          onDragStart={() => setDraggedReportId(board.id)}
+                          onDragEnd={() => setDraggedReportId(null)}
+                          onDragOver={(event) => {
+                            if (active) event.preventDefault()
+                          }}
+                          onDrop={() => dropReport(board.id)}
+                        >
+                          <span className="drag-handle" aria-hidden="true">
+                            <Icon name="dots" size={18} />
+                          </span>
+                          <span className="include-control">
+                            <button
+                              className={`include-switch ${
+                                active ? "active" : ""
+                              }`}
+                              aria-label={`${
+                                active ? "Excluir" : "Incluir"
+                              } ${board.name}`}
+                              aria-pressed={active}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                toggleReport(board.id)
+                              }}
+                            >
+                              <i />
+                            </button>
+                            <small>Incluir</small>
+                          </span>
+                          <span className="assembly-report-icon">
+                            <Icon name={board.icon} size={18} />
+                          </span>
+                          <span className="assembly-report-copy">
+                            <strong>{board.name}</strong>
+                            <small>{board.description}</small>
+                          </span>
+                          <span className="assembly-row-order">
+                            <button
+                              disabled={!active || activeIndex === 0}
+                              aria-label={`Subir ${board.name}`}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                moveReport(board.id, -1)
+                              }}
+                            >
+                              <Icon name="chevron" size={15} />
+                            </button>
+                            <button
+                              disabled={
+                                !active ||
+                                activeIndex === activeReports.length - 1
+                              }
+                              aria-label={`Bajar ${board.name}`}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                moveReport(board.id, 1)
+                              }}
+                            >
+                              <Icon name="chevron" size={15} />
+                            </button>
+                          </span>
+                        </article>
+                      )
+                    })}
+                  </div>
+                </section>
+              )
+            })}
+          </div>
+        </aside>
+
+        <section className="assembly-config">
+          <div className="assembly-selected-heading">
+            <span>
+              <Icon name={selectedReport.icon} size={21} />
+            </span>
+            <div>
+              <h2>{selectedReport.name}</h2>
+              <p>{selectedReport.description}</p>
+            </div>
+          </div>
+          <div
+            className={`assembly-config-body ${
+              selectedActive ? "" : "disabled"
+            }`}
+          >
+            {!selectedActive && (
+              <div className="assembly-disabled-notice">
+                <Icon name="info" size={18} />
+                Activa este tablero para incluirlo en la presentación
+              </div>
+            )}
+            <div className="config-intro">
+              <strong>Configuración del tablero</strong>
+              <p>
+                Define qué verá la presentación para este tablero. El tablero
+                operativo no cambia.
+              </p>
+            </div>
+
+            <fieldset disabled={!selectedActive} className="config-fieldset">
+              <legend>Incluir</legend>
+              <div className="config-checks">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={config.includeVisual}
+                    onChange={(event) =>
+                      updateConfig({ includeVisual: event.target.checked })
+                    }
+                  />
+                  Resumen visual
+                </label>
+                <label className={hasTable ? "" : "is-unavailable"}>
+                  <input
+                    type="checkbox"
+                    disabled={!hasTable}
+                    checked={config.includeData && hasTable}
+                    onChange={(event) =>
+                      updateConfig({ includeData: event.target.checked })
+                    }
+                  />
+                  Vista de datos
+                  {!hasTable && <small>No disponible para este tablero</small>}
+                </label>
+              </div>
+            </fieldset>
+
+            <fieldset
+              disabled={
+                !selectedActive ||
+                !config.includeVisual ||
+                !config.includeData ||
+                !hasTable
+              }
+              className="config-fieldset"
+            >
+              <legend>Mostrar primero</legend>
+              <div className="config-segmented">
+                <button
+                  type="button"
+                  className={config.showFirst === "visual" ? "active" : ""}
+                  onClick={() => updateConfig({ showFirst: "visual" })}
+                >
+                  Resumen visual
+                </button>
+                <button
+                  type="button"
+                  className={config.showFirst === "data" ? "active" : ""}
+                  onClick={() => updateConfig({ showFirst: "data" })}
+                >
+                  Vista de datos
+                </button>
+              </div>
+            </fieldset>
+
+            <label className="config-key-figures">
+              <input
+                type="checkbox"
+                disabled={!selectedActive || !config.includeVisual}
+                checked={config.includeFigures}
+                onChange={(event) =>
+                  updateConfig({ includeFigures: event.target.checked })
+                }
+              />
+              <span>
+                <strong>Incluir cifras clave</strong>
+                <small>Destaca los indicadores principales al inicio.</small>
+              </span>
+            </label>
+
+            <fieldset
+              disabled={!selectedActive || !config.includeVisual}
+              className="config-fieldset"
+            >
+              <legend>Composición</legend>
+              <div className="composition-options">
+                {executiveCompositionOptions.map((option) => (
+                  <label key={option.id}>
+                    <input
+                      type="radio"
+                      name={`composition-${selectedReport.id}`}
+                      checked={config.composition === option.id}
+                      onChange={() => updateConfig({ composition: option.id })}
+                    />
+                    {option.label}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset
+              disabled={!selectedActive || !config.includeVisual}
+              className="config-fieldset"
+            >
+              <legend>
+                Gráficas ({activeCharts.length} de {config.charts.length})
+              </legend>
+              <div className="config-order-list">
+                {config.charts.map((graph, index) => (
+                  <div key={graph.id}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={graph.active}
+                        onChange={() =>
+                          updateConfig({
+                            charts: config.charts.map((item) =>
+                              item.id === graph.id
+                                ? { ...item, active: !item.active }
+                                : item,
+                            ),
+                          })
+                        }
+                      />
+                      {chartName(graph.id)}
+                    </label>
+                    <span>
+                      <button
+                        type="button"
+                        disabled={index === 0}
+                        onClick={() => moveGraph(index, -1)}
+                        aria-label={`Subir ${chartName(graph.id)}`}
+                      >
+                        <Icon name="chevron" size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        disabled={index === config.charts.length - 1}
+                        onClick={() => moveGraph(index, 1)}
+                        aria-label={`Bajar ${chartName(graph.id)}`}
+                      >
+                        <Icon name="chevron" size={15} />
+                      </button>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </fieldset>
+
+            {hasTable && (
+              <fieldset
+                disabled={!selectedActive || !config.includeData}
+                className="config-fieldset"
+              >
+                <legend>Vista de datos</legend>
+                <div className="config-data-options">
+                  <label>
+                    <input
+                      type="radio"
+                      name={`data-mode-${selectedReport.id}`}
+                      checked={config.dataMode === "table"}
+                      onChange={() => updateConfig({ dataMode: "table" })}
+                    />
+                    Tabla completa
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name={`data-mode-${selectedReport.id}`}
+                      checked={config.dataMode === "indicators"}
+                      onChange={() => updateConfig({ dataMode: "indicators" })}
+                    />
+                    Seleccionar indicadores
+                  </label>
+                  <label className="sections-switch">
+                    <span>
+                      Secciones {config.sectionsOpen ? "abiertas" : "cerradas"}
+                    </span>
+                    <button
+                      type="button"
+                      className={`include-switch ${
+                        config.sectionsOpen ? "active" : ""
+                      }`}
+                      aria-pressed={config.sectionsOpen}
+                      aria-label="Secciones abiertas"
+                      onClick={() =>
+                        updateConfig({ sectionsOpen: !config.sectionsOpen })
+                      }
+                    >
+                      <i />
+                    </button>
+                  </label>
+                </div>
+                {config.dataMode === "indicators" && (
+                  <div className="executive-indicator-picker">
+                    {selectedReport.data.metrics.map((metric) => {
+                      const checked = config.indicators.includes(metric.id)
+                      return (
+                        <label
+                          key={metric.id}
+                          className={checked ? "checked" : ""}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            disabled={checked && config.indicators.length === 1}
+                            onChange={() => toggleIndicator(metric.id)}
+                          />
+                          {metric.label}
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
+              </fieldset>
+            )}
+
+            <div className="assembly-preview-summary">
+              <strong>
+                {countLabel(activeCharts.length, "gráfica", "gráficas")} ·{" "}
+                {countLabel(selectedMetrics.length, "indicador", "indicadores")}
+              </strong>
+              <span>Vista previa</span>
+            </div>
+            <div className="assembly-dashboard-preview deck-palette-light">
+              <div className="preview-title">
+                <strong>{selectedReport.name}</strong>
+                <span>{executivePeriod(report)}</span>
+              </div>
+              {config.includeFigures && selectedMetrics.length > 0 && (
+                <div className="preview-figures executive-preview-figures">
+                  {selectedMetrics.map((metric) => (
+                    <div key={metric.id}>
+                      <span>{metric.label}</span>
+                      <strong>{metric.value}</strong>
+                      <small>{metric.note}</small>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {activeCharts.length > 0 ? (
+                <div className="assembly-preview-charts">
+                  {activeCharts.map((chart) => (
+                    <figure key={chart.id}>
+                      <figcaption>{chart.title}</figcaption>
+                      <ExecutiveChart chart={chart} width={520} height={200} />
+                    </figure>
+                  ))}
+                </div>
+              ) : (
+                <div className="assembly-preview-empty">
+                  Selecciona al menos una gráfica para el resumen visual.
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  )
+}
+
 function DashboardsPage({
   initialScope,
+  bankRequest,
+  onReportViewChange,
   onNotice,
   onReports,
+  onFarmSummary,
+  executiveReports,
+  onExecutiveReportsChange,
+  onOpenReportSettings,
+  reportLogo,
 }: {
   initialScope: string
+  bankRequest: number
+  onReportViewChange: (open: boolean) => void
   onNotice: (text: string) => void
   onReports: () => void
+  onFarmSummary: () => void
+  executiveReports: Record<string, ExecutiveReportState>
+  onExecutiveReportsChange: (
+    update: (
+      current: Record<string, ExecutiveReportState>,
+    ) => Record<string, ExecutiveReportState>,
+  ) => void
+  onOpenReportSettings: () => void
+  reportLogo: string
 }) {
   const [selectedReport, setSelectedReport] =
     useState<ReportCatalogItem | null>(null)
+  const [executiveView, setExecutiveView] =
+    useState<"center" | "presentation" | "assembly" | null>(null)
   const [scope, setScope] = useState(initialScope)
   const [editingReport, setEditingReport] = useState(false)
   const [activeSections, setActiveSections] = useState<ReportSection[]>([
@@ -15670,6 +21442,20 @@ function DashboardsPage({
     useState<Record<string, string>>({})
   const [startDate, setStartDate] = useState("2026-01-01")
   const [endDate, setEndDate] = useState(TODAY_ISO)
+  useEffect(() => {
+    setEditingReport(false)
+    setSelectedReport(null)
+    setExecutiveView(null)
+  }, [bankRequest])
+  useEffect(() => {
+    onReportViewChange(Boolean(selectedReport || executiveView))
+  }, [executiveView, onReportViewChange, selectedReport])
+  useEffect(
+    () => () => {
+      onReportViewChange(false)
+    },
+    [onReportViewChange],
+  )
   const reportScopes = [
     ...initialFarms.map((farm) => farm.name),
     consolidatedReportScope,
@@ -15754,6 +21540,105 @@ function DashboardsPage({
     ? `Consolidado · ${initialFarms.length} granjas · período ${formattedPeriod}`
     : `${scope} · ${formattedPeriod}`
 
+  if (executiveView) {
+    const executiveTitle =
+      scope === consolidatedReportScope ? "Consolidado" : scope
+    const executiveReport = executiveReports[scope] ?? defaultExecutiveReport
+    const updateExecutiveReport = (
+      update: (report: ExecutiveReportState) => ExecutiveReportState,
+    ) =>
+      onExecutiveReportsChange((current) => ({
+        ...current,
+        [scope]: update(current[scope] ?? defaultExecutiveReport),
+      }))
+    const executiveSlideCount = executiveSlideSpecs(
+      executiveReport,
+      executiveTitle,
+    ).length
+
+    if (executiveView === "center") {
+      return (
+        <div className="connected-tool-page executive-center-page">
+          <header className="page-header connected-page-header">
+            <div>
+              <div className="breadcrumbs">
+                <span>Inicio</span>
+                <Icon name="chevron" size={14} />
+                <button onClick={() => setExecutiveView(null)}>Tableros</button>
+                <Icon name="chevron" size={14} />
+                <strong>Centro Ejecutivo</strong>
+              </div>
+              <h1>Centro Ejecutivo · {executiveTitle}</h1>
+              <p>Informe armado y guardado, listo para exponer</p>
+            </div>
+          </header>
+          <article className="executive-report-card">
+            <span className="executive-report-icon">
+              <Icon name="chart" size={24} />
+            </span>
+            <div className="executive-report-copy">
+              <h2>Informe ejecutivo · {executiveTitle}</h2>
+              <p>
+                Presenta los resultados clave de la granja con una historia
+                clara, lista para compartir con tu equipo.
+              </p>
+              <strong>
+                {countLabel(
+                  executiveReport.activeBoards.length,
+                  "tablero",
+                  "tableros",
+                )}{" "}
+                ·{" "}
+                {countLabel(executiveSlideCount, "diapositiva", "diapositivas")}{" "}
+                · Actualizado el {executiveDate(TODAY_ISO)}
+              </strong>
+            </div>
+            <div className="executive-report-actions">
+              <button
+                className="button primary"
+                onClick={() => setExecutiveView("presentation")}
+              >
+                Abrir presentación
+                <Icon name="arrow" size={16} />
+              </button>
+              <button
+                className="button secondary"
+                onClick={() => setExecutiveView("assembly")}
+              >
+                <Icon name="edit" size={16} />
+                Personalizar
+              </button>
+            </div>
+          </article>
+        </div>
+      )
+    }
+
+    if (executiveView === "assembly") {
+      return (
+        <ExecutiveAssembly
+          farmName={executiveTitle}
+          report={executiveReport}
+          onChange={updateExecutiveReport}
+          onBack={() => setExecutiveView("center")}
+          onPresentation={() => setExecutiveView("presentation")}
+        />
+      )
+    }
+
+    return (
+      <ExecutiveDeckEditor
+        farmTitle={executiveTitle}
+        report={executiveReport}
+        onChange={updateExecutiveReport}
+        onClose={() => setExecutiveView("assembly")}
+        onNotice={onNotice}
+        onOpenReportSettings={onOpenReportSettings}
+        reportLogo={reportLogo}
+      />
+    )
+  }
+
   if (!selectedReport) {
     return (
       <div className="connected-tool-page reports-page">
@@ -15779,6 +21664,36 @@ function DashboardsPage({
             </button>
           </div>
         </header>
+        <section className="overview-section">
+          <div className="section-heading-accent">
+            <h2>Vistas generales</h2>
+          </div>
+          <div className="overview-cards">
+            <button
+              className="overview-card"
+              onClick={() => setExecutiveView("center")}
+            >
+              <span className="overview-card-icon executive">
+                <Icon name="chart" size={22} />
+              </span>
+              <span>
+                <strong>Centro Ejecutivo</strong>
+                <small>Visión general y toma de decisiones</small>
+              </span>
+              <Icon name="chevron" size={18} />
+            </button>
+            <button className="overview-card" onClick={onFarmSummary}>
+              <span className="overview-card-icon operations">
+                <Icon name="clipboard" size={22} />
+              </span>
+              <span>
+                <strong>Centro de Operaciones</strong>
+                <small>Seguimiento diario de la operación</small>
+              </span>
+              <Icon name="chevron" size={18} />
+            </button>
+          </div>
+        </section>
         <section className="role-report-section">
           <div className="section-heading-accent">
             <h2>Plantillas por rol</h2>
@@ -15967,13 +21882,17 @@ function DashboardsPage({
       <header className="report-view-header">
         <div>
           <div className="breadcrumbs">
+            <span>Inicio</span>
+            <Icon name="chevron" size={14} />
+            <span>{isConsolidated ? "Consolidado" : scope}</span>
+            <Icon name="chevron" size={14} />
             <button
               onClick={() => {
                 setEditingReport(false)
                 setSelectedReport(null)
               }}
             >
-              Banco de informes
+              Tableros
             </button>
             <Icon name="chevron" size={14} />
             <strong>{selectedReport.name}</strong>
@@ -17679,7 +23598,6 @@ export default function App() {
   const [porciTables, setPorciTables] = useState(initialPorciTables)
   const [modal, setModal] = useState<"add" | "edit" | null>(null)
   const [lotModal, setLotModal] = useState(false)
-  const [voiceOpen, setVoiceOpen] = useState(false)
   const [inviteOpen, setInviteOpen] = useState(false)
   const [editing, setEditing] = useState<Farm | null>(null)
   const [deleting, setDeleting] = useState<Farm | null>(null)
@@ -17708,12 +23626,18 @@ export default function App() {
     )
   const [selectedFarm, setSelectedFarm] = useState<Farm>(initialFarms[0])
   const [dashboardScope, setDashboardScope] = useState(initialFarms[0].name)
+  const [dashboardBankRequest, setDashboardBankRequest] = useState(0)
+  const [dashboardReportOpen, setDashboardReportOpen] = useState(false)
+  // Executive reports live here so edits survive leaving Tableros.
+  const [executiveReports, setExecutiveReports] =
+    useState<Record<string, ExecutiveReportState>>({})
+  const [reportLogo, setReportLogo] = useState(porcitrackLogo)
   const [activeCycle, setActiveCycle] = useState<ProductionCycle>("Precebo")
   const [selectedLot, setSelectedLot] = useState<Lot | null>(null)
   const [accountOpen, setAccountOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
-    () => window.matchMedia(compactSidebarQuery).matches,
+    () => window.matchMedia(desktopSidebarQuery).matches,
   )
   const [settingsSection, setSettingsSection] =
     useState<SettingsSection>("Granjas y ciclos")
@@ -17738,7 +23662,7 @@ export default function App() {
     return () => window.clearTimeout(timer)
   }, [toast])
   useEffect(() => {
-    const query = window.matchMedia(compactSidebarQuery)
+    const query = window.matchMedia(desktopSidebarQuery)
     const syncSidebar = () => setSidebarCollapsed(query.matches)
     query.addEventListener("change", syncSidebar)
     return () => query.removeEventListener("change", syncSidebar)
@@ -17879,6 +23803,11 @@ export default function App() {
     skipSettingsGuard.current = false
     return false
   }
+  const returnToDashboardBank = () => {
+    setDashboardBankRequest((current) => current + 1)
+    setDashboardReportOpen(false)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
   const navigate = (label: string) => {
     if (page === "settings" && label === "Configuración") return
     if (guardSettings(() => navigate(label))) return
@@ -17901,9 +23830,13 @@ export default function App() {
       setPage("porciTable")
       setSelectedLot(null)
     } else if (label === "Tableros") {
-      setDashboardScope(selectedFarm.name)
-      setPage("dashboards")
-      setSelectedLot(null)
+      if (page === "dashboards") {
+        returnToDashboardBank()
+      } else {
+        setDashboardScope(selectedFarm.name)
+        setPage("dashboards")
+        setSelectedLot(null)
+      }
     } else if (label === "Reportes") {
       setPage("reports")
       setSelectedLot(null)
@@ -18300,6 +24233,8 @@ export default function App() {
     if (page === "lot") {
       setSelectedLot(null)
       setPage("cycle")
+    } else if (page === "dashboards" && dashboardReportOpen) {
+      returnToDashboardBank()
     } else if (
       page === "farmSummary" ||
       page === "history" ||
@@ -18394,7 +24329,6 @@ export default function App() {
             }}
             onCreateLot={() => setLotModal(true)}
             onFarmQueryChange={setFarmQuery}
-            onVoice={() => setVoiceOpen(true)}
           />
         )}
         {page === "home" ? (
@@ -18531,11 +24465,27 @@ export default function App() {
         ) : page === "dashboards" ? (
           <DashboardsPage
             initialScope={dashboardScope}
+            bankRequest={dashboardBankRequest}
+            onReportViewChange={setDashboardReportOpen}
             onNotice={setToast}
+            onFarmSummary={() => {
+              setPage("farmSummary")
+              setSelectedLot(null)
+              window.scrollTo({ top: 0, behavior: "smooth" })
+            }}
             onReports={() => {
               setPage("reports")
               setSelectedLot(null)
               window.scrollTo({ top: 0, behavior: "smooth" })
+            }}
+            executiveReports={executiveReports}
+            onExecutiveReportsChange={setExecutiveReports}
+            reportLogo={reportLogo}
+            onOpenReportSettings={() => {
+              setSettingsSection("Reportes")
+              setPage("settings")
+              setSelectedLot(null)
+              window.scrollTo({ top: 0 })
             }}
           />
         ) : page === "reports" ? (
@@ -18561,6 +24511,8 @@ export default function App() {
             onInvite={() => setInviteOpen(true)}
             onDirtyChange={setSettingsDirty}
             onNotice={setToast}
+            reportLogo={reportLogo}
+            onReportLogoChange={setReportLogo}
           />
         ) : selectedLot ? (
           <LotDetail
@@ -18623,15 +24575,6 @@ export default function App() {
             .map((lot) => lot.code)}
           onClose={() => setLotModal(false)}
           onSave={saveLot}
-        />
-      )}
-      {voiceOpen && (
-        <VoiceRegistrationModal
-          onClose={() => setVoiceOpen(false)}
-          onStart={() => {
-            setVoiceOpen(false)
-            setToast("Escuchando registro por voz")
-          }}
         />
       )}
       {inviteOpen && (
