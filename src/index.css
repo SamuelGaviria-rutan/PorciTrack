@@ -309,7 +309,7 @@ h1 { font-family: 'Inter', sans-serif; color: var(--evergreen); font-size: clamp
 .field input { width: 100%; height: 46px; border: 1px solid #dcd6d0; border-radius: 10px; background: white; padding: 0 13px; color: var(--text); font-size: 16px; transition: border .15s, box-shadow .15s; }
 input::placeholder, textarea::placeholder { color: #6B7166; }
 .field input:focus { border-color: var(--sage); box-shadow: 0 0 0 3px rgba(98,148,96,.12); outline: none; }
-.field.has-error input { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(239,68,68,.1); }
+.field.has-error input, .field.has-error select, .field.has-error .date-picker-trigger { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(239,68,68,.1); }
 .field > small { display: flex; align-items: center; gap: 5px; margin-top: 6px; color: #bf2525; font-size: 12px; font-weight: 600; }
 .date-picker { position: relative; }
 .date-picker-trigger { display: flex; width: 100%; height: 46px; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid #dcd6d0; border-radius: 10px; background: white; padding: 0 13px; color: var(--evergreen); text-align: left; }
@@ -4185,9 +4185,35 @@ button.medicine-container-card:hover { border-color: #D8B26D; transform: transla
 .medicine-alert-group.red .medicine-alert-row > div:last-child strong { color: #B72F35; }
 .medicine-alert-group.amber .medicine-alert-row > div:last-child strong { color: #97601D; }
 
-.medicine-purchase-form { max-height: min(68vh,720px); overflow-y: auto; }
+.medicine-purchase-form { max-height: min(68vh,720px); overflow-y: auto; gap: 0; }
+.medicine-purchase-subtitle { margin-bottom: 20px; color: #667557; font-size: 13px; }
+.medicine-purchase-section { padding: 20px 0 22px; border-top: 1px solid #E7E0DA; }
+.medicine-purchase-section > h3, .medicine-custom-fields h3 { margin-bottom: 16px; color: #263419; font-size: 16px; font-weight: 700; }
 .medicine-purchase-form .form-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
-.cost-field > div { display: grid; grid-template-columns: 120px 1fr; gap: 6px; }
+.medicine-selector-field { grid-column: span 2; }
+.medicine-selector-row { display: grid; grid-template-columns: minmax(0,1fr) 46px; gap: 8px; }
+.searchable-medicine-input { position: relative; }
+.searchable-medicine-input > svg { position: absolute; z-index: 1; top: 14px; left: 13px; color: #667557; pointer-events: none; }
+.searchable-medicine-input > input { padding-left: 39px; }
+.medicine-add-button { display: grid; width: 46px; height: 46px; place-items: center; border: 1px solid #263419; border-radius: 10px; background: #263419; color: white; }
+.medicine-add-button:hover { background: #34452A; }
+.calculated-balance-field input { background: #F7F5F3; color: #263419; font-weight: 700; }
+.medicine-cost-layout { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(220px,1fr); align-items: start; gap: 18px; }
+.cost-mode-radios { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 9px; }
+.cost-mode-radios label { position: relative; cursor: pointer; }
+.cost-mode-radios input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.cost-mode-radios span { display: flex; min-height: 46px; align-items: center; justify-content: center; border: 1px solid #DCD6D0; border-radius: 10px; background: white; color: #4A5043; font-weight: 700; }
+.cost-mode-radios input:checked + span { border-color: #477745; background: #EDF5EC; color: #263419; box-shadow: inset 0 0 0 1px #477745; }
+.cost-mode-radios input:focus-visible + span { outline: 3px solid rgba(98,148,96,.35); outline-offset: 2px; }
+.medicine-cost-input .calculated-cost { color: #477745; font-size: 13px; }
+.medicine-custom-fields { padding: 20px 0 22px; border-top: 1px solid #E7E0DA; }
+.medicine-custom-fields-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.medicine-custom-fields-heading h3 { margin: 0; }
+.medicine-custom-fields-heading .button { height: 36px; min-height: 36px; padding: 0 12px; }
+.custom-field-list { display: grid; gap: 12px; margin-top: 16px; }
+.custom-field-row { display: grid; grid-template-columns: 1fr 1fr 38px; align-items: end; gap: 10px; }
+.custom-field-remove { display: grid; width: 38px; height: 46px; place-items: center; border-radius: 9px; color: #C92525; }
+.custom-field-remove:hover { background: #FFF0F0; }
 .medicine-purchase-notes { grid-column: 1 / -1; }
 .medicine-purchase-notes textarea { min-height: 78px; }
 
@@ -4221,6 +4247,13 @@ button.medicine-container-card:hover { border-color: #D8B26D; transform: transla
   .medicine-count-footer .field, .medicine-count-footer .button { grid-column: 1 / -1; }
   .medicine-alert-row { align-items: flex-start; }
   .medicine-purchase-form .form-grid { grid-template-columns: 1fr; }
+  .medicine-selector-field { grid-column: auto; }
+  .medicine-cost-layout, .cost-mode-radios { grid-template-columns: 1fr; }
+  .medicine-custom-fields-heading { align-items: stretch; flex-direction: column; }
+  .medicine-custom-fields-heading .button { width: 100%; }
+  .custom-field-row { grid-template-columns: 1fr 38px; }
+  .custom-field-row .field { grid-column: 1; }
+  .custom-field-remove { grid-column: 2; grid-row: 1 / 3; align-self: end; }
 }
 
 /* Inventory browser-style tabs */

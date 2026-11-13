@@ -14648,17 +14648,22 @@ function MedicinePurchaseModal({
   product,
   onClose,
   onSave,
+  onNewMedicine,
+  onValidationError,
 }: {
   medicines: MedicineItem[]
   product?: string
   onClose: () => void
   onSave: (medicineName: string, lot: MedicineLot) => void
+  onNewMedicine: () => void
+  onValidationError: (message: string) => void
 }) {
   const initialSelection =
     medicines.find((medicine) => medicine.name === product) ?? medicines[0]
   const [form, setForm] = useState({
     medicine: initialSelection?.name ?? "",
     date: TODAY_ISO,
+    time: new Date().toTimeString().slice(0, 5),
     lot: "",
     expiry: "",
     ica: initialSelection?.ica ?? "",
@@ -14669,26 +14674,59 @@ function MedicinePurchaseModal({
     content: "",
     unit: "ml",
     containers: "",
-    costMode: "Total",
+    costMode: "Total" as "Total" | "Por empaque",
     cost: "",
     notes: "",
   })
   const [invoice, setInvoice] = useState("")
   const [submitted, setSubmitted] = useState(false)
+  const [customFields, setCustomFields] = useState<Array<{
+    id: number
+    label: string
+    value: string
+  }>>([])
+  const selectedMedicine = medicines.find(
+    (medicine) => medicine.name === form.medicine,
+  )
+  const containerNames: Record<string, { singular: string plural: string }> = {
+    Frasco: { singular: "frasco", plural: "frascos" },
+    Ampolla: { singular: "ampolla", plural: "ampollas" },
+    Caja: { singular: "caja", plural: "cajas" },
+    Tableta: { singular: "tableta", plural: "tabletas" },
+    Sobre: { singular: "sobre", plural: "sobres" },
+    Otro: { singular: "empaque", plural: "empaques" },
+  }
+  const containerName = containerNames[form.containerType]
+  const content = parseColombianNumber(form.content)
+  const containerCount = parseColombianNumber(form.containers)
+  const totalBalance = content * containerCount
+  const cost = parseColombianNumber(form.cost)
+  const calculatedCost =
+    form.costMode === "Total"
+      ? containerCount > 0
+        ? cost / containerCount
+        : 0
+      : cost * containerCount
+  const requiredValues = [
+    selectedMedicine?.name ?? "",
+    form.date,
+    form.time,
+    form.lot,
+    form.expiry,
+    form.ica,
+    form.laboratory,
+    form.content,
+    form.containers,
+  ]
   const submit = (event: FormEvent) => {
     event.preventDefault()
     setSubmitted(true)
-    if (
-      !form.medicine ||
-      !form.date ||
-      !form.lot ||
-      !form.expiry ||
-      !form.ica ||
-      !form.laboratory ||
-      !form.content ||
-      !form.containers
-    )
+    const missingFields = requiredValues.filter((value) => !value.trim()).length
+    if (missingFields) {
+      onValidationError(`Faltan ${missingFields} campos obligatorios`)
+      focusFirstError(event.currentTarget as HTMLFormElement)
       return
+    }
     const contentMl = parseColombianNumber(form.content)
     const sealed = Math.trunc(parseColombianNumber(form.containers))
     onSave(form.medicine, {
@@ -14705,208 +14743,375 @@ function MedicinePurchaseModal({
   }
   const requiredClass = (value: string) =>
     submitted && !value ? "has-error" : ""
+  const formatCalculatedNumber = (value: number) =>
+    value.toLocaleString("es-CO", { maximumFractionDigits: 2 })
   return (
     <DialogShell
       title="Registrar compra de medicamento"
       onClose={onClose}
       size="wide"
+      headerAction={
+        <label
+          className={`invoice-header-action ${invoice ? "has-file" : ""}`}
+          title={invoice || "Adjuntar foto o PDF de la factura"}
+        >
+          <input
+            type="file"
+            accept="image/*,.pdf"
+            onChange={(event) =>
+              setInvoice(event.target.files?.[0]?.name ?? "")
+            }
+          />
+          <Icon name={invoice ? "check" : "camera"} size={19} strokeWidth={2} />
+          <span>{invoice ? "Factura adjunta" : "Foto de la factura"}</span>
+        </label>
+      }
     >
       <form onSubmit={submit}>
         <div className="form-content medicine-purchase-form">
-          <div className="form-grid">
-            <label className={`field ${requiredClass(form.medicine)}`}>
-              <span>
-                Medicamento <em>* obligatorio</em>
-              </span>
-              <select
-                value={form.medicine}
-                onChange={(e) => {
-                  const medicine = medicines.find(
-                    (item) => item.name === e.target.value,
-                  )
-                  setForm({
-                    ...form,
-                    medicine: e.target.value,
-                    ica: medicine?.ica ?? "",
-                    laboratory: medicine?.laboratory ?? "",
-                    withdrawal: medicine ? String(medicine.withdrawal) : "",
-                  })
-                }}
+          <p className="medicine-purchase-subtitle">
+            Indica empaques y contenido de lo que compraste.
+          </p>
+
+          <section className="medicine-purchase-section">
+            <h3>Datos del medicamento</h3>
+            <div className="form-grid">
+              <div
+                className={`field medicine-selector-field ${
+                  submitted && !selectedMedicine ? "has-error" : ""
+                }`}
               >
-                {medicines.map((item) => (
-                  <option key={item.id}>{item.name}</option>
-                ))}
-              </select>
-            </label>
-            <label className={`field ${requiredClass(form.date)}`}>
-              <span>
-                Fecha <em>* obligatorio</em>
-              </span>
-              <DatePicker
-                value={form.date}
-                max={TODAY_ISO}
-                onChange={(value) => setForm({ ...form, date: value })}
-                label="Fecha de compra del medicamento"
-              />
-            </label>
-            <label className={`field ${requiredClass(form.lot)}`}>
-              <span>
-                Lote <em>* obligatorio</em>
-              </span>
-              <input
-                value={form.lot}
-                onChange={(e) =>
-                  setForm({ ...form, lot: e.target.value.toUpperCase() })
-                }
-                placeholder="Ej. OX-2610"
-              />
-            </label>
-            <label className={`field ${requiredClass(form.expiry)}`}>
-              <span>
-                Vencimiento <em>* obligatorio</em>
-              </span>
-              <DatePicker
-                value={form.expiry}
-                min={TODAY_ISO}
-                onChange={(value) => setForm({ ...form, expiry: value })}
-                label="Vencimiento del medicamento"
-              />
-            </label>
-            <label className={`field ${requiredClass(form.ica)}`}>
-              <span>
-                Registro ICA <em>* obligatorio</em>
-              </span>
-              <input
-                value={form.ica}
-                onChange={(e) => setForm({ ...form, ica: e.target.value })}
-                placeholder="ICA 0000-MV"
-              />
-            </label>
-            <label className={`field ${requiredClass(form.laboratory)}`}>
-              <span>
-                Laboratorio <em>* obligatorio</em>
-              </span>
-              <input
-                value={form.laboratory}
-                onChange={(e) =>
-                  setForm({ ...form, laboratory: e.target.value })
-                }
-              />
-            </label>
-            <label className="field">
-              <span>Retiro (días)</span>
-              <ColombianNumberInput
-                value={form.withdrawal}
-                onChange={(value) => setForm({ ...form, withdrawal: value })}
-                integer
-                placeholder="0"
-              />
-            </label>
-            <label className="field">
-              <span>Lugar</span>
-              <select
-                value={form.place}
-                onChange={(e) => setForm({ ...form, place: e.target.value })}
-              >
-                <option>Bodega sanitaria</option>
-                <option>Nevera sanitaria</option>
-                <option>Botiquín general</option>
-                <option>Botiquín maternidad</option>
-              </select>
-            </label>
-            <label className="field">
-              <span>
-                Tipo de envase <em>* obligatorio</em>
-              </span>
-              <select
-                value={form.containerType}
-                onChange={(e) =>
-                  setForm({ ...form, containerType: e.target.value })
-                }
-              >
-                <option>Frasco</option>
-                <option>Ampolla</option>
-                <option>Caja</option>
-                <option>Tableta</option>
-                <option>Sobre</option>
-              </select>
-            </label>
-            <label className={`field ${requiredClass(form.content)}`}>
-              <span>
-                Contenido por envase <em>* obligatorio</em>
-              </span>
-              <ColombianNumberInput
-                value={form.content}
-                onChange={(value) => setForm({ ...form, content: value })}
-                placeholder="Ej. 20"
-              />
-            </label>
-            <label className="field">
-              <span>
-                Unidad <em>* obligatorio</em>
-              </span>
-              <select
-                value={form.unit}
-                onChange={(e) => setForm({ ...form, unit: e.target.value })}
-              >
-                <option>ml</option>
-                <option>mg</option>
-                <option>g</option>
-                <option>tabletas</option>
-                <option>dosis</option>
-              </select>
-            </label>
-            <label className={`field ${requiredClass(form.containers)}`}>
-              <span>
-                Cantidad de envases <em>* obligatorio</em>
-              </span>
-              <ColombianNumberInput
-                value={form.containers}
-                onChange={(value) => setForm({ ...form, containers: value })}
-                integer
-                placeholder="Ej. 10"
-              />
-            </label>
-            <div className="field cost-field">
-              <span>Costo</span>
-              <div>
-                <select
-                  value={form.costMode}
+                <span>
+                  Medicamento <em>* obligatorio</em>
+                </span>
+                <div className="medicine-selector-row">
+                  <div className="searchable-medicine-input">
+                    <Icon name="search" size={17} />
+                    <input
+                      list="medicine-purchase-options"
+                      value={form.medicine}
+                      onChange={(e) => {
+                        const medicine = medicines.find(
+                          (item) => item.name === e.target.value,
+                        )
+                        setForm({
+                          ...form,
+                          medicine: e.target.value,
+                          ...(medicine
+                            ? {
+                                ica: medicine.ica,
+                                laboratory: medicine.laboratory,
+                                withdrawal: String(medicine.withdrawal),
+                              }
+                            : {}),
+                        })
+                      }}
+                      placeholder="Buscar medicamento"
+                      autoComplete="off"
+                    />
+                    <datalist id="medicine-purchase-options">
+                      {medicines.map((item) => (
+                        <option value={item.name} key={item.id} />
+                      ))}
+                    </datalist>
+                  </div>
+                  <button
+                    type="button"
+                    className="medicine-add-button"
+                    onClick={onNewMedicine}
+                    aria-label="Crear nuevo medicamento"
+                    title="Crear nuevo medicamento"
+                  >
+                    <Icon name="plus" size={20} strokeWidth={2.2} />
+                  </button>
+                </div>
+              </div>
+              <label className={`field ${requiredClass(form.date)}`}>
+                <span>
+                  Fecha <em>* obligatorio</em>
+                </span>
+                <DatePicker
+                  value={form.date}
+                  max={TODAY_ISO}
+                  onChange={(value) => setForm({ ...form, date: value })}
+                  label="Fecha de compra del medicamento"
+                />
+              </label>
+              <label className={`field ${requiredClass(form.time)}`}>
+                <span>
+                  Hora <em>* obligatorio</em>
+                </span>
+                <input
+                  type="time"
+                  value={form.time}
+                  onChange={(e) => setForm({ ...form, time: e.target.value })}
+                />
+              </label>
+              <label className={`field ${requiredClass(form.lot)}`}>
+                <span>
+                  Lote <em>* obligatorio</em>
+                </span>
+                <input
+                  value={form.lot}
                   onChange={(e) =>
-                    setForm({ ...form, costMode: e.target.value })
+                    setForm({ ...form, lot: e.target.value.toUpperCase() })
+                  }
+                  placeholder="Ej. OX-2610"
+                />
+              </label>
+              <label className={`field ${requiredClass(form.expiry)}`}>
+                <span>
+                  Vencimiento <em>* obligatorio</em>
+                </span>
+                <DatePicker
+                  value={form.expiry}
+                  min={TODAY_ISO}
+                  onChange={(value) => setForm({ ...form, expiry: value })}
+                  label="Vencimiento del medicamento"
+                />
+              </label>
+              <label className={`field ${requiredClass(form.ica)}`}>
+                <span>
+                  Registro ICA <em>* obligatorio</em>
+                </span>
+                <input
+                  value={form.ica}
+                  onChange={(e) => setForm({ ...form, ica: e.target.value })}
+                  placeholder="ICA 0000-MV"
+                />
+              </label>
+              <label className={`field ${requiredClass(form.laboratory)}`}>
+                <span>
+                  Laboratorio <em>* obligatorio</em>
+                </span>
+                <input
+                  value={form.laboratory}
+                  onChange={(e) =>
+                    setForm({ ...form, laboratory: e.target.value })
+                  }
+                />
+              </label>
+              <label className="field">
+                <span>Retiro (días)</span>
+                <ColombianNumberInput
+                  value={form.withdrawal}
+                  onChange={(value) => setForm({ ...form, withdrawal: value })}
+                  integer
+                  placeholder="0"
+                />
+              </label>
+              <label className="field">
+                <span>Lugar</span>
+                <select
+                  value={form.place}
+                  onChange={(e) => setForm({ ...form, place: e.target.value })}
+                >
+                  <option>Bodega sanitaria</option>
+                  <option>Nevera sanitaria</option>
+                  <option>Botiquín general</option>
+                  <option>Botiquín maternidad</option>
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section className="medicine-purchase-section">
+            <h3>¿Qué compraste?</h3>
+            <div className="form-grid">
+              <label className="field">
+                <span>
+                  Tipo de empaque <em>* obligatorio</em>
+                </span>
+                <select
+                  value={form.containerType}
+                  onChange={(e) =>
+                    setForm({ ...form, containerType: e.target.value })
                   }
                 >
-                  <option>Total</option>
-                  <option>Por envase</option>
+                  <option>Frasco</option>
+                  <option>Ampolla</option>
+                  <option>Caja</option>
+                  <option>Tableta</option>
+                  <option>Sobre</option>
+                  <option>Otro</option>
                 </select>
+              </label>
+              <label className={`field ${requiredClass(form.content)}`}>
+                <span>
+                  Contenido por empaque <em>* obligatorio</em>
+                </span>
+                <ColombianNumberInput
+                  value={form.content}
+                  onChange={(value) => setForm({ ...form, content: value })}
+                  placeholder="Ej. 20"
+                />
+              </label>
+              <label className="field">
+                <span>
+                  Unidad <em>* obligatorio</em>
+                </span>
+                <select
+                  value={form.unit}
+                  onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                >
+                  <option>ml</option>
+                  <option>mg</option>
+                  <option>g</option>
+                  <option>tabletas</option>
+                  <option>dosis</option>
+                  <option>Unidades</option>
+                </select>
+              </label>
+              <label className={`field ${requiredClass(form.containers)}`}>
+                <span>
+                  Cantidad de {containerName.plural} <em>* obligatorio</em>
+                </span>
+                <ColombianNumberInput
+                  value={form.containers}
+                  onChange={(value) => setForm({ ...form, containers: value })}
+                  integer
+                  placeholder="Ej. 10"
+                />
+              </label>
+              <label className="field calculated-balance-field">
+                <span>Saldo total</span>
+                <input
+                  readOnly
+                  value={
+                    form.content && form.containers
+                      ? `${formatCalculatedNumber(totalBalance)} ${form.unit}`
+                      : ""
+                  }
+                  placeholder="Se calcula automáticamente"
+                />
+              </label>
+            </div>
+          </section>
+
+          <section className="medicine-purchase-section">
+            <h3>Costos</h3>
+            <div className="medicine-cost-layout">
+              <div
+                className="cost-mode-radios"
+                role="radiogroup"
+                aria-label="Tipo de costo"
+              >
+                {(["Total", "Por empaque"] as const).map((mode) => (
+                  <label key={mode}>
+                    <input
+                      type="radio"
+                      name="medicine-cost-mode"
+                      checked={form.costMode === mode}
+                      onChange={() => setForm({ ...form, costMode: mode })}
+                    />
+                    <span>
+                      {mode === "Total" ? "Costo total" : "Costo por empaque"}
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <label className="field medicine-cost-input">
+                <span>
+                  {form.costMode === "Total"
+                    ? "Valor total"
+                    : `Valor por ${containerName.singular}`}
+                </span>
                 <ColombianNumberInput
                   value={form.cost}
                   onChange={(value) => setForm({ ...form, cost: value })}
                   placeholder="$ 0"
                 />
-              </div>
+                {form.cost && containerCount > 0 && (
+                  <small className="calculated-cost">
+                    = $ {Math.round(calculatedCost).toLocaleString("es-CO")}{" "}
+                    {form.costMode === "Total"
+                      ? `por ${containerName.singular}`
+                      : "en total"}
+                  </small>
+                )}
+              </label>
             </div>
-            <label className="field invoice-upload">
-              <span>Foto de la factura</span>
-              <input
-                type="file"
-                accept="image/*,.pdf"
-                onChange={(e) => setInvoice(e.target.files?.[0]?.name ?? "")}
-              />
-              <span className="upload-control">
-                <Icon name="camera" size={18} />
-                {invoice || "Adjuntar foto o PDF"}
-              </span>
-            </label>
-            <label className="field medicine-purchase-notes">
-              <span>Notas</span>
-              <textarea
-                value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                placeholder="Observaciones de la compra"
-              />
-            </label>
-          </div>
+          </section>
+
+          <section className="medicine-custom-fields">
+            <div className="medicine-custom-fields-heading">
+              <h3>Campos personalizados (opcional)</h3>
+              <button
+                type="button"
+                className="button secondary"
+                onClick={() =>
+                  setCustomFields([
+                    ...customFields,
+                    { id: Date.now(), label: "", value: "" },
+                  ])
+                }
+              >
+                <Icon name="plus" size={16} />
+                Agregar campo
+              </button>
+            </div>
+            {customFields.length > 0 && (
+              <div className="custom-field-list">
+                {customFields.map((field) => (
+                  <div className="custom-field-row" key={field.id}>
+                    <label className="field">
+                      <span>Etiqueta</span>
+                      <input
+                        value={field.label}
+                        onChange={(e) =>
+                          setCustomFields(
+                            customFields.map((item) =>
+                              item.id === field.id
+                                ? { ...item, label: e.target.value }
+                                : item,
+                            ),
+                          )
+                        }
+                        placeholder="Ej. Número de factura"
+                      />
+                    </label>
+                    <label className="field">
+                      <span>Valor</span>
+                      <input
+                        value={field.value}
+                        onChange={(e) =>
+                          setCustomFields(
+                            customFields.map((item) =>
+                              item.id === field.id
+                                ? { ...item, value: e.target.value }
+                                : item,
+                            ),
+                          )
+                        }
+                        placeholder="Escribe el valor"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="custom-field-remove"
+                      onClick={() =>
+                        setCustomFields(
+                          customFields.filter((item) => item.id !== field.id),
+                        )
+                      }
+                      aria-label="Eliminar campo personalizado"
+                    >
+                      <Icon name="trash" size={17} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <label className="field medicine-purchase-notes">
+            <span>Notas</span>
+            <textarea
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              placeholder="Observaciones de la compra"
+            />
+          </label>
         </div>
         <div className="modal-actions large-actions">
           <button type="button" className="button secondary" onClick={onClose}>
@@ -15323,6 +15528,8 @@ function InventoryPage({
           medicines={medicines}
           product={purchase.product}
           onClose={() => setPurchase(null)}
+          onNewMedicine={() => setNewMedicineOpen(true)}
+          onValidationError={onNotice}
           onSave={(medicineName, lot) => {
             setMedicines(
               medicines.map((medicine) =>
