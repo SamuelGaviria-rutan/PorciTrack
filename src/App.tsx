@@ -6549,8 +6549,24 @@ const sowRecordStatuses: SowRecordStatus[] = [
   "Eliminadas",
 ]
 
+const breedingDateFromToday = (dayOffset: number) => {
+  const date = new Date("2026-03-16T12:00:00")
+  date.setDate(date.getDate() + dayOffset)
+  return formatDate(date)
+}
+
 const initialSows: Sow[] = Array.from({ length: 60 }, (_, index) => {
   const stage = sowStages[index % sowStages.length]
+  const daysInStatus =
+    stage === "Gestación"
+      ? 40 + (index % 69)
+      : stage === "Lactancia"
+        ? index === 1
+          ? 27
+          : 4 + (index % 7)
+        : stage === "Vacía"
+          ? 3 + (index % 8)
+          : 210 + (index - 22) * 7
   return {
     id: 1304 + index,
     number: `#${1304 + index}`,
@@ -6558,22 +6574,13 @@ const initialSows: Sow[] = Array.from({ length: 60 }, (_, index) => {
     stage,
     recordStatus: "Activas",
     band: index === 1 ? 51 : 37 + (index % 4),
-    daysInStatus:
-      index === 1
-        ? 27
-        : stage === "Gestación"
-          ? 94 + index * 2
-          : stage === "Lactancia"
-            ? 4 + (index % 7)
-            : stage === "Vacía"
-              ? 3 + (index % 8)
-              : 210 + (index - 22) * 7,
+    daysInStatus,
     probableFarrowing:
-      index === 0
-        ? "14/03/2026"
-        : index === 1
-          ? "17/10/2026"
-          : `${String(17 + (index % 9)).padStart(2, "0")}/10/2026`,
+      stage === "Lactancia"
+        ? breedingDateFromToday(-daysInStatus)
+        : stage === "Gestación"
+          ? breedingDateFromToday(114 - daysInStatus)
+          : undefined,
     piglets: stage === "Lactancia" ? 10 + (index % 4) : undefined,
     weightKg: stage === "Reemplazo" ? 135 + (index % 8) * 4 : undefined,
     parity: 1 + (index % 6),
@@ -6583,7 +6590,7 @@ const initialSows: Sow[] = Array.from({ length: 60 }, (_, index) => {
       index === 1
         ? "22/06–28/06"
         : `${String(22 + (index % 5)).padStart(2, "0")}/06–${String(28 + (index % 5)).padStart(2, "0")}/06`,
-    attention: index === 0 ? "overdue" : index === 1 ? "vaccine" : undefined,
+    attention: index === 1 ? "vaccine" : undefined,
   }
 })
 
@@ -6653,9 +6660,9 @@ const initialBreedingAlerts: BreedingAlert[] = [
   {
     id: 1,
     sowNumber: "#1304",
-    type: "parto",
-    title: "Parto atrasado",
-    detail: "Fecha probable de parto: 14/03/2026 · 2 días de atraso",
+    type: "servicio",
+    title: "Control de gestación pendiente",
+    detail: "Confirmar seguimiento de gestación hoy",
     urgency: 1,
   },
   {
@@ -7023,12 +7030,18 @@ function SowCard({
         <span>
           {sow.lot.replace("Lote R-", "")} · Banda {sow.band} · {sow.cycleWeek}
         </span>
-        <span>
-          <TermInfo abbreviation="FPP" meaning="fecha probable de parto" />{" "}
-          <b className={delayed ? "overdue-date" : ""}>
-            {sow.probableFarrowing}
-          </b>
-        </span>
+        {sow.stage === "Lactancia" ? (
+          <span>
+            Parto <b>{sow.probableFarrowing}</b>
+          </span>
+        ) : sow.stage === "Gestación" ? (
+          <span>
+            <TermInfo abbreviation="FPP" meaning="fecha probable de parto" />{" "}
+            <b className={delayed ? "overdue-date" : ""}>
+              {sow.probableFarrowing}
+            </b>
+          </span>
+        ) : null}
       </div>
       <div className="sow-card-metrics">
         <div>
@@ -10168,6 +10181,47 @@ function BreedingPage({
             </div>
           ) : (
             <div className="active-sow-content">
+              <section className="attend-today">
+                <div className="attend-heading">
+                  <div>
+                    <span className="attend-icon">
+                      <Icon name="clock" size={18} />
+                    </span>
+                    <div>
+                      <h2>Atender hoy</h2>
+                      <p>Prioridades del plantel ordenadas por urgencia</p>
+                    </div>
+                  </div>
+                  <strong>{activeAlerts.length}</strong>
+                </div>
+                {activeAlerts.length ? (
+                  activeAlerts
+                    .slice()
+                    .sort((a, b) => a.urgency - b.urgency)
+                    .map((alert) => (
+                      <div className="attend-row" key={alert.id}>
+                        <span
+                          className={`alert-dot urgency-${alert.urgency}`}
+                        />
+                        <strong>{alert.sowNumber}</strong>
+                        <div>
+                          <b>{alert.title}</b>
+                          <span>{alert.detail}</span>
+                        </div>
+                        <button
+                          className="button secondary"
+                          onClick={() => resolveAlert(alert)}
+                        >
+                          Resolver
+                        </button>
+                      </div>
+                    ))
+                ) : (
+                  <div className="attend-empty">
+                    No hay pendientes para hoy.
+                  </div>
+                )}
+              </section>
               <div className="sow-stage-sections">
                 {sowStageOrder
                   .filter(
