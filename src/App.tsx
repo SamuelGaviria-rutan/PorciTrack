@@ -1639,11 +1639,13 @@ function DialogShell({
   children,
   onClose,
   size = "normal",
+  headerAction,
 }: {
   title: ReactNode
   children: ReactNode
   onClose: () => void
   size?: "normal" | "small" | "wide" | "full"
+  headerAction?: ReactNode
 }) {
   return (
     <div
@@ -1669,9 +1671,16 @@ function DialogShell({
       >
         <div className="modal-heading">
           <h2 id="modal-title">{title}</h2>
-          <button className="icon-button" onClick={onClose} aria-label="Cerrar">
-            <Icon name="x" size={20} />
-          </button>
+          <div className="modal-heading-actions">
+            {headerAction}
+            <button
+              className="icon-button"
+              onClick={onClose}
+              aria-label="Cerrar"
+            >
+              <Icon name="x" size={20} />
+            </button>
+          </div>
         </div>
         {children}
       </section>
@@ -12878,10 +12887,7 @@ const medicineSealed = (medicine: MedicineItem) =>
   medicine.lots.reduce((sum, lot) => sum + lot.sealed, 0)
 const medicineOpen = (medicine: MedicineItem) =>
   medicine.lots.find((lot) => lot.openRemaining > 0)
-const bottleLabel = (
-  quantity: number,
-  state: "sellado" | "en uso",
-) =>
+const bottleLabel = (quantity: number, state: "sellado" | "en uso") =>
   `${quantity} ${quantity === 1 ? "frasco" : "frascos"} ${
     state === "sellado" && quantity !== 1 ? "sellados" : state
   }`
@@ -13788,12 +13794,7 @@ function MedicineStockSummary({ medicine }: { medicine: MedicineItem }) {
   )
 }
 
-type MedicineConsumptionCycle =
-  | "Camada"
-  | "Cerdas"
-  | "Precebo"
-  | "Levante / Finalización"
-  | "Reproductor"
+type MedicineConsumptionCycle = "Camada" | "Cerdas" | "Precebo" | "Levante / Finalización" | "Reproductor"
 
 function MedicineConsumptionModal({
   medicine,
@@ -14508,7 +14509,27 @@ function PurchaseModal({
     )
   }
   return (
-    <DialogShell title="Registrar compra" onClose={attemptClose} size="wide">
+    <DialogShell
+      title="Registrar compra"
+      onClose={attemptClose}
+      size="wide"
+      headerAction={
+        <label
+          className={`invoice-header-action ${invoice ? "has-file" : ""}`}
+          title={invoice || "Adjuntar foto o PDF de la factura"}
+        >
+          <input
+            type="file"
+            accept="image/*,.pdf"
+            onChange={(event) =>
+              setInvoice(event.target.files?.[0]?.name ?? "")
+            }
+          />
+          <Icon name={invoice ? "check" : "camera"} size={19} strokeWidth={2} />
+          <span>{invoice ? "Factura adjunta" : "Foto de factura"}</span>
+        </label>
+      }
+    >
       <form onSubmit={submit}>
         <div className="form-content purchase-form">
           <div className="form-grid">
@@ -14602,18 +14623,6 @@ function PurchaseModal({
                 onChange={(e) => setForm({ ...form, supplier: e.target.value })}
                 placeholder="Nombre del proveedor"
               />
-            </label>
-            <label className="field invoice-upload">
-              <span>Foto de la factura</span>
-              <input
-                type="file"
-                accept="image/*,.pdf"
-                onChange={(e) => setInvoice(e.target.files?.[0]?.name ?? "")}
-              />
-              <span className="upload-control">
-                <Icon name="download" size={18} />
-                {invoice || "Seleccionar archivo"}
-              </span>
             </label>
           </div>
         </div>
@@ -15018,15 +15027,13 @@ function InventoryPage({
         ]
   const consumptionCycles: MedicineConsumptionCycle[] = [
     ...(activeCycles.includes("Plantel reproductivo")
-      ? (["Camada", "Cerdas"] as const)
+      ? ["Camada", "Cerdas"] as const
       : []),
-    ...(activeCycles.includes("Precebo") ? (["Precebo"] as const) : []),
+    ...(activeCycles.includes("Precebo") ? ["Precebo"] as const : []),
     ...(activeCycles.includes("Levante")
-      ? (["Levante / Finalización"] as const)
+      ? ["Levante / Finalización"] as const
       : []),
-    ...(activeCycles.includes("Reproductor")
-      ? (["Reproductor"] as const)
-      : []),
+    ...(activeCycles.includes("Reproductor") ? ["Reproductor"] as const : []),
   ]
   const consumptionDestinations: Record<MedicineConsumptionCycle, string[]> = {
     Precebo: lots
@@ -15092,9 +15099,16 @@ function InventoryPage({
           </div>
         </div>
         <section className="inventory-workspace">
-          <div className="inventory-main-tabs">
+          <div
+            className="inventory-main-tabs"
+            role="tablist"
+            aria-label="Categoría de inventario"
+          >
             {(["Alimentos", "Medicamentos"] as const).map((item) => (
               <button
+                type="button"
+                role="tab"
+                aria-selected={category === item}
                 className={category === item ? "active" : ""}
                 onClick={() => {
                   setCategory(item)
@@ -15105,17 +15119,31 @@ function InventoryPage({
                 }}
                 key={item}
               >
-                {item}
+                <span className="inventory-tab-favicon" aria-hidden="true">
+                  <Icon
+                    name={item === "Alimentos" ? "box" : "syringe"}
+                    size={15}
+                    strokeWidth={2}
+                  />
+                </span>
+                <span>{item}</span>
               </button>
             ))}
           </div>
           <div className="inventory-view-bar">
-            <div className="inventory-views">
+            <div
+              className="inventory-views"
+              role="tablist"
+              aria-label={`Secciones de ${category.toLowerCase()}`}
+            >
               {(category === "Medicamentos"
                 ? ["Inventario", "Catálogo", "Historial", "Alertas"] as const
                 : ["Inventario", "Historial", "Conteo físico"] as const
               ).map((item) => (
                 <button
+                  type="button"
+                  role="tab"
+                  aria-selected={view === item}
                   className={view === item ? "active" : ""}
                   onClick={() => setView(item)}
                   key={item}
@@ -17447,57 +17475,540 @@ function FarmSummaryPage({
   )
 }
 
-type CalendarEventType = "Vacuna" | "Parto probable" | "Pediluvio" | "Documento ICA"
+type CalendarEventType = "Vacuna" | "Parto probable" | "Pediluvio" | "Documento ICA" | "Retiro sanitario" | "Evento" | "Alarma"
+type CalendarCycle = "Gestación" | "Maternidad" | "Precebo" | "Levante/Finalización" | "Reproductor"
+type CalendarEventStatus = "Vencido" | "Próximo" | "Hecho"
+type CalendarView = "Mes" | "Semana" | "Día" | "Lista"
 type FarmCalendarEvent = {
   id: number
   farmId: number
   date: string
   type: CalendarEventType
+  cycle: CalendarCycle
   title: string
   detail: string
   action: string
+  lot?: string
+  status?: CalendarEventStatus
+  recurring?: boolean
+  alarm?: boolean
+  product?: string
+  application?: string
+  withdrawalEnd?: string
+  withdrawalDays?: number
+  responsible?: string
+  note?: string
+  startTime?: string
+  endTime?: string
 }
 
-const farmCalendarEvents: FarmCalendarEvent[] = initialFarms.flatMap(
-  (farm, index) => [
+type CalendarEventGroup = {
+  key: string
+  date: string
+  label: string
+  events: FarmCalendarEvent[]
+}
+
+const calendarCycles: CalendarCycle[] = [
+  "Gestación",
+  "Maternidad",
+  "Precebo",
+  "Levante/Finalización",
+  "Reproductor",
+]
+const calendarEventTypes: CalendarEventType[] = [
+  "Vacuna",
+  "Parto probable",
+  "Pediluvio",
+  "Documento ICA",
+  "Retiro sanitario",
+  "Evento",
+  "Alarma",
+]
+const calendarWeekdays = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+
+const farmCalendarEvents: FarmCalendarEvent[] = [
+  ...initialFarms.flatMap((farm, index) => [
     {
-      id: farm.id * 10 + 1,
+      id: farm.id * 100 + 1,
       farmId: farm.id,
       date: `2026-03-${String(10 + index).padStart(2, "0")}`,
-      type: "Vacuna",
+      type: "Vacuna" as const,
+      cycle: "Gestación" as const,
       title: "Refuerzo de parvovirus",
       detail: `Aplicación programada para el plantel de ${farm.name}.`,
       action: "Aplicar vacuna",
+      recurring: true,
+      status: "Hecho" as const,
     },
     {
-      id: farm.id * 10 + 2,
+      id: farm.id * 100 + 2,
       farmId: farm.id,
-      date: `2026-03-${String(12 + index).padStart(2, "0")}`,
-      type: "Parto probable",
+      date: `2026-03-${String(17 + index).padStart(2, "0")}`,
+      type: "Parto probable" as const,
+      cycle: "Maternidad" as const,
       title: `Parto probable · Cerda #${1304 + index}`,
       detail: "Revisar signos de parto y preparar el área de maternidad.",
       action: "Registrar parto",
+      status: "Próximo" as const,
     },
     {
-      id: farm.id * 10 + 3,
+      id: farm.id * 100 + 3,
       farmId: farm.id,
       date: `2026-03-${String(14 + index).padStart(2, "0")}`,
-      type: "Pediluvio",
+      type: "Pediluvio" as const,
+      cycle: "Precebo" as const,
       title: "Control de pediluvio",
       detail: "Renovar solución desinfectante del acceso principal.",
       action: "Marcar como hecho",
+      recurring: true,
+      status: "Vencido" as const,
     },
     {
-      id: farm.id * 10 + 4,
+      id: farm.id * 100 + 4,
       farmId: farm.id,
       date: "2026-03-16",
-      type: "Documento ICA",
-      title: "Documento ICA vencido · 4.2",
+      type: "Documento ICA" as const,
+      cycle: "Levante/Finalización" as const,
+      title: "Documento ICA · numeral 4.2",
       detail: "La evidencia de vigencia de productos requiere actualización.",
       action: "Marcar como revisado",
+      status: "Próximo" as const,
     },
-  ],
-)
+  ]),
+  ...Array.from({ length: 3 }, (_, index) => ({
+    id: 1000 + index,
+    farmId: 1,
+    date: "2026-03-18",
+    type: "Retiro sanitario" as const,
+    cycle: "Precebo" as const,
+    title: `Retiro sanitario · PROFEN · Registro ${index + 1}`,
+    detail: "Seguimiento al período de retiro del tratamiento aplicado.",
+    action: "Ver registro",
+    lot: "DP-202603",
+    status: "Próximo" as const,
+    product: "PROFEN",
+    application: `0${8 + index}/03/2026`,
+    withdrawalEnd: "18/03/2026",
+    withdrawalDays: 10 - index,
+    responsible: ["Laura Gómez", "Andrés Mejía", "Carlos Ríos"][index],
+    note:
+      index === 0
+        ? "Completar retiro antes de movilizar el lote."
+        : "Sin novedades durante el seguimiento.",
+  })),
+  ...Array.from({ length: 2 }, (_, index) => ({
+    id: 1100 + index,
+    farmId: 1,
+    date: "2026-03-20",
+    type: "Evento" as const,
+    cycle: "Maternidad" as const,
+    title: `Ingreso a maternidad · Cerda #${1320 + index}`,
+    detail: "Ingreso programado al área de maternidad.",
+    action: "Ver registro",
+    lot: "L-0326",
+    status: "Próximo" as const,
+    responsible: index ? "Laura Gómez" : "Andrés Mejía",
+  })),
+]
+
+const calendarIso = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate(),
+  ).padStart(2, "0")}`
+
+const calendarStatus = (
+  event: FarmCalendarEvent,
+  completedEvents: number[],
+): CalendarEventStatus => {
+  if (completedEvents.includes(event.id) || event.status === "Hecho")
+    return "Hecho"
+  if (event.status) return event.status
+  return event.date < TODAY_ISO ? "Vencido" : "Próximo"
+}
+
+function NewCalendarEventModal({
+  initialDate,
+  onClose,
+  onSave,
+}: {
+  initialDate: string
+  onClose: () => void
+  onSave: (event: Omit<FarmCalendarEvent, "id" | "farmId">) => void
+}) {
+  const [title, setTitle] = useState("")
+  const [date, setDate] = useState(initialDate)
+  const [allDay, setAllDay] = useState(true)
+  const [startTime, setStartTime] = useState("08:00")
+  const [endTime, setEndTime] = useState("09:00")
+  const [description, setDescription] = useState("")
+  const [repeat, setRepeat] = useState("No se repite")
+  const [interval, setInterval] = useState("1")
+  const [repeatDays, setRepeatDays] = useState<string[]>(["L"])
+  const [repeatUntil, setRepeatUntil] = useState("")
+  const [forEveryone, setForEveryone] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const customRepeat = repeat === "Personalizado…"
+  return (
+    <DialogShell title="Nuevo evento" onClose={onClose} size="wide">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          setSubmitted(true)
+          if (!title.trim() || !date) return
+          onSave({
+            date,
+            type: "Evento",
+            cycle: "Gestación",
+            title: title.trim(),
+            detail:
+              description.trim() ||
+              `${allDay ? "Todo el día" : `${startTime}–${endTime}`} · ${
+                forEveryone ? "Todos los miembros" : "Calendario de la granja"
+              }`,
+            action: "Marcar como hecho",
+            recurring: repeat !== "No se repite",
+            startTime: allDay ? undefined : startTime,
+            endTime: allDay ? undefined : endTime,
+          })
+        }}
+      >
+        <div className="form-content calendar-create-form">
+          <label
+            className={`field ${submitted && !title.trim() ? "has-error" : ""}`}
+          >
+            <span>
+              Título <em>* obligatorio</em>
+            </span>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} />
+          </label>
+          <label className={`field ${submitted && !date ? "has-error" : ""}`}>
+            <span>
+              Fecha <em>* obligatorio</em>
+            </span>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </label>
+          <label className="stock-toggle calendar-form-switch">
+            <input
+              type="checkbox"
+              checked={allDay}
+              onChange={(e) => setAllDay(e.target.checked)}
+            />
+            <span aria-hidden="true" />
+            Todo el día
+          </label>
+          {!allDay && (
+            <div className="calendar-time-fields">
+              <label className="field">
+                <span>Hora de inicio</span>
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                />
+              </label>
+              <label className="field">
+                <span>Hora de fin</span>
+                <input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                />
+              </label>
+            </div>
+          )}
+          <label className="field">
+            <span>Descripción</span>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span>Se repite</span>
+            <select value={repeat} onChange={(e) => setRepeat(e.target.value)}>
+              {[
+                "No se repite",
+                "Todos los días",
+                "Todas las semanas",
+                "Cada 2 semanas",
+                "Cada mes",
+                "Personalizado…",
+              ].map((option) => (
+                <option key={option}>{option}</option>
+              ))}
+            </select>
+          </label>
+          {customRepeat && (
+            <div className="calendar-custom-repeat">
+              <label className="field">
+                <span>Cada</span>
+                <span className="calendar-repeat-interval">
+                  <input
+                    inputMode="numeric"
+                    value={interval}
+                    onChange={(e) =>
+                      setInterval(e.target.value.replace(/\D/g, "") || "1")
+                    }
+                  />
+                  semanas
+                </span>
+              </label>
+              <div>
+                <span>Días</span>
+                <div className="calendar-day-chips">
+                  {["L", "M", "X", "J", "V", "S", "D"].map((day) => (
+                    <button
+                      type="button"
+                      className={repeatDays.includes(day) ? "active" : ""}
+                      onClick={() =>
+                        setRepeatDays((current) =>
+                          current.includes(day)
+                            ? current.filter((item) => item !== day)
+                            : [...current, day],
+                        )
+                      }
+                      key={day}
+                    >
+                      {day}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <label className="field">
+                <span>Fecha de finalización (opcional)</span>
+                <input
+                  type="date"
+                  value={repeatUntil}
+                  onChange={(e) => setRepeatUntil(e.target.value)}
+                />
+              </label>
+              <p>Se repite cada {interval} semana</p>
+            </div>
+          )}
+          <label className="stock-toggle calendar-form-switch">
+            <input
+              type="checkbox"
+              checked={forEveryone}
+              onChange={(e) => setForEveryone(e.target.checked)}
+            />
+            <span aria-hidden="true" />
+            Para todos los miembros
+          </label>
+        </div>
+        <div className="modal-actions large-actions">
+          <button type="button" className="button secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="button primary">Guardar</button>
+        </div>
+      </form>
+    </DialogShell>
+  )
+}
+
+function CalendarAlarmModal({
+  initialDate,
+  onClose,
+  onSave,
+}: {
+  initialDate: string
+  onClose: () => void
+  onSave: (event: Omit<FarmCalendarEvent, "id" | "farmId">) => void
+}) {
+  const [repeat, setRepeat] = useState("Una vez")
+  const [weekdays, setWeekdays] = useState<string[]>(["L"])
+  const [date, setDate] = useState(initialDate)
+  const [time, setTime] = useState("08:00")
+  const [timezone, setTimezone] = useState("America/Bogota")
+  const [email, setEmail] = useState("administracion@granja.co")
+  const [message, setMessage] = useState("")
+  return (
+    <DialogShell title="Programar alarma" onClose={onClose} size="wide">
+      <form
+        onSubmit={(event) => {
+          event.preventDefault()
+          if (!date || !email.trim()) return
+          onSave({
+            date,
+            type: "Alarma",
+            cycle: "Gestación",
+            title: "Alarma · Resumen por correo",
+            detail:
+              message.trim() ||
+              `Resumen programado a las ${time} · ${timezone} · ${email}`,
+            action: "Marcar como hecho",
+            recurring: repeat !== "Una vez",
+            alarm: true,
+            startTime: time,
+          })
+        }}
+      >
+        <div className="form-content calendar-create-form">
+          <label className="field">
+            <span>Repetición</span>
+            <select value={repeat} onChange={(e) => setRepeat(e.target.value)}>
+              <option>Una vez</option>
+              <option>Cada día</option>
+              <option>Días de la semana</option>
+            </select>
+          </label>
+          {repeat === "Días de la semana" && (
+            <div className="calendar-day-chips calendar-alarm-days">
+              {["L", "M", "X", "J", "V", "S", "D"].map((day) => (
+                <button
+                  type="button"
+                  className={weekdays.includes(day) ? "active" : ""}
+                  onClick={() =>
+                    setWeekdays((current) =>
+                      current.includes(day)
+                        ? current.filter((item) => item !== day)
+                        : [...current, day],
+                    )
+                  }
+                  key={day}
+                >
+                  {day}
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="calendar-alarm-help">
+            Un solo correo para el día que ves en el calendario.
+          </p>
+          <label className="field">
+            <span>Resumen (fecha)</span>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span>Hora de envío</span>
+            <input
+              type="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span>Zona horaria</span>
+            <select
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+            >
+              <option>America/Bogota</option>
+              <option>America/Lima</option>
+              <option>America/Mexico_City</option>
+            </select>
+          </label>
+          <label className="field">
+            <span>Correo destino</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </label>
+          <label className="field">
+            <span>Mensaje opcional</span>
+            <textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+            />
+          </label>
+        </div>
+        <div className="modal-actions large-actions">
+          <button type="button" className="button secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="button primary">Programar envío</button>
+        </div>
+      </form>
+    </DialogShell>
+  )
+}
+
+function CalendarGroupPanel({
+  group,
+  completedEvents,
+  onClose,
+  onView,
+}: {
+  group: CalendarEventGroup
+  completedEvents: number[]
+  onClose: () => void
+  onView: (event: FarmCalendarEvent) => void
+}) {
+  return (
+    <div
+      className="side-panel-backdrop"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <aside
+        className="sow-panel calendar-group-panel"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="panel-heading">
+          <div>
+            <span>{formatDate(new Date(`${group.date}T12:00:00`))}</span>
+            <h2>{group.label}</h2>
+          </div>
+          <button className="icon-button" onClick={onClose} aria-label="Cerrar">
+            <Icon name="x" size={20} />
+          </button>
+        </div>
+        <div className="panel-body calendar-group-records">
+          {group.events.map((event) => (
+            <article key={event.id}>
+              <div className="calendar-record-heading">
+                <strong>{event.product ?? event.title}</strong>
+                <span
+                  className={`calendar-status status-${calendarStatus(
+                    event,
+                    completedEvents,
+                  ).toLowerCase()}`}
+                >
+                  {calendarStatus(event, completedEvents)}
+                </span>
+              </div>
+              {[
+                ["Aplicación", event.application ?? event.date],
+                ["Fin de retiro", event.withdrawalEnd ?? "No aplica"],
+                [
+                  "Días de retiro",
+                  event.withdrawalDays !== undefined
+                    ? `${event.withdrawalDays} días`
+                    : "No aplica",
+                ],
+                ["Ciclo", event.cycle],
+                ["Responsable", event.responsible ?? "Sin asignar"],
+                ["Nota", event.note ?? event.detail],
+              ].map(([label, value]) => (
+                <div className="calendar-record-field" key={label}>
+                  <span>{label}</span>
+                  <strong>{value}</strong>
+                </div>
+              ))}
+              <button
+                className="button secondary"
+                onClick={() => onView(event)}
+              >
+                Ver registro
+              </button>
+            </article>
+          ))}
+        </div>
+      </aside>
+    </div>
+  )
+}
 
 function CalendarPage({
   farm,
@@ -17507,19 +18018,131 @@ function CalendarPage({
   onNotice: (text: string) => void
 }) {
   const [visibleMonth, setVisibleMonth] = useState(new Date(2026, 2, 1, 12))
-  const [filter, setFilter] = useState<"Todos" | CalendarEventType>("Todos")
+  const [selectedDate, setSelectedDate] = useState(TODAY_ISO)
+  const [view, setView] = useState<CalendarView>("Semana")
+  const [query, setQuery] = useState("")
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [selectedCycles, setSelectedCycles] = useState<CalendarCycle[]>([])
+  const [selectedTypes, setSelectedTypes] = useState<CalendarEventType[]>([])
+  const [showCompleted, setShowCompleted] = useState(false)
+  const [groupByLot, setGroupByLot] = useState(true)
+  const [events, setEvents] = useState(() =>
+    farmCalendarEvents.filter((event) => event.farmId === farm.id),
+  )
+  const [completedEvents, setCompletedEvents] = useState<number[]>([])
   const [selectedEvent, setSelectedEvent] = useState<FarmCalendarEvent | null>(
     null,
   )
-  const [completedEvents, setCompletedEvents] = useState<number[]>([])
-  const events = farmCalendarEvents.filter(
-    (event) =>
-      event.farmId === farm.id && (filter === "Todos" || event.type === filter),
+  const [selectedGroup, setSelectedGroup] = useState<CalendarEventGroup | null>(
+    null,
   )
+  const [createMode, setCreateMode] = useState<"event" | "alarm" | null>(null)
+  const filterRef = useDismissibleMenu(filtersOpen, () => setFiltersOpen(false))
+  const createRef = useDismissibleMenu(createOpen, () => setCreateOpen(false))
   const year = visibleMonth.getFullYear()
   const month = visibleMonth.getMonth()
-  const firstWeekday = new Date(year, month, 1).getDay()
+  const firstWeekday = (new Date(year, month, 1).getDay() + 6) % 7
   const daysInMonth = new Date(year, month + 1, 0).getDate()
+
+  const visibleEvents = events
+    .filter((event) => {
+      const status = calendarStatus(event, completedEvents)
+      const searchText =
+        `${event.title} ${event.detail} ${event.lot ?? ""} ${event.responsible ?? ""}`.toLocaleLowerCase(
+          "es",
+        )
+      return (
+        (showCompleted || status !== "Hecho") &&
+        (!selectedCycles.length || selectedCycles.includes(event.cycle)) &&
+        (!selectedTypes.length || selectedTypes.includes(event.type)) &&
+        searchText.includes(query.trim().toLocaleLowerCase("es"))
+      )
+    })
+    .sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id)
+
+  const groupedEvents = useMemo(() => {
+    const groups = new Map<string, FarmCalendarEvent[]>()
+    visibleEvents.forEach((event) => {
+      const key =
+        groupByLot && event.lot
+          ? `${event.date}-${event.type}-${event.lot}`
+          : `event-${event.id}`
+      groups.set(key, [...(groups.get(key) ?? []), event])
+    })
+    return [...groups.entries()].map(([key, items]): CalendarEventGroup => {
+      const first = items[0]
+      const label =
+        items.length > 1 && first.type === "Retiro sanitario"
+          ? `${items.length} retiros sanitarios · Lote ${first.lot}`
+          : items.length > 1 &&
+              first.type === "Evento" &&
+              first.title.startsWith("Ingreso a maternidad")
+            ? `${items.length} ingresos a maternidad · Lote ${first.lot}`
+            : items.length > 1
+              ? `${items.length} ${first.type.toLocaleLowerCase("es")} · Lote ${first.lot}`
+              : first.title
+      return { key, date: first.date, label, events: items }
+    })
+  }, [visibleEvents, groupByLot])
+
+  const statusForGroup = (group: CalendarEventGroup): CalendarEventStatus => {
+    const statuses = group.events.map((event) =>
+      calendarStatus(event, completedEvents),
+    )
+    if (statuses.every((status) => status === "Hecho")) return "Hecho"
+    if (statuses.includes("Vencido")) return "Vencido"
+    return "Próximo"
+  }
+  const openGroup = (group: CalendarEventGroup) => {
+    if (group.events.length > 1) setSelectedGroup(group)
+    else setSelectedEvent(group.events[0])
+  }
+  const eventChip = (group: CalendarEventGroup) => {
+    const first = group.events[0]
+    const status = statusForGroup(group)
+    return (
+      <button
+        className={`calendar-event status-${status.toLowerCase()}`}
+        onClick={() => openGroup(group)}
+        key={group.key}
+      >
+        <span className="calendar-event-status-dot" aria-hidden="true" />
+        {first.alarm && <Icon name="bell" size={13} />}
+        <b>{group.label}</b>
+        {first.recurring && (
+          <span className="calendar-repeat-icon" aria-label="Se repite">
+            ↻
+          </span>
+        )}
+      </button>
+    )
+  }
+  const groupsForDate = (date: string) =>
+    groupedEvents.filter((group) => group.date === date)
+  const selectedDateValue = new Date(`${selectedDate}T12:00:00`)
+  const weekStart = new Date(selectedDateValue)
+  weekStart.setDate(
+    selectedDateValue.getDate() - ((selectedDateValue.getDay() + 6) % 7),
+  )
+  const weekDates = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(weekStart)
+    date.setDate(weekStart.getDate() + index)
+    return date
+  })
+  const saveCreatedEvent = (
+    event: Omit<FarmCalendarEvent, "id" | "farmId">,
+  ) => {
+    setEvents((current) => [
+      ...current,
+      { ...event, id: Date.now(), farmId: farm.id },
+    ])
+    setSelectedDate(event.date)
+    setVisibleMonth(new Date(`${event.date}T12:00:00`))
+    setCreateMode(null)
+    onNotice(event.alarm ? "Alarma programada" : "Evento guardado")
+  }
+
   return (
     <>
       <div className="connected-tool-page calendar-page">
@@ -17536,94 +18159,314 @@ function CalendarPage({
             <p>Vacunas, partos probables y controles operativos.</p>
           </div>
         </header>
-        <div className="calendar-toolbar">
-          <div className="calendar-month-control">
-            <button
-              className="icon-button"
-              aria-label="Mes anterior"
-              onClick={() => setVisibleMonth(new Date(year, month - 1, 1, 12))}
-            >
-              <Icon name="chevron" size={19} />
-            </button>
-            <strong>
-              {visibleMonth.toLocaleDateString("es-CO", {
-                month: "long",
-                year: "numeric",
-              })}
-            </strong>
-            <button
-              className="icon-button"
-              aria-label="Mes siguiente"
-              onClick={() => setVisibleMonth(new Date(year, month + 1, 1, 12))}
-            >
-              <Icon name="chevron" size={19} />
-            </button>
-          </div>
-          <div className="calendar-filters" aria-label="Filtrar eventos">
-            {([
-              "Todos",
-              "Vacuna",
-              "Parto probable",
-              "Pediluvio",
-              "Documento ICA",
-            ] as const).map((item) => (
+        <section className="calendar-control-panel">
+          <div className="calendar-toolbar calendar-toolbar-primary">
+            <label className="search-field calendar-search">
+              <Icon name="search" size={17} />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Buscar evento, cerda, lote…"
+              />
+            </label>
+            <div className="calendar-popover-wrap" ref={filterRef}>
               <button
-                className={`${filter === item ? "active" : ""} ${
-                  item === "Todos"
-                    ? ""
-                    : `event-${item.toLowerCase().replace(" ", "-")}`
-                }`}
-                onClick={() => setFilter(item)}
-                key={item}
+                className="button secondary"
+                onClick={() => setFiltersOpen(!filtersOpen)}
+                aria-expanded={filtersOpen}
               >
-                {item}
+                <Icon name="filter" size={17} />
+                Filtros
+                {(selectedCycles.length > 0 || selectedTypes.length > 0) && (
+                  <span className="calendar-filter-count">
+                    {selectedCycles.length + selectedTypes.length}
+                  </span>
+                )}
               </button>
-            ))}
+              {filtersOpen && (
+                <div className="calendar-filter-popover">
+                  <fieldset>
+                    <legend>Ciclo</legend>
+                    {calendarCycles.map((cycle) => (
+                      <label key={cycle}>
+                        <input
+                          type="checkbox"
+                          checked={selectedCycles.includes(cycle)}
+                          onChange={() =>
+                            setSelectedCycles((current) =>
+                              current.includes(cycle)
+                                ? current.filter((item) => item !== cycle)
+                                : [...current, cycle],
+                            )
+                          }
+                        />
+                        {cycle}
+                      </label>
+                    ))}
+                  </fieldset>
+                  <fieldset>
+                    <legend>Tipo de evento</legend>
+                    {calendarEventTypes.map((type) => (
+                      <label key={type}>
+                        <input
+                          type="checkbox"
+                          checked={selectedTypes.includes(type)}
+                          onChange={() =>
+                            setSelectedTypes((current) =>
+                              current.includes(type)
+                                ? current.filter((item) => item !== type)
+                                : [...current, type],
+                            )
+                          }
+                        />
+                        {type}
+                      </label>
+                    ))}
+                  </fieldset>
+                  <button
+                    className="text-button"
+                    onClick={() => {
+                      setSelectedCycles([])
+                      setSelectedTypes([])
+                    }}
+                  >
+                    Limpiar
+                  </button>
+                </div>
+              )}
+            </div>
+            <label className="stock-toggle">
+              <input
+                type="checkbox"
+                checked={showCompleted}
+                onChange={(event) => setShowCompleted(event.target.checked)}
+              />
+              <span aria-hidden="true" />
+              Mostrar completados
+            </label>
+            <label className="stock-toggle">
+              <input
+                type="checkbox"
+                checked={groupByLot}
+                onChange={(event) => setGroupByLot(event.target.checked)}
+              />
+              <span aria-hidden="true" />
+              Agrupar por lote
+            </label>
           </div>
-        </div>
-        <div className="month-calendar">
-          <div className="month-weekdays">
-            {["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"].map((day) => (
-              <span key={day}>{day}</span>
-            ))}
-          </div>
-          <div className="month-grid">
-            {Array.from({ length: firstWeekday }, (_, index) => (
-              <div className="outside" key={`empty-${index}`} />
-            ))}
-            {Array.from({ length: daysInMonth }, (_, index) => {
-              const day = index + 1
-              const iso = `${year}-${String(month + 1).padStart(
-                2,
-                "0",
-              )}-${String(day).padStart(2, "0")}`
-              const dayEvents = events.filter((event) => event.date === iso)
-              return (
-                <div className="month-day" key={iso}>
-                  <span>{day}</span>
-                  {dayEvents.map((event) => (
+          <div className="calendar-toolbar calendar-toolbar-secondary">
+            <div className="calendar-navigation">
+              <div className="calendar-month-control">
+                <button
+                  className="icon-button"
+                  aria-label="Mes anterior"
+                  onClick={() => {
+                    const nextMonth = new Date(year, month - 1, 1, 12)
+                    setVisibleMonth(nextMonth)
+                    setSelectedDate(calendarIso(nextMonth))
+                  }}
+                >
+                  <Icon name="chevron" size={19} />
+                </button>
+                <strong>
+                  {visibleMonth.toLocaleDateString("es-CO", {
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </strong>
+                <button
+                  className="icon-button"
+                  aria-label="Mes siguiente"
+                  onClick={() => {
+                    const nextMonth = new Date(year, month + 1, 1, 12)
+                    setVisibleMonth(nextMonth)
+                    setSelectedDate(calendarIso(nextMonth))
+                  }}
+                >
+                  <Icon name="chevron" size={19} />
+                </button>
+              </div>
+              <button
+                className="button secondary"
+                onClick={() => {
+                  setVisibleMonth(new Date(2026, 2, 1, 12))
+                  setSelectedDate(TODAY_ISO)
+                }}
+              >
+                Hoy
+              </button>
+              <div className="calendar-popover-wrap" ref={createRef}>
+                <button
+                  className="button primary"
+                  onClick={() => setCreateOpen(!createOpen)}
+                  aria-expanded={createOpen}
+                >
+                  <Icon name="plus" size={17} />
+                  Crear
+                </button>
+                {createOpen && (
+                  <div className="lot-menu calendar-create-menu">
                     <button
-                      className={`calendar-event event-${event.type
-                        .toLowerCase()
-                        .replace(" ", "-")} ${
-                        completedEvents.includes(event.id) ? "completed" : ""
-                      }`}
-                      onClick={() => setSelectedEvent(event)}
-                      key={event.id}
+                      onClick={() => {
+                        setCreateMode("event")
+                        setCreateOpen(false)
+                      }}
                     >
-                      <b>{event.type}</b>
-                      <small>
-                        {event.title}
-                        {completedEvents.includes(event.id) ? " · Hecho" : ""}
-                      </small>
+                      <Icon name="calendar" size={16} />
+                      Evento
                     </button>
-                  ))}
+                    <button
+                      onClick={() => {
+                        setCreateMode("alarm")
+                        setCreateOpen(false)
+                      }}
+                    >
+                      <Icon name="bell" size={16} />
+                      Alarma (resumen por correo)
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="inventory-views calendar-view-switch">
+              {(["Mes", "Semana", "Día", "Lista"] as const).map((item) => (
+                <button
+                  className={view === item ? "active" : ""}
+                  onClick={() => setView(item)}
+                  key={item}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className="calendar-results">
+            {countLabel(
+              visibleEvents.length,
+              "evento encontrado",
+              "eventos encontrados",
+            )}
+          </p>
+        </section>
+
+        {view === "Mes" && (
+          <div className="month-calendar">
+            <div className="month-weekdays">
+              {calendarWeekdays.map((day) => (
+                <span key={day}>{day}</span>
+              ))}
+            </div>
+            <div className="month-grid">
+              {Array.from({ length: firstWeekday }, (_, index) => (
+                <div className="outside" key={`empty-${index}`} />
+              ))}
+              {Array.from({ length: daysInMonth }, (_, index) => {
+                const day = index + 1
+                const iso = `${year}-${String(month + 1).padStart(
+                  2,
+                  "0",
+                )}-${String(day).padStart(2, "0")}`
+                return (
+                  <div
+                    className={`month-day ${
+                      iso === TODAY_ISO ? "is-today" : ""
+                    } ${iso === selectedDate ? "is-selected" : ""}`}
+                    key={iso}
+                    onClick={() => setSelectedDate(iso)}
+                  >
+                    <span>{day}</span>
+                    {groupsForDate(iso).map(eventChip)}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {view === "Semana" && (
+          <div className="calendar-week-view">
+            {weekDates.map((date, index) => {
+              const iso = calendarIso(date)
+              return (
+                <div
+                  className={iso === TODAY_ISO ? "is-today" : ""}
+                  key={iso}
+                  onClick={() => setSelectedDate(iso)}
+                >
+                  <header>
+                    <span>{calendarWeekdays[index]}</span>
+                    <strong>{date.getDate()}</strong>
+                  </header>
+                  {groupsForDate(iso).map(eventChip)}
                 </div>
               )
             })}
           </div>
-        </div>
+        )}
+
+        {view === "Día" && (
+          <section className="calendar-day-view">
+            <header>
+              <span>
+                {new Date(`${selectedDate}T12:00:00`).toLocaleDateString(
+                  "es-CO",
+                  { weekday: "long" },
+                )}
+              </span>
+              <strong>
+                {formatDate(new Date(`${selectedDate}T12:00:00`))}
+              </strong>
+            </header>
+            <div>
+              {groupsForDate(selectedDate).length ? (
+                groupsForDate(selectedDate).map(eventChip)
+              ) : (
+                <p className="calendar-empty">No hay eventos para este día.</p>
+              )}
+            </div>
+          </section>
+        )}
+
+        {view === "Lista" && (
+          <div className="calendar-list-view">
+            {[...new Set(groupedEvents.map((group) => group.date))].map(
+              (date) => (
+                <section key={date}>
+                  <header>
+                    {new Date(`${date}T12:00:00`).toLocaleDateString("es-CO", {
+                      weekday: "long",
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </header>
+                  {groupsForDate(date).map((group) => (
+                    <button key={group.key} onClick={() => openGroup(group)}>
+                      <span>
+                        <strong>{group.label}</strong>
+                        <small>
+                          {group.events[0].cycle}
+                          {group.events[0].lot
+                            ? ` · Lote ${group.events[0].lot}`
+                            : ""}
+                        </small>
+                      </span>
+                      <span
+                        className={`calendar-status status-${statusForGroup(
+                          group,
+                        ).toLowerCase()}`}
+                      >
+                        {statusForGroup(group)}
+                      </span>
+                    </button>
+                  ))}
+                </section>
+              ),
+            )}
+          </div>
+        )}
       </div>
+
       {selectedEvent && (
         <DialogShell
           title={selectedEvent.title}
@@ -17632,11 +18475,17 @@ function CalendarPage({
         >
           <div className="calendar-event-detail">
             <span
-              className={`calendar-event-type event-${selectedEvent.type
-                .toLowerCase()
-                .replace(" ", "-")}`}
+              className={`calendar-status status-${calendarStatus(
+                selectedEvent,
+                completedEvents,
+              ).toLowerCase()}`}
             >
+              {calendarStatus(selectedEvent, completedEvents)}
+            </span>
+            <span className="calendar-event-type">
+              {selectedEvent.alarm && <Icon name="bell" size={14} />}
               {selectedEvent.type}
+              {selectedEvent.recurring && " · ↻"}
             </span>
             <strong>
               {formatDate(new Date(`${selectedEvent.date}T12:00:00`))}
@@ -17652,19 +18501,46 @@ function CalendarPage({
             </button>
             <button
               className="button primary"
-              disabled={completedEvents.includes(selectedEvent.id)}
+              disabled={
+                calendarStatus(selectedEvent, completedEvents) === "Hecho"
+              }
               onClick={() => {
-                setCompletedEvents([...completedEvents, selectedEvent.id])
+                setCompletedEvents((current) => [...current, selectedEvent.id])
                 onNotice(`${selectedEvent.action} · hecho`)
                 setSelectedEvent(null)
               }}
             >
-              {completedEvents.includes(selectedEvent.id)
+              {calendarStatus(selectedEvent, completedEvents) === "Hecho"
                 ? "Evento completado"
                 : selectedEvent.action}
             </button>
           </div>
         </DialogShell>
+      )}
+      {selectedGroup && (
+        <CalendarGroupPanel
+          group={selectedGroup}
+          completedEvents={completedEvents}
+          onClose={() => setSelectedGroup(null)}
+          onView={(event) => {
+            setSelectedGroup(null)
+            setSelectedEvent(event)
+          }}
+        />
+      )}
+      {createMode === "event" && (
+        <NewCalendarEventModal
+          initialDate={selectedDate}
+          onClose={() => setCreateMode(null)}
+          onSave={saveCreatedEvent}
+        />
+      )}
+      {createMode === "alarm" && (
+        <CalendarAlarmModal
+          initialDate={selectedDate}
+          onClose={() => setCreateMode(null)}
+          onSave={saveCreatedEvent}
+        />
       )}
     </>
   )
