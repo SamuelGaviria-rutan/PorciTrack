@@ -12788,6 +12788,32 @@ const initialMedicineItems: MedicineItem[] = [
       },
     ],
   },
+  {
+    id: 11,
+    name: "Amoxicilina LA",
+    activeIngredient: "Amoxicilina 150 mg/ml",
+    type: "Medicamento",
+    unit: "ml",
+    laboratory: "Laboratorios Vecol",
+    ica: "ICA 4187-MV",
+    withdrawal: 28,
+    route: "Intramuscular",
+    suggestedDose: "1 ml / 10 kg",
+    minimumMl: 100,
+    lots: [
+      {
+        id: 1101,
+        code: "AM-2512",
+        expiry: "2027-03-20",
+        place: "Bodega sanitaria",
+        container: "Frasco 100 ml",
+        contentMl: 100,
+        sealed: 0,
+        openRemaining: 0,
+        entries: 1,
+      },
+    ],
+  },
 ]
 
 const medicineLotBalance = (lot: MedicineLot) =>
@@ -13708,19 +13734,28 @@ function MedicineStockSummary({ medicine }: { medicine: MedicineItem }) {
   )
 }
 
+type MedicineConsumptionCycle =
+  | "Camada"
+  | "Cerdas"
+  | "Precebo"
+  | "Levante / Finalización"
+  | "Reproductor"
+
 function MedicineConsumptionModal({
   medicine,
+  cycles,
   destinations,
   onClose,
   onSave,
 }: {
   medicine: MedicineItem
-  destinations: Record<"Camada" | "Cerdas" | "Precebo", string[]>
+  cycles: MedicineConsumptionCycle[]
+  destinations: Record<MedicineConsumptionCycle, string[]>
   onClose: () => void
   onSave: (quantity: number, kind: "Consumo" | "Merma o pérdida") => void
 }) {
   const [kind, setKind] = useState<"Consumo" | "Merma o pérdida">("Consumo")
-  const [cycle, setCycle] = useState<"Camada" | "Cerdas" | "Precebo">("Camada")
+  const [cycle, setCycle] = useState<MedicineConsumptionCycle>(cycles[0])
   const [destination, setDestination] = useState("")
   const [quantity, setQuantity] = useState("")
   const [responsible, setResponsible] = useState("Laura Gómez")
@@ -13767,15 +13802,13 @@ function MedicineConsumptionModal({
                   <select
                     value={cycle}
                     onChange={(e) => {
-                      setCycle(
-                        e.target.value as "Camada" | "Cerdas" | "Precebo",
-                      )
+                      setCycle(e.target.value as MedicineConsumptionCycle)
                       setDestination("")
                     }}
                   >
-                    <option>Camada</option>
-                    <option>Cerdas</option>
-                    <option>Precebo</option>
+                    {cycles.map((option) => (
+                      <option key={option}>{option}</option>
+                    ))}
                   </select>
                 </label>
                 <label
@@ -14825,12 +14858,14 @@ function MedicinePurchaseModal({
 
 function InventoryPage({
   farmName,
+  activeCycles,
   lots,
   attention,
   setAttention,
   onNotice,
 }: {
   farmName: string
+  activeCycles: Cycle[]
   lots: Lot[]
   attention: InventoryAttention[]
   setAttention: (items: InventoryAttention[]) => void
@@ -14915,17 +14950,47 @@ function InventoryPage({
     ...sow,
     number: `#${sowNumberStart + index}`,
   }))
-  const consumptionDestinations: Record<
-    "Camada" | "Cerdas" | "Precebo",
-    string[]
-  > = {
+  const farmReproducers =
+    farmName === "Granja La Esperanza"
+      ? initialReproducers
+      : [
+          {
+            ...initialReproducers[0],
+            name:
+              farmName === "Granja El Porvenir"
+                ? "Macho Landrace 02"
+                : "Macho Pietrain 03",
+          },
+        ]
+  const consumptionCycles: MedicineConsumptionCycle[] = [
+    ...(activeCycles.includes("Plantel reproductivo")
+      ? (["Camada", "Cerdas"] as const)
+      : []),
+    ...(activeCycles.includes("Precebo") ? (["Precebo"] as const) : []),
+    ...(activeCycles.includes("Levante")
+      ? (["Levante / Finalización"] as const)
+      : []),
+    ...(activeCycles.includes("Reproductor")
+      ? (["Reproductor"] as const)
+      : []),
+  ]
+  const consumptionDestinations: Record<MedicineConsumptionCycle, string[]> = {
     Precebo: lots
       .filter((lot) => lot.cycle === "Precebo" && lot.status === "Activo")
+      .map((lot) => lot.code),
+    "Levante / Finalización": lots
+      .filter((lot) => lot.cycle === "Levante" && lot.status === "Activo")
       .map((lot) => lot.code),
     Cerdas: farmSows.map((sow) => sow.number),
     Camada: farmSows
       .filter((sow) => sow.stage === "Lactancia")
       .map((sow) => `Camada ${sow.number}`),
+    Reproductor: farmReproducers
+      .filter(
+        (reproducer) =>
+          reproducer.kind === "Macho" && reproducer.status === "Activo",
+      )
+      .map((reproducer) => reproducer.name),
   }
 
   return (
@@ -15195,6 +15260,7 @@ function InventoryPage({
             medicines.find((item) => item.id === consumptionMedicine.id) ??
             consumptionMedicine
           }
+          cycles={consumptionCycles}
           destinations={consumptionDestinations}
           onClose={() => setConsumptionMedicine(null)}
           onSave={(quantity, kind) => {
@@ -26546,6 +26612,7 @@ export default function App() {
           <InventoryPage
             key={selectedFarm.id}
             farmName={selectedFarm.name}
+            activeCycles={selectedFarm.cycles}
             lots={lots.filter((lot) => lot.farmId === selectedFarm.id)}
             attention={inventoryAttentionByFarm[selectedFarm.id] ?? []}
             setAttention={updateInventoryAttention}
