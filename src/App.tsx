@@ -12798,6 +12798,13 @@ const medicineSealed = (medicine: MedicineItem) =>
   medicine.lots.reduce((sum, lot) => sum + lot.sealed, 0)
 const medicineOpen = (medicine: MedicineItem) =>
   medicine.lots.find((lot) => lot.openRemaining > 0)
+const bottleLabel = (
+  quantity: number,
+  state: "sellado" | "en uso",
+) =>
+  `${quantity} ${quantity === 1 ? "frasco" : "frascos"} ${
+    state === "sellado" && quantity !== 1 ? "sellados" : state
+  }`
 const medicineStatus = (medicine: MedicineItem) => {
   const expiries = medicine.lots
     .filter((lot) => medicineLotBalance(lot) > 0)
@@ -13388,9 +13395,9 @@ function MedicineInventoryTable({
                 <td>
                   <div className="container-summary">
                     <span>
-                      {medicineSealed(item)} frascos sellados
+                      {bottleLabel(medicineSealed(item), "sellado")}
                       {openLot
-                        ? ` + 1 en uso (${formatDecimal(openLot.openRemaining)} ml de ${openLot.contentMl} ml)`
+                        ? ` + ${bottleLabel(1, "en uso")} (${formatDecimal(openLot.openRemaining)} ml de ${openLot.contentMl} ml)`
                         : ""}
                     </span>
                   </div>
@@ -13703,15 +13710,17 @@ function MedicineStockSummary({ medicine }: { medicine: MedicineItem }) {
 
 function MedicineConsumptionModal({
   medicine,
+  destinations,
   onClose,
   onSave,
 }: {
   medicine: MedicineItem
+  destinations: Record<"Camada" | "Cerdas" | "Precebo", string[]>
   onClose: () => void
   onSave: (quantity: number, kind: "Consumo" | "Merma o pérdida") => void
 }) {
   const [kind, setKind] = useState<"Consumo" | "Merma o pérdida">("Consumo")
-  const [cycle, setCycle] = useState("Camada")
+  const [cycle, setCycle] = useState<"Camada" | "Cerdas" | "Precebo">("Camada")
   const [destination, setDestination] = useState("")
   const [quantity, setQuantity] = useState("")
   const [responsible, setResponsible] = useState("Laura Gómez")
@@ -13757,13 +13766,16 @@ function MedicineConsumptionModal({
                   <span>Ciclo</span>
                   <select
                     value={cycle}
-                    onChange={(e) => setCycle(e.target.value)}
+                    onChange={(e) => {
+                      setCycle(
+                        e.target.value as "Camada" | "Cerdas" | "Precebo",
+                      )
+                      setDestination("")
+                    }}
                   >
                     <option>Camada</option>
                     <option>Cerdas</option>
                     <option>Precebo</option>
-                    <option>Levante/Finalización</option>
-                    <option>Reproductor</option>
                   </select>
                 </label>
                 <label
@@ -13772,16 +13784,19 @@ function MedicineConsumptionModal({
                   }`}
                 >
                   <span>
-                    {cycle === "Cerdas" ? "Cerda destino" : "Lote destino"}{" "}
-                    <em>* obligatorio</em>
+                    Lote destino <em>* obligatorio</em>
                   </span>
-                  <input
+                  <select
                     value={destination}
                     onChange={(e) => setDestination(e.target.value)}
-                    placeholder={
-                      cycle === "Cerdas" ? "Ej. C-1042" : "Ej. Camada C-2608"
-                    }
-                  />
+                  >
+                    <option value="">Seleccionar destino</option>
+                    {destinations[cycle].map((option) => (
+                      <option value={option} key={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
                 </label>
               </>
             ) : (
@@ -14810,11 +14825,13 @@ function MedicinePurchaseModal({
 
 function InventoryPage({
   farmName,
+  lots,
   attention,
   setAttention,
   onNotice,
 }: {
   farmName: string
+  lots: Lot[]
   attention: InventoryAttention[]
   setAttention: (items: InventoryAttention[]) => void
   onNotice: (text: string) => void
@@ -14883,15 +14900,33 @@ function InventoryPage({
       (!stockOnly || medicineBalance(item) > 0),
   )
   const foodTotal = foods.reduce((sum, item) => sum + item.stock, 0)
-  const medicineTotal = medicines.reduce(
-    (sum, item) => sum + medicineBalance(item),
-    0,
-  )
   const medicineAlertCount = medicines.reduce(
     (sum, item) =>
       sum + item.lots.filter((lot) => lot.expiry <= "2026-04-15").length,
     0,
   )
+  const sowNumberStart =
+    farmName === "Granja La Esperanza"
+      ? 1304
+      : farmName === "Granja El Porvenir"
+        ? 1501
+        : 1701
+  const farmSows = initialSows.map((sow, index) => ({
+    ...sow,
+    number: `#${sowNumberStart + index}`,
+  }))
+  const consumptionDestinations: Record<
+    "Camada" | "Cerdas" | "Precebo",
+    string[]
+  > = {
+    Precebo: lots
+      .filter((lot) => lot.cycle === "Precebo" && lot.status === "Activo")
+      .map((lot) => lot.code),
+    Cerdas: farmSows.map((sow) => sow.number),
+    Camada: farmSows
+      .filter((sow) => sow.stage === "Lactancia")
+      .map((sow) => `Camada ${sow.number}`),
+  }
 
   return (
     <>
@@ -14931,7 +14966,9 @@ function InventoryPage({
             </span>
             <div>
               <span>Medicamentos</span>
-              <strong>{formatDecimal(medicineTotal)} ml</strong>
+              <strong>
+                {medicines.length} medicamentos · {medicineAlertCount} alertas
+              </strong>
             </div>
           </div>
         </div>
@@ -14984,24 +15021,15 @@ function InventoryPage({
                   />
                 </label>
                 {category === "Medicamentos" ? (
-                  <>
-                    <label className="stock-toggle">
-                      <input
-                        type="checkbox"
-                        checked={stockOnly}
-                        onChange={(e) => setStockOnly(e.target.checked)}
-                      />
-                      <span aria-hidden="true" />
-                      Solo con stock
-                    </label>
-                    <button
-                      className="button primary medicine-toolbar-purchase"
-                      onClick={() => setPurchase({ category: "Medicamentos" })}
-                    >
-                      <Icon name="plus" size={17} />
-                      Registrar compra
-                    </button>
-                  </>
+                  <label className="stock-toggle">
+                    <input
+                      type="checkbox"
+                      checked={stockOnly}
+                      onChange={(e) => setStockOnly(e.target.checked)}
+                    />
+                    <span aria-hidden="true" />
+                    Solo con stock
+                  </label>
                 ) : (
                   <select
                     value={statusFilter}
@@ -15167,6 +15195,7 @@ function InventoryPage({
             medicines.find((item) => item.id === consumptionMedicine.id) ??
             consumptionMedicine
           }
+          destinations={consumptionDestinations}
           onClose={() => setConsumptionMedicine(null)}
           onSave={(quantity, kind) => {
             setMedicines(
@@ -26517,6 +26546,7 @@ export default function App() {
           <InventoryPage
             key={selectedFarm.id}
             farmName={selectedFarm.name}
+            lots={lots.filter((lot) => lot.farmId === selectedFarm.id)}
             attention={inventoryAttentionByFarm[selectedFarm.id] ?? []}
             setAttention={updateInventoryAttention}
             onNotice={setToast}
