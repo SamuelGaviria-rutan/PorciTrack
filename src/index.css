@@ -350,29 +350,43 @@ input::placeholder, textarea::placeholder { color: #6B7166; }
 .porkia-assistant { position: fixed; z-index: 44; right: 24px; bottom: 24px; }
 .porkia-launcher { display: grid; width: 52px; height: 52px; place-items: center; border-radius: 50%; background: #F95860; box-shadow: 0 8px 24px rgba(72,38,35,.22); color: white; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
 .porkia-launcher:hover { transform: translateY(-2px); background: #ed4d55; box-shadow: 0 11px 28px rgba(72,38,35,.27); }
-.porkia-panel { position: absolute; right: 0; bottom: 64px; display: grid; width: 380px; height: 520px; grid-template-rows: auto 1fr auto; overflow: hidden; border: 1px solid #e8e2dc; border-radius: 16px; background: white; box-shadow: 0 22px 60px rgba(36,49,25,.2); animation: porkia-in .18s ease; }
+.porkia-panel { position: absolute; right: 0; bottom: 64px; display: grid; width: 380px; height: 520px; grid-template-rows: auto minmax(0,1fr) auto; overflow: hidden; border: 1px solid #dedbd5; border-radius: 18px; background: white; box-shadow: 0 22px 60px rgba(36,49,25,.2); animation: porkia-in .18s ease; }
 @keyframes porkia-in { from { transform: translateY(8px) scale(.985); opacity: 0; } }
-.porkia-header { display: grid; min-height: 74px; grid-template-columns: 40px minmax(0,1fr) auto; align-items: center; gap: 10px; border-bottom: 1px solid #eee9e4; padding: 12px 14px; }
+.porkia-header { display: grid; gap: 9px; border-bottom: 1px solid #dedbd5; padding: 13px 14px 12px; }
+.porkia-header-main { display: grid; grid-template-columns: 40px minmax(0,1fr) auto; align-items: center; gap: 10px; }
 .porkia-brand-icon { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 12px; background: #F95860; color: white; }
 .porkia-heading { min-width: 0; }
 .porkia-heading > div { display: flex; align-items: center; gap: 7px; }
-.porkia-heading strong { color: #243119; font-size: 16px; }
-.porkia-heading > div span { border-radius: 999px; background: #fff0f0; padding: 3px 6px; color: #c92525; font-size: 9px; font-weight: 700; letter-spacing: .06em; }
-.porkia-heading small { display: block; overflow: hidden; margin-top: 3px; color: #777d73; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.porkia-heading strong { color: #243119; font-size: 17px; }
+.porkia-heading > div span { border-radius: 999px; background: #f4f2ef; padding: 4px 7px; color: #66705f; font-size: 9px; font-weight: 700; letter-spacing: .07em; }
+.porkia-heading small { display: block; overflow: hidden; margin-top: 2px; color: #6f7769; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .porkia-header-actions { display: flex; gap: 3px; }
 .porkia-header-actions button, .porkia-composer-actions button { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 9px; color: #686e64; }
 .porkia-header-actions button:hover, .porkia-composer-actions button:hover:not(:disabled) { background: #f7f5f2; color: #243119; }
-.porkia-empty { display: grid; place-items: center; align-content: center; padding: 28px; text-align: center; }
-.porkia-empty > span { display: grid; width: 76px; height: 76px; margin-bottom: 17px; place-items: center; border-radius: 22px; background: #fff0f0; color: #F95860; }
-.porkia-empty strong { color: #243119; font-size: 20px; letter-spacing: -.35px; }
-.porkia-empty p { margin-top: 6px; color: #777d73; font-size: 13px; }
-.porkia-footer { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 8px; margin: 0 14px 14px; border: 1px solid #dcd6d0; border-radius: 13px; background: white; padding: 7px 7px 7px 12px; box-shadow: 0 3px 12px rgba(36,49,25,.05); }
-.porkia-footer:focus-within { border-color: #F95860; box-shadow: 0 0 0 3px rgba(249,88,96,.1); }
-.porkia-footer input { min-width: 0; height: 40px; color: #243119; font-size: 12px; outline: none; }
+.porkia-header > p { color: #6f7769; font-size: 11px; line-height: 1.45; }
+.porkia-context-action { justify-self: start; min-height: 34px; border: 1px solid #dedbd5; border-radius: 9px; background: white; padding: 0 11px; color: #263419; font-size: 12px; font-weight: 700; }
+.porkia-context-action:hover { background: #f8f7f5; }
+.porkia-conversation { overflow-y: auto; padding: 12px 14px 16px; color: #263419; font-size: 12px; line-height: 1.48; }
+.porkia-assistant-message { margin-bottom: 12px; }
+.porkia-user-message { margin: 0 8px 14px 22px; border-radius: 13px; background: #fff0f1; padding: 10px 12px; }
+.porkia-answer { display: grid; gap: 8px; }
+.porkia-answer > strong { font-size: 13px; }
+.porkia-answer ul { display: grid; gap: 4px; padding-left: 20px; list-style: disc; }
+.porkia-result-card { display: grid; grid-template-columns: 42px minmax(0,1fr) auto; align-items: center; gap: 9px; margin-top: 14px; border: 1px solid #ead9d5; border-radius: 14px; background: #fff3f2; padding: 10px; box-shadow: 0 2px 6px rgba(36,49,25,.05); }
+.porkia-result-card > span { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 11px; background: #ffe0df; color: #F95860; }
+.porkia-result-card strong, .porkia-result-card small { display: block; }
+.porkia-result-card strong { color: #263419; font-size: 11px; line-height: 1.3; }
+.porkia-result-card small { margin-top: 2px; color: #777d73; font-size: 10px; }
+.porkia-result-card button { display: flex; min-height: 34px; align-items: center; gap: 3px; border-radius: 999px; background: #F95860; padding: 0 11px; color: white; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.porkia-result-card button:hover { background: #ed4d55; }
+.porkia-footer { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 7px; border-top: 1px solid #dedbd5; background: white; padding: 9px 10px 10px; }
+.porkia-footer input { min-width: 0; height: 46px; border: 1px solid #dcd6d0; border-radius: 11px; padding: 0 11px; color: #243119; font-size: 11px; outline: none; }
+.porkia-footer input:focus { border-color: #F95860; box-shadow: 0 0 0 3px rgba(249,88,96,.1); }
 .porkia-footer input::placeholder { color: #83877f; }
-.porkia-composer-actions { display: flex; align-items: center; gap: 2px; }
-.porkia-composer-actions .porkia-send { background: #243119; color: white; }
-.porkia-composer-actions .porkia-send:hover:not(:disabled) { background: #34452a; color: white; }
+.porkia-composer-actions { display: flex; align-items: center; gap: 5px; }
+.porkia-composer-actions button { width: 42px; height: 46px; border: 1px solid #dedbd5; border-radius: 11px; }
+.porkia-composer-actions .porkia-send { border-color: #ff9da2; background: #ff9da2; color: white; }
+.porkia-composer-actions .porkia-send:hover:not(:disabled) { border-color: #F95860; background: #F95860; color: white; }
 .porkia-composer-actions .porkia-send:disabled { cursor: not-allowed; opacity: .35; }
 
 .module-placeholder { max-width: 680px; margin: 100px auto 0; padding: 50px; border: 1px dashed #cfc8c0; border-radius: 16px; background: white; text-align: center; box-shadow: var(--shadow); }

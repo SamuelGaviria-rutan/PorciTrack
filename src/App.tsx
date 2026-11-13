@@ -23816,6 +23816,7 @@ function getFarmAlerts(
 function PorkIAAssistant({ farmName }: { farmName: string }) {
   const [open, setOpen] = useState(false)
   const [message, setMessage] = useState("")
+  const displayFarmName = farmName.replace(/^Granja\s+/, "")
 
   useEffect(() => {
     if (!open) return
@@ -23836,35 +23837,77 @@ function PorkIAAssistant({ farmName }: { farmName: string }) {
           aria-label="PorkIA"
         >
           <header className="porkia-header">
-            <span className="porkia-brand-icon">
-              <Icon name="chatSmile" size={22} />
-            </span>
-            <div className="porkia-heading">
-              <div>
-                <strong>PorkIA</strong>
-                <span>BETA</span>
+            <div className="porkia-header-main">
+              <span className="porkia-brand-icon">
+                <Icon name="chatSmile" size={23} />
+              </span>
+              <div className="porkia-heading">
+                <div>
+                  <strong>PorkIA</strong>
+                  <span>BETA</span>
+                </div>
+                <small>{displayFarmName}</small>
               </div>
-              <small>{farmName}</small>
+              <div className="porkia-header-actions">
+                <button
+                  type="button"
+                  title="Nueva conversación"
+                  aria-label="Nueva conversación"
+                >
+                  <Icon name="plus" size={22} />
+                </button>
+                <button type="button" title="Historial" aria-label="Historial">
+                  <Icon name="clock" size={20} />
+                </button>
+              </div>
             </div>
-            <div className="porkia-header-actions">
-              <button
-                type="button"
-                title="Nueva conversación"
-                aria-label="Nueva conversación"
-              >
-                <Icon name="plus" size={19} />
-              </button>
-              <button type="button" title="Historial" aria-label="Historial">
-                <Icon name="clock" size={18} />
-              </button>
-            </div>
+            <p>
+              Estás en {displayFarmName}. El diálogo sigue aquí. Confirma para
+              enviar en esta pantalla.
+            </p>
+            <button type="button" className="porkia-context-action">
+              Enviar en {displayFarmName}
+            </button>
           </header>
-          <div className="porkia-empty">
-            <span>
-              <Icon name="chatSmile" size={40} />
-            </span>
-            <strong>Pregúntale a PorkIA.</strong>
-            <p>Tu granja tiene respuestas.</p>
+          <div className="porkia-conversation">
+            <p className="porkia-assistant-message">
+              No hay medicamentos a punto de vencer en esa fecha. ¿Quieres ayuda
+              con algo más?
+            </p>
+            <p className="porkia-user-message">
+              Cuántas hembras activas tengo en {displayFarmName.toLowerCase()}{" "}
+              hasta el 30 de octubre
+            </p>
+            <div className="porkia-answer">
+              <strong>PorkIA ya tiene el resumen.</strong>
+              <p>
+                Al 30 de octubre de 2026 en la granja {displayFarmName} hay 20
+                hembras activas en total.
+              </p>
+              <p>Detalle por estado:</p>
+              <ul>
+                <li>En gestación: 16</li>
+                <li>En maternidad: 4</li>
+                <li>En plantel sin etapa fina: 0</li>
+              </ul>
+              <p>
+                Estas cifras son saldo al cierre del 30/10/2026, no reflejan el
+                saldo de hoy. Un movimiento posterior a esa fecha no está
+                incluido.
+              </p>
+            </div>
+            <article className="porkia-result-card">
+              <span>
+                <Icon name="clock" size={23} />
+              </span>
+              <div>
+                <strong>Stock animal de hoy (no es esta fecha)</strong>
+                <small>Gráfico</small>
+              </div>
+              <button type="button">
+                Ver gráfico <Icon name="chevron" size={16} />
+              </button>
+            </article>
           </div>
           <form
             className="porkia-footer"
@@ -23877,7 +23920,7 @@ function PorkIAAssistant({ farmName }: { farmName: string }) {
               id="porkia-message"
               value={message}
               onChange={(event) => setMessage(event.target.value)}
-              placeholder="Ej.: aplica 2 ml de AMOXI a la cerda 1304"
+              placeholder="Ej: aplica 2 ml de AMOXI a la cerda 101"
             />
             <div className="porkia-composer-actions">
               <button type="button" title="Cámara" aria-label="Cámara">
