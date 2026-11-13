@@ -1688,6 +1688,16 @@ function DialogShell({
   )
 }
 
+function useEscapeClose(onClose: () => void) {
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose()
+    }
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [onClose])
+}
+
 function DiscardChangesDialog({
   onDiscard,
   onKeepEditing,
@@ -6564,6 +6574,17 @@ const breedingDateFromToday = (dayOffset: number) => {
   return formatDate(date)
 }
 
+const breedingBandRange = (index: number) => {
+  const start = new Date(2026, 0, 5 + (index % 4) * 7, 12)
+  const end = new Date(start)
+  end.setDate(start.getDate() + 6)
+  const shortDate = (date: Date) =>
+    `${String(date.getDate()).padStart(2, "0")}/${String(
+      date.getMonth() + 1,
+    ).padStart(2, "0")}`
+  return `${shortDate(start)}–${shortDate(end)}`
+}
+
 const initialSows: Sow[] = Array.from({ length: 60 }, (_, index) => {
   const stage = sowStages[index % sowStages.length]
   const daysInStatus =
@@ -6595,10 +6616,7 @@ const initialSows: Sow[] = Array.from({ length: 60 }, (_, index) => {
     parity: 1 + (index % 6),
     bornAliveAverage: 11 + (index % 3),
     pha: index === 1 ? 2.2 : 2 + (index % 4) / 10,
-    cycleWeek:
-      index === 1
-        ? "22/06–28/06"
-        : `${String(22 + (index % 5)).padStart(2, "0")}/06–${String(28 + (index % 5)).padStart(2, "0")}/06`,
+    cycleWeek: breedingBandRange(index),
     attention: index === 1 ? "vaccine" : undefined,
   }
 })
@@ -14533,22 +14551,6 @@ function PurchaseModal({
       <form onSubmit={submit}>
         <div className="form-content purchase-form">
           <div className="form-grid">
-            <label className="field">
-              <span>Tipo de inventario</span>
-              <select
-                value={form.category}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    category: e.target.value as InventoryCategory,
-                    product: "",
-                  })
-                }
-              >
-                <option>Alimentos</option>
-                <option>Medicamentos</option>
-              </select>
-            </label>
             <label
               className={`field ${
                 submitted && !form.product ? "has-error" : ""
@@ -14957,9 +14959,8 @@ function MedicinePurchaseModal({
                   <option>ml</option>
                   <option>mg</option>
                   <option>g</option>
-                  <option>tabletas</option>
                   <option>dosis</option>
-                  <option>Unidades</option>
+                  <option>unidades</option>
                 </select>
               </label>
               <label className={`field ${requiredClass(form.containers)}`}>
@@ -15529,7 +15530,7 @@ function InventoryPage({
           product={purchase.product}
           onClose={() => setPurchase(null)}
           onNewMedicine={() => setNewMedicineOpen(true)}
-          onValidationError={onNotice}
+          onValidationError={(message) => onNotice(`__error__${message}`)}
           onSave={(medicineName, lot) => {
             setMedicines(
               medicines.map((medicine) =>
@@ -17795,7 +17796,7 @@ const farmCalendarEvents: FarmCalendarEvent[] = [
     lot: "DP-202603",
     status: "Próximo" as const,
     product: "PROFEN",
-    application: `0${8 + index}/03/2026`,
+    application: `${String(8 + index).padStart(2, "0")}/03/2026`,
     withdrawalEnd: "18/03/2026",
     withdrawalDays: 10 - index,
     responsible: ["Laura Gómez", "Andrés Mejía", "Carlos Ríos"][index],
@@ -17856,6 +17857,7 @@ function NewCalendarEventModal({
   const [forEveryone, setForEveryone] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const customRepeat = repeat === "Personalizado…"
+  useEscapeClose(onClose)
   return (
     <DialogShell title="Nuevo evento" onClose={onClose} size="wide">
       <form
@@ -18034,6 +18036,7 @@ function CalendarAlarmModal({
   const [timezone, setTimezone] = useState("America/Bogota")
   const [email, setEmail] = useState("administracion@granja.co")
   const [message, setMessage] = useState("")
+  useEscapeClose(onClose)
   return (
     <DialogShell title="Programar alarma" onClose={onClose} size="wide">
       <form
@@ -18152,6 +18155,7 @@ function CalendarGroupPanel({
   onClose: () => void
   onView: (event: FarmCalendarEvent) => void
 }) {
+  useEscapeClose(onClose)
   return (
     <div
       className="side-panel-backdrop"
@@ -18226,7 +18230,7 @@ function CalendarPage({
 }) {
   const [visibleMonth, setVisibleMonth] = useState(new Date(2026, 2, 1, 12))
   const [selectedDate, setSelectedDate] = useState(TODAY_ISO)
-  const [view, setView] = useState<CalendarView>("Semana")
+  const [view, setView] = useState<CalendarView>("Mes")
   const [query, setQuery] = useState("")
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [createOpen, setCreateOpen] = useState(false)
@@ -27907,11 +27911,17 @@ export default function App() {
         />
       )}
       {toast && (
-        <div className="toast" role="status">
+        <div
+          className={`toast ${toast.startsWith("__error__") ? "error" : ""}`}
+          role={toast.startsWith("__error__") ? "alert" : "status"}
+        >
           <span>
-            <Icon name="check" size={17} />
+            <Icon
+              name={toast.startsWith("__error__") ? "alert" : "check"}
+              size={17}
+            />
           </span>
-          {toast}
+          {toast.replace(/^__error__/, "")}
         </div>
       )}
       <PorkIAAssistant farmName={selectedFarm.name} />

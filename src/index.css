@@ -350,6 +350,8 @@ input::placeholder, textarea::placeholder { color: #6B7166; }
 .danger-icon { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 12px; background: #fff0f0; color: var(--danger); }
 .toast { position: fixed; z-index: 100; right: 24px; bottom: 24px; display: flex; align-items: center; gap: 10px; border: 1px solid #d8e6d5; border-radius: 12px; background: white; padding: 10px 15px 10px 10px; box-shadow: 0 14px 34px rgba(36,49,25,.18); color: var(--evergreen); font-weight: 700; animation: toast-in .25s ease; }
 .toast span { display: grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; background: var(--sage); color: white; }
+.toast.error { border-color: #efb1b1; background: #fff5f5; color: var(--danger-text); }
+.toast.error span { background: var(--danger); }
 @keyframes toast-in { from { opacity: 0; transform: translateY(10px); } }
 
 .porkia-assistant { position: fixed; z-index: 44; right: 24px; bottom: 24px; }
@@ -691,7 +693,7 @@ input::placeholder, textarea::placeholder { color: #6B7166; }
 .attend-row > strong { color: var(--evergreen); }
 .attend-row b, .attend-row span { display: block; }
 .attend-row b { color: var(--evergreen); font-size: 13px; }
-.attend-row div > span { margin-top: 2px; color: #4A5043; font-size: 12px; }
+.attend-row div > span { margin-top: 2px; color: #3f4639; font-size: 12px; }
 .attend-heading > strong { display: grid; min-width: 27px; height: 27px; place-items: center; border-radius: 999px; background: #fff0cf; color: var(--amber-text); font-size: 12px; }
 .attend-empty { padding: 22px 17px; color: #4A5043; font-size: 12px; text-align: center; }
 .sow-directory { position: relative; }
