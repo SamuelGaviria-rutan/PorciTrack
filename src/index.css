@@ -3977,3 +3977,146 @@ main { margin-left: 260px; background: #FFFFFF; transition: margin-left .2s ease
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Medication inventory */
+.inventory-tab-count { display: inline-grid; min-width: 21px; height: 21px; margin-left: 6px; place-items: center; border-radius: 999px; background: #FEE9E7; color: #B92F35; font-size: 11px; }
+.inventory-filters:has(.stock-toggle) { flex: 1; justify-content: flex-end; }
+.inventory-filters:has(.stock-toggle) .search-field { width: min(330px, 100%); margin-right: auto; }
+.stock-toggle { display: inline-flex; align-items: center; gap: 8px; color: #52604A; font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.stock-toggle input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.stock-toggle > span { position: relative; width: 36px; height: 21px; border-radius: 999px; background: #D8DAD5; transition: background .18s ease; }
+.stock-toggle > span::after { position: absolute; top: 3px; left: 3px; width: 15px; height: 15px; border-radius: 50%; background: white; box-shadow: 0 1px 3px rgba(0,0,0,.2); content: ''; transition: transform .18s ease; }
+.stock-toggle input:checked + span { background: #477745; }
+.stock-toggle input:checked + span::after { transform: translateX(15px); }
+.medicine-toolbar-purchase { height: 38px; min-height: 38px; }
+
+.medicine-batch-table { overflow: visible; border: 0; }
+.medicine-batch-table > table { border-collapse: separate; border-spacing: 0; }
+.medicine-batch-table > table > tbody > .medicine-summary-row { cursor: pointer; }
+.medicine-batch-table > table > tbody > .medicine-summary-row:hover { background: #FAF9F7; }
+.medicine-batch-table > table > tbody.is-expanded > .medicine-summary-row { background: #F7F9F5; }
+.medicine-name { display: flex; align-items: center; gap: 9px; }
+.medicine-name > svg { flex: 0 0 auto; color: #667557; transform: rotate(0); transition: transform .18s ease; }
+.is-expanded .medicine-name > svg { transform: rotate(90deg); }
+.medicine-name strong, .medicine-name small, .medicine-lots-table td:first-child small { display: block; }
+.medicine-name small { max-width: 230px; margin-top: 3px; overflow: hidden; color: #667557; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.lot-count-label { display: inline-flex; border-radius: 999px; background: #F1F3EE; padding: 5px 9px; color: #52604A; font-size: 11px; font-weight: 700; }
+.medicine-detail-row > td { padding: 0 !important; border-bottom: 1px solid #DDE5DA; background: #FBFCFA; }
+.medicine-expanded { padding: 18px 20px 21px; }
+.medicine-container-cards { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.medicine-container-card { display: grid; min-width: 0; grid-template-columns: 42px minmax(0,1fr); align-items: center; gap: 10px; border: 1px solid #D7E5D3; border-radius: 12px; background: #F4F8F3; padding: 12px; text-align: left; }
+button.medicine-container-card:hover { border-color: #D8B26D; transform: translateY(-1px); }
+.medicine-container-card.open { border-color: #EDD49F; background: #FFF8E9; }
+.medicine-container-card > span:not(.medicine-bottle) { min-width: 0; }
+.medicine-container-card small, .medicine-container-card strong, .medicine-container-card em { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.medicine-container-card small { color: #667557; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.medicine-container-card strong { margin-top: 3px; color: #263419; font-size: 13px; }
+.medicine-container-card em { margin-top: 3px; color: #667557; font-size: 11px; font-style: normal; }
+.medicine-container-card > b { grid-column: 2; color: #477745; font-size: 12px; }
+.medicine-container-card.open > b { color: #9B631D; }
+.medicine-bottle { position: relative; display: block; width: 34px; height: 48px; }
+.medicine-bottle-cap { display: block; width: 18px; height: 7px; margin: 0 auto; border-radius: 3px 3px 1px 1px; background: #52604A; }
+.medicine-bottle-body { position: relative; display: block; width: 34px; height: 40px; overflow: hidden; border: 2px solid #A7AFA1; border-radius: 5px 5px 9px 9px; background: rgba(255,255,255,.78); }
+.medicine-bottle-body > span { position: absolute; right: 0; bottom: 0; left: 0; background: #78A776; }
+.medicine-bottle.amber .medicine-bottle-body > span { background: #E5AF54; }
+.medicine-fefo-note { display: flex; align-items: center; gap: 7px; margin: 13px 0; border-radius: 9px; background: #F1F5EF; padding: 9px 11px; color: #52604A; font-size: 11px; font-weight: 600; }
+.medicine-lots-table { overflow: visible; border: 1px solid #E7E0DA; border-radius: 10px; background: white; }
+.medicine-lots-table table { width: 100%; }
+.medicine-lots-table th, .medicine-lots-table td { padding: 10px 12px; }
+.medicine-lots-table td:first-child small { margin-top: 2px; color: #667557; font-size: 10px; }
+.medicine-lot-menu { position: absolute; z-index: 10; top: 38px; right: 6px; width: 140px; text-align: left; }
+
+.medicine-consumption-layout { display: grid; grid-template-columns: minmax(260px,.85fr) minmax(320px,1.15fr); min-height: 470px; }
+.consumption-stock-summary { border-right: 1px solid #E7E0DA; background: #FAF9F7; padding: 22px; }
+.consumption-stock-summary h3 { margin-bottom: 12px; font-size: 15px; }
+.consumption-stock-card { display: grid; grid-template-columns: 38px 1fr; align-items: center; gap: 10px; margin-bottom: 8px; border: 1px solid #D7E5D3; border-radius: 11px; background: white; padding: 10px; }
+.consumption-stock-card.open { border-color: #EDD49F; background: #FFF9EC; }
+.consumption-stock-card .medicine-bottle { transform: scale(.8); transform-origin: center; }
+.consumption-stock-card small, .consumption-stock-card strong, .consumption-stock-card em { display: block; }
+.consumption-stock-card small { color: #667557; font-size: 10px; }
+.consumption-stock-card strong { margin-top: 3px; color: #263419; font-size: 13px; }
+.consumption-stock-card em { margin-top: 2px; color: #667557; font-size: 10px; font-style: normal; }
+.consumption-form { display: grid; align-content: start; gap: 14px; padding: 22px; }
+.consumption-kind-tabs { width: 100%; margin-bottom: 3px; }
+.consumption-kind-tabs button { flex: 1; }
+
+.medicine-history-panel { width: min(860px, 94vw); }
+.medicine-history-panel .panel-heading p { margin-top: 3px; color: #667557; font-size: 12px; }
+.medicine-history-panel .panel-body { padding: 18px; }
+.medicine-history-table { overflow-x: auto; }
+.medicine-history-table table { min-width: 780px; }
+.movement-type { font-size: 12px; font-weight: 700; }
+.movement-type.in { color: #477745; }
+.movement-type.out { color: #B33B3F; }
+
+.medicine-physical-count .inventory-table { overflow-x: auto; }
+.medicine-physical-count td:first-child strong, .medicine-physical-count td:first-child small { display: block; }
+.medicine-physical-count td:first-child small { margin-top: 3px; color: #667557; font-size: 11px; }
+.medicine-physical-count .count-field { width: 130px; }
+.medicine-physical-count .count-field input { background: white; }
+.count-alert { color: #A96312; font-weight: 700; }
+.medicine-count-footer { display: grid; grid-template-columns: repeat(3,auto) minmax(240px,1fr) auto; align-items: end; gap: 16px; margin-top: 14px; border-radius: 12px; background: #F7F5F3; padding: 14px; }
+.medicine-count-footer > div span, .medicine-count-footer > div strong { display: block; }
+.medicine-count-footer > div span { color: #667557; font-size: 10px; }
+.medicine-count-footer > div strong { margin-top: 4px; font-size: 15px; }
+
+.catalog-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+.catalog-heading h2 { font-size: 17px; }
+.catalog-heading p { margin-top: 3px; color: #667557; font-size: 12px; }
+.medicine-catalog .inventory-table { overflow-x: auto; }
+.medicine-catalog table { min-width: 1050px; }
+
+.medicine-alerts-view { display: grid; gap: 15px; }
+.medicine-alert-group { overflow: hidden; border: 1px solid; border-radius: 13px; }
+.medicine-alert-group.red { border-color: #F0C4C4; background: #FFF8F8; }
+.medicine-alert-group.amber { border-color: #EED7A9; background: #FFFBF2; }
+.medicine-alert-heading { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid; }
+.medicine-alert-group.red .medicine-alert-heading { border-color: #F0C4C4; color: #B72F35; }
+.medicine-alert-group.amber .medicine-alert-heading { border-color: #EED7A9; color: #97601D; }
+.medicine-alert-heading h2 { font-size: 15px; }
+.medicine-alert-heading p { margin-top: 2px; color: #667557; font-size: 11px; }
+.medicine-alert-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 16px; border-bottom: 1px solid rgba(231,224,218,.7); background: rgba(255,255,255,.5); }
+.medicine-alert-row:last-child { border-bottom: 0; }
+.medicine-alert-row strong, .medicine-alert-row span { display: block; }
+.medicine-alert-row span { margin-top: 3px; color: #667557; font-size: 11px; }
+.medicine-alert-row > div:last-child { text-align: right; }
+.medicine-alert-group.red .medicine-alert-row > div:last-child strong { color: #B72F35; }
+.medicine-alert-group.amber .medicine-alert-row > div:last-child strong { color: #97601D; }
+
+.medicine-purchase-form { max-height: min(68vh,720px); overflow-y: auto; }
+.medicine-purchase-form .form-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.cost-field > div { display: grid; grid-template-columns: 120px 1fr; gap: 6px; }
+.medicine-purchase-notes { grid-column: 1 / -1; }
+.medicine-purchase-notes textarea { min-height: 78px; }
+
+@media (max-width: 1099px) {
+  .medicine-batch-table > table, .medicine-batch-table > table > tbody { display: table; width: 100%; }
+  .medicine-batch-table > table > thead { display: table-header-group; }
+  .medicine-batch-table > table > tbody { display: table-row-group; }
+  .medicine-batch-table > table > tbody > tr { display: table-row; }
+  .medicine-batch-table > table > tbody > tr > td { display: table-cell; width: auto !important; min-width: 0 !important; padding: 11px 8px; }
+  .medicine-batch-table .medicine-detail-row > td { display: table-cell; }
+  .medicine-container-cards { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .medicine-count-footer { grid-template-columns: repeat(3,1fr); }
+  .medicine-count-footer .field { grid-column: 1 / 3; }
+}
+
+@media (max-width: 760px) {
+  .inventory-filters:has(.stock-toggle) { display: grid; grid-template-columns: 1fr 1fr; }
+  .inventory-filters:has(.stock-toggle) .search-field { grid-column: 1 / -1; width: 100%; }
+  .medicine-toolbar-purchase { padding: 0 10px; }
+  .medicine-batch-table { overflow-x: auto; }
+  .medicine-batch-table > table { min-width: 760px; }
+  .medicine-container-cards { grid-template-columns: 1fr; }
+  .medicine-expanded { padding: 14px; }
+  .medicine-lots-table { overflow-x: auto; }
+  .medicine-lots-table table { min-width: 720px; }
+  .medicine-consumption-layout { grid-template-columns: 1fr; }
+  .consumption-stock-summary { max-height: 260px; overflow-y: auto; border-right: 0; border-bottom: 1px solid #E7E0DA; padding: 16px; }
+  .consumption-form { padding: 16px; }
+  .catalog-heading { align-items: stretch; flex-direction: column; }
+  .medicine-count-footer { grid-template-columns: 1fr 1fr; }
+  .medicine-count-footer .field, .medicine-count-footer .button { grid-column: 1 / -1; }
+  .medicine-alert-row { align-items: flex-start; }
+  .medicine-purchase-form .form-grid { grid-template-columns: 1fr; }
+}

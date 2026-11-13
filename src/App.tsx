@@ -12414,7 +12414,7 @@ function ReproducerPage({
 }
 
 type InventoryCategory = "Alimentos" | "Medicamentos"
-type InventoryView = "Inventario" | "Historial" | "Conteo físico"
+type InventoryView = "Inventario" | "Catálogo" | "Historial" | "Alertas" | "Conteo físico"
 
 type FoodItem = {
   id: number
@@ -12429,13 +12429,28 @@ type FoodItem = {
 type MedicineItem = {
   id: number
   name: string
-  stock: number
-  minimum: number
-  sealed: number
-  open: number
-  openLevel: number
-  empty: number
+  activeIngredient: string
+  type: "Medicamento" | "Vacuna"
+  unit: string
+  laboratory: string
+  ica: string
+  withdrawal: number
+  route: string
+  suggestedDose: string
+  minimumMl: number
+  lots: MedicineLot[]
+}
+
+type MedicineLot = {
+  id: number
+  code: string
   expiry: string
+  place: string
+  container: string
+  contentMl: number
+  sealed: number
+  openRemaining: number
+  entries: number
 }
 
 const initialFoodItems: FoodItem[] = [
@@ -12471,38 +12486,329 @@ const initialFoodItems: FoodItem[] = [
 const initialMedicineItems: MedicineItem[] = [
   {
     id: 1,
-    name: "Vacuna Circovirus",
-    stock: 4,
-    minimum: 3,
-    sealed: 3,
-    open: 1,
-    openLevel: 40,
-    empty: 2,
-    expiry: "15/03/2026",
+    name: "Oxitocina Porcivet",
+    activeIngredient: "Oxitocina 10 UI/ml",
+    type: "Medicamento",
+    unit: "ml",
+    laboratory: "Laboratorios Vecol",
+    ica: "ICA 10234-MV",
+    withdrawal: 0,
+    route: "Intramuscular",
+    suggestedDose: "1–2 ml por cerda",
+    minimumMl: 120,
+    lots: [
+      {
+        id: 101,
+        code: "OX-2601",
+        expiry: "2026-06-30",
+        place: "Nevera sanitaria",
+        container: "Frasco 20 ml",
+        contentMl: 20,
+        sealed: 7,
+        openRemaining: 10,
+        entries: 8,
+      },
+      {
+        id: 102,
+        code: "OX-2602",
+        expiry: "2026-11-15",
+        place: "Nevera sanitaria",
+        container: "Frasco 20 ml",
+        contentMl: 20,
+        sealed: 3,
+        openRemaining: 0,
+        entries: 3,
+      },
+    ],
   },
   {
     id: 2,
-    name: "Oxitocina 10 unidades internacionales",
-    stock: 2,
-    minimum: 4,
-    sealed: 2,
-    open: 0,
-    openLevel: 0,
-    empty: 1,
-    expiry: "14/03/2026",
+    name: "Circumvent PCV",
+    activeIngredient: "Circovirus porcino tipo 2",
+    type: "Vacuna",
+    unit: "ml",
+    laboratory: "MSD Salud Animal",
+    ica: "ICA 8765-BV",
+    withdrawal: 0,
+    route: "Intramuscular",
+    suggestedDose: "2 ml por animal",
+    minimumMl: 80,
+    lots: [
+      {
+        id: 201,
+        code: "CV-2518",
+        expiry: "2026-03-15",
+        place: "Nevera 1 · bandeja A",
+        container: "Frasco 100 ml",
+        contentMl: 100,
+        sealed: 1,
+        openRemaining: 35,
+        entries: 2,
+      },
+    ],
   },
   {
     id: 3,
-    name: "Hierro dextrano",
-    stock: 7,
-    minimum: 3,
-    sealed: 6,
-    open: 1,
-    openLevel: 75,
-    empty: 0,
-    expiry: "16/03/2026",
+    name: "Hierro Dextran 200",
+    activeIngredient: "Hierro dextrano 200 mg/ml",
+    type: "Medicamento",
+    unit: "ml",
+    laboratory: "Virbac",
+    ica: "ICA 7342-MV",
+    withdrawal: 0,
+    route: "Intramuscular",
+    suggestedDose: "1 ml por lechón",
+    minimumMl: 200,
+    lots: [
+      {
+        id: 301,
+        code: "HD-2603",
+        expiry: "2026-03-28",
+        place: "Botiquín precebo",
+        container: "Frasco 100 ml",
+        contentMl: 100,
+        sealed: 2,
+        openRemaining: 62,
+        entries: 3,
+      },
+      {
+        id: 302,
+        code: "HD-2604",
+        expiry: "2026-09-20",
+        place: "Bodega sanitaria",
+        container: "Frasco 100 ml",
+        contentMl: 100,
+        sealed: 3,
+        openRemaining: 0,
+        entries: 3,
+      },
+    ],
+  },
+  {
+    id: 4,
+    name: "Enrofloxacina 10%",
+    activeIngredient: "Enrofloxacina 100 mg/ml",
+    type: "Medicamento",
+    unit: "ml",
+    laboratory: "Bayer",
+    ica: "ICA 6541-MV",
+    withdrawal: 12,
+    route: "Intramuscular",
+    suggestedDose: "1 ml / 20 kg",
+    minimumMl: 150,
+    lots: [
+      {
+        id: 401,
+        code: "EN-2607",
+        expiry: "2026-04-10",
+        place: "Bodega sanitaria",
+        container: "Frasco 100 ml",
+        contentMl: 100,
+        sealed: 1,
+        openRemaining: 42,
+        entries: 2,
+      },
+    ],
+  },
+  {
+    id: 5,
+    name: "Ivermectina 1%",
+    activeIngredient: "Ivermectina 10 mg/ml",
+    type: "Medicamento",
+    unit: "ml",
+    laboratory: "Calier",
+    ica: "ICA 5520-MV",
+    withdrawal: 28,
+    route: "Subcutánea",
+    suggestedDose: "1 ml / 33 kg",
+    minimumMl: 100,
+    lots: [
+      {
+        id: 501,
+        code: "IV-2602",
+        expiry: "2026-08-18",
+        place: "Botiquín general",
+        container: "Frasco 60 ml",
+        contentMl: 60,
+        sealed: 2,
+        openRemaining: 25,
+        entries: 3,
+      },
+    ],
+  },
+  {
+    id: 6,
+    name: "Penicilina G Procaínica",
+    activeIngredient: "Penicilina G + estreptomicina",
+    type: "Medicamento",
+    unit: "ml",
+    laboratory: "Vicar",
+    ica: "ICA 4312-MV",
+    withdrawal: 30,
+    route: "Intramuscular",
+    suggestedDose: "1 ml / 20 kg",
+    minimumMl: 120,
+    lots: [
+      {
+        id: 601,
+        code: "PN-2598",
+        expiry: "2026-07-01",
+        place: "Nevera sanitaria",
+        container: "Frasco 60 ml",
+        contentMl: 60,
+        sealed: 1,
+        openRemaining: 18,
+        entries: 2,
+      },
+      {
+        id: 602,
+        code: "PN-2606",
+        expiry: "2027-01-30",
+        place: "Nevera sanitaria",
+        container: "Frasco 60 ml",
+        contentMl: 60,
+        sealed: 2,
+        openRemaining: 0,
+        entries: 2,
+      },
+    ],
+  },
+  {
+    id: 7,
+    name: "Flunixin Meglumine",
+    activeIngredient: "Flunixin 50 mg/ml",
+    type: "Medicamento",
+    unit: "ml",
+    laboratory: "Zoetis",
+    ica: "ICA 9021-MV",
+    withdrawal: 10,
+    route: "Intramuscular",
+    suggestedDose: "2 ml / 45 kg",
+    minimumMl: 80,
+    lots: [
+      {
+        id: 701,
+        code: "FL-2605",
+        expiry: "2026-10-12",
+        place: "Botiquín general",
+        container: "Frasco 100 ml",
+        contentMl: 100,
+        sealed: 2,
+        openRemaining: 70,
+        entries: 3,
+      },
+    ],
+  },
+  {
+    id: 8,
+    name: "Vacuna Mycoplasma",
+    activeIngredient: "Mycoplasma hyopneumoniae",
+    type: "Vacuna",
+    unit: "ml",
+    laboratory: "Boehringer Ingelheim",
+    ica: "ICA 8150-BV",
+    withdrawal: 0,
+    route: "Intramuscular",
+    suggestedDose: "2 ml por animal",
+    minimumMl: 100,
+    lots: [
+      {
+        id: 801,
+        code: "MY-2601",
+        expiry: "2026-05-22",
+        place: "Nevera 1 · bandeja B",
+        container: "Frasco 100 ml",
+        contentMl: 100,
+        sealed: 3,
+        openRemaining: 0,
+        entries: 3,
+      },
+    ],
+  },
+  {
+    id: 9,
+    name: "Toltrazuril 5%",
+    activeIngredient: "Toltrazuril 50 mg/ml",
+    type: "Medicamento",
+    unit: "ml",
+    laboratory: "Elanco",
+    ica: "ICA 7231-MV",
+    withdrawal: 14,
+    route: "Oral",
+    suggestedDose: "1 ml por lechón",
+    minimumMl: 60,
+    lots: [
+      {
+        id: 901,
+        code: "TZ-2604",
+        expiry: "2026-12-05",
+        place: "Botiquín maternidad",
+        container: "Frasco 100 ml",
+        contentMl: 100,
+        sealed: 1,
+        openRemaining: 48,
+        entries: 2,
+      },
+    ],
+  },
+  {
+    id: 10,
+    name: "Complejo B12",
+    activeIngredient: "Vitaminas B1, B6 y B12",
+    type: "Medicamento",
+    unit: "ml",
+    laboratory: "Laverlam",
+    ica: "ICA 3198-MV",
+    withdrawal: 0,
+    route: "Intramuscular",
+    suggestedDose: "2–5 ml por animal",
+    minimumMl: 100,
+    lots: [
+      {
+        id: 1001,
+        code: "VB-2602",
+        expiry: "2026-09-08",
+        place: "Botiquín general",
+        container: "Frasco 20 ml",
+        contentMl: 20,
+        sealed: 4,
+        openRemaining: 12,
+        entries: 5,
+      },
+      {
+        id: 1002,
+        code: "VB-2608",
+        expiry: "2027-02-14",
+        place: "Bodega sanitaria",
+        container: "Frasco 20 ml",
+        contentMl: 20,
+        sealed: 5,
+        openRemaining: 0,
+        entries: 5,
+      },
+    ],
   },
 ]
+
+const medicineLotBalance = (lot: MedicineLot) =>
+  lot.sealed * lot.contentMl + lot.openRemaining
+const medicineBalance = (medicine: MedicineItem) =>
+  medicine.lots.reduce((sum, lot) => sum + medicineLotBalance(lot), 0)
+const medicineSealed = (medicine: MedicineItem) =>
+  medicine.lots.reduce((sum, lot) => sum + lot.sealed, 0)
+const medicineOpen = (medicine: MedicineItem) =>
+  medicine.lots.find((lot) => lot.openRemaining > 0)
+const medicineStatus = (medicine: MedicineItem) => {
+  const expiries = medicine.lots
+    .filter((lot) => medicineLotBalance(lot) > 0)
+    .map((lot) => lot.expiry)
+    .sort()
+  const earliest = expiries[0]
+  if (earliest && earliest < TODAY_ISO) return "Vencido"
+  if (earliest && earliest <= "2026-04-15") return "Por vencer"
+  if (medicineBalance(medicine) < medicine.minimumMl) return "Stock bajo"
+  return "Disponible"
+}
 
 type InventoryAttention = {
   id: number
@@ -12666,6 +12972,7 @@ function RemoveInventoryDialog({
 function InventoryRowMenu({
   anchor,
   onClose,
+  onConsume,
   onHistory,
   onEdit,
   onCount,
@@ -12673,6 +12980,7 @@ function InventoryRowMenu({
 }: {
   anchor: HTMLButtonElement
   onClose: () => void
+  onConsume?: () => void
   onHistory: () => void
   onEdit: () => void
   onCount: () => void
@@ -12728,17 +13036,23 @@ function InventoryRowMenu({
 
   return createPortal(
     <div className="lot-menu inventory-row-menu" ref={menuRef} style={position}>
+      {onConsume && (
+        <button onClick={onConsume}>
+          <Icon name="droplet" size={16} />
+          Registrar consumo
+        </button>
+      )}
       <button onClick={onHistory}>
         <Icon name="clock" size={16} />
         Ver historial
       </button>
+      <button onClick={onCount}>
+        <Icon name="check" size={16} />
+        Conteo físico
+      </button>
       <button onClick={onEdit}>
         <Icon name="edit" size={16} />
         Editar
-      </button>
-      <button onClick={onCount}>
-        <Icon name="check" size={16} />
-        Contar
       </button>
       <div className="menu-divider" />
       <button className="delete-item" onClick={onRemove}>
@@ -12853,18 +13167,179 @@ function FoodInventoryTable({
   )
 }
 
+function MedicineBottle({
+  level,
+  tone,
+}: {
+  level: number
+  tone: "amber" | "green"
+}) {
+  return (
+    <span className={`medicine-bottle ${tone}`} aria-hidden="true">
+      <span className="medicine-bottle-cap" />
+      <span className="medicine-bottle-body">
+        <span style={{ height: `${Math.max(5, level)}%` }} />
+      </span>
+    </span>
+  )
+}
+
+function MedicineExpanded({
+  medicine,
+  onConsume,
+  onEditLot,
+  onDeleteLot,
+}: {
+  medicine: MedicineItem
+  onConsume: () => void
+  onEditLot: (lot: MedicineLot) => void
+  onDeleteLot: (lot: MedicineLot) => void
+}) {
+  const openLot = medicineOpen(medicine)
+  const sealedLots = medicine.lots.filter((lot) => lot.sealed > 0)
+  const [lotMenu, setLotMenu] = useState<number | null>(null)
+  return (
+    <div className="medicine-expanded">
+      <div className="medicine-container-cards">
+        {openLot && (
+          <button className="medicine-container-card open" onClick={onConsume}>
+            <MedicineBottle
+              tone="amber"
+              level={(openLot.openRemaining / openLot.contentMl) * 100}
+            />
+            <span>
+              <small>En uso</small>
+              <strong>{openLot.code}</strong>
+              <em>
+                Vence {formatDate(new Date(`${openLot.expiry}T12:00:00`))}
+              </em>
+            </span>
+            <b>~{formatDecimal(openLot.openRemaining)} ml</b>
+          </button>
+        )}
+        {sealedLots.map((lot) => (
+          <div className="medicine-container-card sealed" key={lot.id}>
+            <MedicineBottle tone="green" level={100} />
+            <span>
+              <small>Sellados</small>
+              <strong>
+                × {lot.sealed} · {lot.code}
+              </strong>
+              <em>Vence {formatDate(new Date(`${lot.expiry}T12:00:00`))}</em>
+            </span>
+            <b>
+              {lot.contentMl} ml c/u ·{" "}
+              {formatDecimal(lot.sealed * lot.contentMl)} ml total
+            </b>
+          </div>
+        ))}
+      </div>
+      <div className="medicine-fefo-note">
+        <Icon name="info" size={17} />
+        Se gasta primero el envase en uso y luego el lote que vence antes.
+      </div>
+      <div className="medicine-lots-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Lote</th>
+              <th>Vencimiento</th>
+              <th>Lugar</th>
+              <th>Entradas</th>
+              <th>Saldo</th>
+              <th>Estado</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {medicine.lots.map((lot) => {
+              const expired = lot.expiry < TODAY_ISO
+              const near = !expired && lot.expiry <= "2026-04-15"
+              return (
+                <tr key={lot.id}>
+                  <td>
+                    <strong>{lot.code}</strong>
+                    <small>{lot.container}</small>
+                  </td>
+                  <td>{formatDate(new Date(`${lot.expiry}T12:00:00`))}</td>
+                  <td>{lot.place}</td>
+                  <td>{lot.entries} envases</td>
+                  <td>{formatDecimal(medicineLotBalance(lot))} ml</td>
+                  <td>
+                    <span
+                      className={`status ${
+                        expired ? "critical" : near ? "warning" : "positive"
+                      }`}
+                    >
+                      {expired ? "Vencido" : near ? "Por vencer" : "Disponible"}
+                    </span>
+                  </td>
+                  <td className="row-actions-cell">
+                    <button
+                      className="dots-button"
+                      aria-label={`Acciones del lote ${lot.code}`}
+                      onClick={() =>
+                        setLotMenu(lotMenu === lot.id ? null : lot.id)
+                      }
+                    >
+                      <Icon name="dots" size={18} />
+                    </button>
+                    {lotMenu === lot.id && (
+                      <div className="lot-menu medicine-lot-menu">
+                        <button
+                          onClick={() => {
+                            setLotMenu(null)
+                            onEditLot(lot)
+                          }}
+                        >
+                          <Icon name="edit" size={15} />
+                          Editar
+                        </button>
+                        <button
+                          className="delete-item"
+                          onClick={() => {
+                            setLotMenu(null)
+                            onDeleteLot(lot)
+                          }}
+                        >
+                          <Icon name="trash" size={15} />
+                          Eliminar
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 function MedicineInventoryTable({
   items,
   menuOpen,
   setMenuOpen,
-  onView,
+  expanded,
+  setExpanded,
+  onConsume,
+  onHistory,
+  onCount,
+  onDeleteLot,
   onNotice,
   onRemove,
 }: {
   items: MedicineItem[]
   menuOpen: string | null
   setMenuOpen: (value: string | null) => void
-  onView: (view: InventoryView) => void
+  expanded: number | null
+  setExpanded: (value: number | null) => void
+  onConsume: (item: MedicineItem) => void
+  onHistory: (item: MedicineItem) => void
+  onCount: (item: MedicineItem) => void
+  onDeleteLot: (medicine: MedicineItem, lot: MedicineLot) => void
   onNotice: (text: string) => void
   onRemove: (item: MedicineItem) => void
 }) {
@@ -12874,73 +13349,84 @@ function MedicineInventoryTable({
     setMenuAnchor(null)
   }
   return (
-    <div className="table-wrap inventory-table medicine-table">
+    <div className="table-wrap inventory-table medicine-table medicine-batch-table">
       <table>
         <thead>
           <tr>
             <th>Medicamento</th>
-            <th>Presentaciones</th>
-            <th>Stock</th>
-            <th>Vencimiento</th>
+            <th>Envases</th>
+            <th>Lotes</th>
+            <th>Saldo total</th>
             <th>Estado</th>
             <th />
           </tr>
         </thead>
-        <tbody>
-          {items.map((item) => {
-            const low = item.stock < item.minimum
-            const key = `medicine-${item.id}`
-            return (
-              <tr key={item.id}>
+        {items.map((item) => {
+          const key = `medicine-${item.id}`
+          const openLot = medicineOpen(item)
+          const status = medicineStatus(item)
+          return (
+            <tbody
+              className={expanded === item.id ? "is-expanded" : ""}
+              key={item.id}
+            >
+              <tr
+                className="medicine-summary-row"
+                onClick={() =>
+                  setExpanded(expanded === item.id ? null : item.id)
+                }
+              >
                 <td>
-                  <strong>{item.name}</strong>
+                  <span className="medicine-name">
+                    <Icon name="chevron" size={16} />
+                    <span>
+                      <strong>{item.name}</strong>
+                      <small>{item.activeIngredient}</small>
+                    </span>
+                  </span>
                 </td>
                 <td>
                   <div className="container-summary">
                     <span>
-                      {item.sealed} {item.sealed === 1 ? "sellado" : "sellados"}{" "}
-                      · {item.open} {item.open === 1 ? "abierto" : "abiertos"}
-                      {item.open ? ` (${item.openLevel} % restante)` : ""} ·{" "}
-                      {item.empty} {item.empty === 1 ? "vacío" : "vacíos"}
+                      {medicineSealed(item)} frascos sellados
+                      {openLot
+                        ? ` + 1 en uso (${formatDecimal(openLot.openRemaining)} ml de ${openLot.contentMl} ml)`
+                        : ""}
                     </span>
-                    {item.open > 0 && (
-                      <div className="bottle-level">
-                        <span style={{ width: `${item.openLevel}%` }} />
-                      </div>
-                    )}
                   </div>
                 </td>
-                <td>{countLabel(item.stock, "ítem", "ítems")}</td>
                 <td>
-                  <span
-                    className={
-                      item.id === 1 ? "expiry-date urgent" : "expiry-date"
-                    }
-                  >
-                    {item.expiry}
+                  <span className="lot-count-label">
+                    {item.lots.length}{" "}
+                    {item.lots.length === 1 ? "lote" : "lotes"}
                   </span>
+                </td>
+                <td>
+                  <strong>{formatDecimal(medicineBalance(item))} ml</strong>
                 </td>
                 <td>
                   <span
                     className={`status ${
-                      item.id === 1 ? "critical" : low ? "warning" : "positive"
+                      status === "Vencido"
+                        ? "critical"
+                        : status === "Por vencer" || status === "Stock bajo"
+                          ? "warning"
+                          : "positive"
                     }`}
                   >
-                    {item.id === 1
-                      ? "Por vencer"
-                      : low
-                        ? "Stock bajo"
-                        : "Disponible"}
+                    {status}
                   </span>
                 </td>
-                <td className="row-actions-cell">
+                <td
+                  className="row-actions-cell"
+                  onClick={(event) => event.stopPropagation()}
+                >
                   <button
                     className="dots-button"
                     aria-label={`Acciones de ${item.name}`}
                     onClick={(event) => {
-                      if (menuOpen === key) {
-                        closeMenu()
-                      } else {
+                      if (menuOpen === key) closeMenu()
+                      else {
                         setMenuAnchor(event.currentTarget)
                         setMenuOpen(key)
                       }
@@ -12952,9 +13438,13 @@ function MedicineInventoryTable({
                     <InventoryRowMenu
                       anchor={menuAnchor}
                       onClose={closeMenu}
+                      onConsume={() => {
+                        closeMenu()
+                        onConsume(item)
+                      }}
                       onHistory={() => {
                         closeMenu()
-                        onView("Historial")
+                        onHistory(item)
                       }}
                       onEdit={() => {
                         closeMenu()
@@ -12962,7 +13452,7 @@ function MedicineInventoryTable({
                       }}
                       onCount={() => {
                         closeMenu()
-                        onView("Conteo físico")
+                        onCount(item)
                       }}
                       onRemove={() => {
                         closeMenu()
@@ -12972,9 +13462,23 @@ function MedicineInventoryTable({
                   )}
                 </td>
               </tr>
-            )
-          })}
-        </tbody>
+              {expanded === item.id && (
+                <tr className="medicine-detail-row">
+                  <td colSpan={6}>
+                    <MedicineExpanded
+                      medicine={item}
+                      onConsume={() => onConsume(item)}
+                      onEditLot={(lot) =>
+                        onNotice(`Edición del lote ${lot.code}`)
+                      }
+                      onDeleteLot={(lot) => onDeleteLot(item, lot)}
+                    />
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          )
+        })}
       </table>
     </div>
   )
@@ -13026,6 +13530,727 @@ function InventoryHistory({ category }: { category: InventoryCategory }) {
   )
 }
 
+const medicineMovements = [
+  {
+    date: "16/03/2026 08:40",
+    type: "Consumo −",
+    lot: "OX-2601",
+    quantity: "15 ml",
+    value: "$18.750",
+    destination: "Camada C-2608",
+    responsible: "Laura Gómez",
+  },
+  {
+    date: "14/03/2026 16:12",
+    type: "Envase terminado",
+    lot: "OX-2601",
+    quantity: "20 ml",
+    value: "—",
+    destination: "Cerdas",
+    responsible: "Andrés Mejía",
+  },
+  {
+    date: "10/03/2026 10:05",
+    type: "Compra +",
+    lot: "OX-2602",
+    quantity: "60 ml",
+    value: "$75.000",
+    destination: "Nevera sanitaria",
+    responsible: "Andrés Mejía",
+  },
+  {
+    date: "08/03/2026 14:25",
+    type: "Ajuste",
+    lot: "OX-2601",
+    quantity: "−2 ml",
+    value: "—",
+    destination: "Conteo físico",
+    responsible: "Carlos Ríos",
+  },
+]
+
+function MedicineHistoryTable({ medicine }: { medicine?: MedicineItem }) {
+  return (
+    <div className="table-wrap inventory-table medicine-history-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo</th>
+            <th>Lote</th>
+            <th>Cantidad</th>
+            <th>Valor</th>
+            <th>Destino</th>
+            <th>Responsable</th>
+          </tr>
+        </thead>
+        <tbody>
+          {medicineMovements.map((movement, index) => (
+            <tr key={`${movement.date}-${index}`}>
+              <td>{movement.date}</td>
+              <td>
+                <span
+                  className={`movement-type ${
+                    movement.type.includes("+")
+                      ? "in"
+                      : movement.type.includes("−")
+                        ? "out"
+                        : ""
+                  }`}
+                >
+                  {movement.type}
+                </span>
+              </td>
+              <td>{movement.lot}</td>
+              <td>{movement.quantity}</td>
+              <td>{movement.value}</td>
+              <td>{movement.destination}</td>
+              <td>{movement.responsible}</td>
+            </tr>
+          ))}
+          {!medicine && (
+            <tr>
+              <td>05/03/2026 09:10</td>
+              <td>
+                <span className="movement-type in">Compra +</span>
+              </td>
+              <td>HD-2604</td>
+              <td>300 ml</td>
+              <td>$420.000</td>
+              <td>Bodega sanitaria</td>
+              <td>Laura Gómez</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function MedicineHistoryPanel({
+  medicine,
+  onClose,
+}: {
+  medicine: MedicineItem
+  onClose: () => void
+}) {
+  return (
+    <div
+      className="side-panel-backdrop"
+      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <aside
+        className="sow-panel medicine-history-panel"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="panel-heading">
+          <div>
+            <h2>Historial</h2>
+            <p>{medicine.name}</p>
+          </div>
+          <button className="icon-button" onClick={onClose} aria-label="Cerrar">
+            <Icon name="x" size={20} />
+          </button>
+        </div>
+        <div className="panel-body">
+          <MedicineHistoryTable medicine={medicine} />
+        </div>
+      </aside>
+    </div>
+  )
+}
+
+function MedicineStockSummary({ medicine }: { medicine: MedicineItem }) {
+  const openLot = medicineOpen(medicine)
+  return (
+    <div className="consumption-stock-summary">
+      <h3>Envases disponibles</h3>
+      {openLot && (
+        <div className="consumption-stock-card open">
+          <MedicineBottle
+            tone="amber"
+            level={(openLot.openRemaining / openLot.contentMl) * 100}
+          />
+          <span>
+            <small>En uso · {openLot.code}</small>
+            <strong>{formatDecimal(openLot.openRemaining)} ml</strong>
+            <em>Vence {formatDate(new Date(`${openLot.expiry}T12:00:00`))}</em>
+          </span>
+        </div>
+      )}
+      {medicine.lots
+        .filter((lot) => lot.sealed > 0)
+        .map((lot) => (
+          <div className="consumption-stock-card" key={lot.id}>
+            <MedicineBottle tone="green" level={100} />
+            <span>
+              <small>Sellados · {lot.code}</small>
+              <strong>
+                × {lot.sealed} · {lot.contentMl} ml c/u
+              </strong>
+              <em>{formatDecimal(lot.sealed * lot.contentMl)} ml total</em>
+            </span>
+          </div>
+        ))}
+      <div className="medicine-fefo-note">
+        <Icon name="info" size={16} />
+        Primero se descuenta el envase en uso.
+      </div>
+    </div>
+  )
+}
+
+function MedicineConsumptionModal({
+  medicine,
+  onClose,
+  onSave,
+}: {
+  medicine: MedicineItem
+  onClose: () => void
+  onSave: (quantity: number, kind: "Consumo" | "Merma o pérdida") => void
+}) {
+  const [kind, setKind] = useState<"Consumo" | "Merma o pérdida">("Consumo")
+  const [cycle, setCycle] = useState("Camada")
+  const [destination, setDestination] = useState("")
+  const [quantity, setQuantity] = useState("")
+  const [responsible, setResponsible] = useState("Laura Gómez")
+  const [reason, setReason] = useState("")
+  const [submitted, setSubmitted] = useState(false)
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    setSubmitted(true)
+    const amount = parseColombianNumber(quantity)
+    if (
+      !amount ||
+      (kind === "Consumo" && (!destination || !responsible)) ||
+      (kind === "Merma o pérdida" && !reason)
+    )
+      return
+    onSave(amount, kind)
+  }
+  return (
+    <DialogShell
+      title={`Registrar consumo · ${medicine.name}`}
+      onClose={onClose}
+      size="wide"
+    >
+      <form onSubmit={submit}>
+        <div className="medicine-consumption-layout">
+          <MedicineStockSummary medicine={medicine} />
+          <div className="consumption-form">
+            <div className="inventory-views consumption-kind-tabs">
+              {(["Consumo", "Merma o pérdida"] as const).map((item) => (
+                <button
+                  type="button"
+                  className={kind === item ? "active" : ""}
+                  onClick={() => setKind(item)}
+                  key={item}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+            {kind === "Consumo" ? (
+              <>
+                <label className="field">
+                  <span>Ciclo</span>
+                  <select
+                    value={cycle}
+                    onChange={(e) => setCycle(e.target.value)}
+                  >
+                    <option>Camada</option>
+                    <option>Cerdas</option>
+                    <option>Precebo</option>
+                    <option>Levante/Finalización</option>
+                    <option>Reproductor</option>
+                  </select>
+                </label>
+                <label
+                  className={`field ${
+                    submitted && !destination ? "has-error" : ""
+                  }`}
+                >
+                  <span>
+                    {cycle === "Cerdas" ? "Cerda destino" : "Lote destino"}{" "}
+                    <em>* obligatorio</em>
+                  </span>
+                  <input
+                    value={destination}
+                    onChange={(e) => setDestination(e.target.value)}
+                    placeholder={
+                      cycle === "Cerdas" ? "Ej. C-1042" : "Ej. Camada C-2608"
+                    }
+                  />
+                </label>
+              </>
+            ) : (
+              <>
+                <label className="field">
+                  <span>Lote</span>
+                  <select>
+                    <option>Automático: el que vence antes</option>
+                    {medicine.lots.map((lot) => (
+                      <option key={lot.id}>{lot.code}</option>
+                    ))}
+                  </select>
+                </label>
+                <label
+                  className={`field ${submitted && !reason ? "has-error" : ""}`}
+                >
+                  <span>
+                    Motivo <em>* obligatorio</em>
+                  </span>
+                  <select
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                  >
+                    <option value="">Seleccionar motivo</option>
+                    <option>Derrame</option>
+                    <option>Envase roto</option>
+                    <option>Cadena de frío</option>
+                    <option>Producto contaminado</option>
+                    <option>Otro</option>
+                  </select>
+                </label>
+              </>
+            )}
+            <label
+              className={`field ${submitted && !quantity ? "has-error" : ""}`}
+            >
+              <span>
+                Cantidad (ml) <em>* obligatorio</em>
+              </span>
+              <ColombianNumberInput
+                value={quantity}
+                onChange={setQuantity}
+                placeholder="Ej. 15"
+                ariaInvalid={submitted && !quantity}
+              />
+            </label>
+            {kind === "Consumo" && (
+              <label className="field">
+                <span>Responsable</span>
+                <select
+                  value={responsible}
+                  onChange={(e) => setResponsible(e.target.value)}
+                >
+                  <option>Laura Gómez</option>
+                  <option>Andrés Mejía</option>
+                  <option>Carlos Ríos</option>
+                </select>
+              </label>
+            )}
+          </div>
+        </div>
+        <div className="modal-actions large-actions">
+          <button type="button" className="button secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="button primary">
+            Guardar {kind === "Consumo" ? "consumo" : "merma"}
+          </button>
+        </div>
+      </form>
+    </DialogShell>
+  )
+}
+
+function MedicinePhysicalCount({
+  medicines,
+  focusMedicine,
+  onSave,
+}: {
+  medicines: MedicineItem[]
+  focusMedicine?: MedicineItem
+  onSave: () => void
+}) {
+  const rows = (focusMedicine ? [focusMedicine] : medicines).flatMap(
+    (medicine) => medicine.lots.map((lot) => ({ medicine, lot })),
+  )
+  const [counts, setCounts] = useState<Record<number, string>>({})
+  const [reason, setReason] = useState("")
+  const totalSystem = rows.reduce(
+    (sum, row) => sum + medicineLotBalance(row.lot),
+    0,
+  )
+  const totalCounted = rows.reduce(
+    (sum, row) =>
+      sum +
+      (counts[row.lot.id]
+        ? parseColombianNumber(counts[row.lot.id])
+        : medicineLotBalance(row.lot)),
+    0,
+  )
+  return (
+    <div className="physical-count medicine-physical-count">
+      <div className="count-heading">
+        <div>
+          <h2>Conteo físico por lote</h2>
+          <p>Compara el saldo del sistema con lo encontrado.</p>
+        </div>
+      </div>
+      <div className="table-wrap inventory-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Medicamento · Lote</th>
+              <th>Sistema</th>
+              <th>Contado</th>
+              <th>Diferencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(({ medicine, lot }) => {
+              const counted =
+                counts[lot.id] === undefined
+                  ? null
+                  : parseColombianNumber(counts[lot.id])
+              const difference =
+                counted === null ? null : counted - medicineLotBalance(lot)
+              return (
+                <tr key={lot.id}>
+                  <td>
+                    <strong>{medicine.name}</strong>
+                    <small>
+                      {lot.code} · {lot.place}
+                    </small>
+                  </td>
+                  <td>{formatDecimal(medicineLotBalance(lot))} ml</td>
+                  <td>
+                    <label className="field count-field">
+                      <ColombianNumberInput
+                        value={counts[lot.id] ?? ""}
+                        onChange={(value) =>
+                          setCounts({ ...counts, [lot.id]: value })
+                        }
+                        placeholder="0 ml"
+                      />
+                    </label>
+                  </td>
+                  <td
+                    className={
+                      difference && difference !== 0 ? "count-alert" : ""
+                    }
+                  >
+                    {difference === null
+                      ? "—"
+                      : `${
+                          difference > 0 ? "+" : ""
+                        }${formatDecimal(difference)} ml`}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="medicine-count-footer">
+        <div>
+          <span>Total sistema</span>
+          <strong>{formatDecimal(totalSystem)} ml</strong>
+        </div>
+        <div>
+          <span>Total contado</span>
+          <strong>{formatDecimal(totalCounted)} ml</strong>
+        </div>
+        <div>
+          <span>Diferencia</span>
+          <strong>{formatDecimal(totalCounted - totalSystem)} ml</strong>
+        </div>
+        <label className="field">
+          <span>
+            Motivo <em>* obligatorio si hay diferencia</em>
+          </span>
+          <input
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Explica la diferencia encontrada"
+          />
+        </label>
+        <button
+          className="button primary"
+          disabled={totalCounted !== totalSystem && !reason.trim()}
+          onClick={onSave}
+        >
+          Guardar conteo
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function MedicineCatalog({
+  medicines,
+  onNew,
+  onNotice,
+}: {
+  medicines: MedicineItem[]
+  onNew: () => void
+  onNotice: (text: string) => void
+}) {
+  return (
+    <div className="medicine-catalog">
+      <div className="catalog-heading">
+        <div>
+          <h2>Catálogo de medicamentos</h2>
+          <p>Compartido entre todas las granjas.</p>
+        </div>
+        <button className="button primary" onClick={onNew}>
+          <Icon name="plus" size={17} />
+          Nuevo medicamento
+        </button>
+      </div>
+      <div className="table-wrap inventory-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre comercial</th>
+              <th>Principio activo</th>
+              <th>Tipo</th>
+              <th>Unidad</th>
+              <th>Laboratorio</th>
+              <th>Registro ICA</th>
+              <th>Retiro (días)</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {medicines.map((item) => (
+              <tr key={item.id}>
+                <td>
+                  <strong>{item.name}</strong>
+                </td>
+                <td>{item.activeIngredient}</td>
+                <td>{item.type}</td>
+                <td>{item.unit}</td>
+                <td>{item.laboratory}</td>
+                <td>{item.ica}</td>
+                <td>{item.withdrawal}</td>
+                <td>
+                  <button
+                    className="dots-button"
+                    onClick={() => onNotice(`Edición de ${item.name}`)}
+                  >
+                    <Icon name="dots" size={18} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+function NewMedicineModal({
+  onClose,
+  onSave,
+}: {
+  onClose: () => void
+  onSave: (medicine: MedicineItem) => void
+}) {
+  const [form, setForm] = useState({
+    name: "",
+    activeIngredient: "",
+    laboratory: "",
+    ica: "",
+    route: "",
+    suggestedDose: "",
+    type: "Medicamento" as MedicineItem["type"],
+    unit: "ml",
+    withdrawal: "",
+  })
+  return (
+    <DialogShell title="Nuevo medicamento" onClose={onClose} size="wide">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          onSave({
+            id: Date.now(),
+            name: form.name.trim(),
+            activeIngredient: form.activeIngredient.trim(),
+            type: form.type,
+            unit: form.unit,
+            laboratory: form.laboratory.trim(),
+            ica: form.ica.trim(),
+            withdrawal: parseColombianNumber(form.withdrawal),
+            route: form.route.trim(),
+            suggestedDose: form.suggestedDose.trim(),
+            minimumMl: 0,
+            lots: [],
+          })
+        }}
+      >
+        <div className="form-content">
+          <div className="form-grid">
+            <label className="field">
+              <span>Nombre comercial * obligatorio</span>
+              <input
+                required
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Escribe el nombre comercial"
+              />
+            </label>
+            <label className="field">
+              <span>Principio activo * obligatorio</span>
+              <input
+                required
+                value={form.activeIngredient}
+                onChange={(e) =>
+                  setForm({ ...form, activeIngredient: e.target.value })
+                }
+                placeholder="Escribe el principio activo"
+              />
+            </label>
+            <label className="field">
+              <span>Laboratorio</span>
+              <input
+                value={form.laboratory}
+                onChange={(e) =>
+                  setForm({ ...form, laboratory: e.target.value })
+                }
+                placeholder="Nombre del laboratorio"
+              />
+            </label>
+            <label className="field">
+              <span>Registro ICA</span>
+              <input
+                value={form.ica}
+                onChange={(e) => setForm({ ...form, ica: e.target.value })}
+                placeholder="ICA 0000-MV"
+              />
+            </label>
+            <label className="field">
+              <span>Vía</span>
+              <input
+                value={form.route}
+                onChange={(e) => setForm({ ...form, route: e.target.value })}
+                placeholder="Ej. Intramuscular"
+              />
+            </label>
+            <label className="field">
+              <span>Dosis sugerida</span>
+              <input
+                value={form.suggestedDose}
+                onChange={(e) =>
+                  setForm({ ...form, suggestedDose: e.target.value })
+                }
+                placeholder="Ej. 1 ml / 20 kg"
+              />
+            </label>
+            <label className="field">
+              <span>Tipo</span>
+              <select
+                value={form.type}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    type: e.target.value as MedicineItem["type"],
+                  })
+                }
+              >
+                <option>Medicamento</option>
+                <option>Vacuna</option>
+              </select>
+            </label>
+            <label className="field">
+              <span>Unidad</span>
+              <select
+                value={form.unit}
+                onChange={(e) => setForm({ ...form, unit: e.target.value })}
+              >
+                <option>ml</option>
+                <option>mg</option>
+                <option>tableta</option>
+                <option>dosis</option>
+              </select>
+            </label>
+            <label className="field">
+              <span>Retiro (días)</span>
+              <ColombianNumberInput
+                value={form.withdrawal}
+                onChange={(value) => setForm({ ...form, withdrawal: value })}
+                integer
+                placeholder="0"
+              />
+            </label>
+          </div>
+        </div>
+        <div className="modal-actions large-actions">
+          <button type="button" className="button secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="button primary">Crear medicamento</button>
+        </div>
+      </form>
+    </DialogShell>
+  )
+}
+
+function MedicineAlerts({ medicines }: { medicines: MedicineItem[] }) {
+  const expired = medicines.flatMap((medicine) =>
+    medicine.lots
+      .filter((lot) => lot.expiry < TODAY_ISO)
+      .map((lot) => ({ medicine, lot })),
+  )
+  const near = medicines.flatMap((medicine) =>
+    medicine.lots
+      .filter((lot) => lot.expiry >= TODAY_ISO && lot.expiry <= "2026-04-15")
+      .map((lot) => ({ medicine, lot })),
+  )
+  const renderGroup = (
+    title: string,
+    tone: "red" | "amber",
+    rows: typeof expired,
+  ) => (
+    <section className={`medicine-alert-group ${tone}`}>
+      <div className="medicine-alert-heading">
+        <Icon name="alert" size={19} />
+        <div>
+          <h2>{title}</h2>
+          <p>
+            {rows.length} {rows.length === 1 ? "lote" : "lotes"}
+          </p>
+        </div>
+      </div>
+      {rows.map(({ medicine, lot }) => {
+        const days = Math.ceil(
+          (new Date(`${lot.expiry}T12:00:00`).getTime() -
+            new Date(`${TODAY_ISO}T12:00:00`).getTime()) /
+            86400000,
+        )
+        return (
+          <div className="medicine-alert-row" key={lot.id}>
+            <div>
+              <strong>{medicine.name}</strong>
+              <span>
+                Lote {lot.code} · {lot.place}
+              </span>
+            </div>
+            <div>
+              <strong>
+                {days < 0
+                  ? `Vencido hace ${Math.abs(days)} día`
+                  : `Vence en ${days} días`}
+              </strong>
+              <span>{formatDecimal(medicineLotBalance(lot))} ml</span>
+            </div>
+          </div>
+        )
+      })}
+    </section>
+  )
+  return (
+    <div className="medicine-alerts-view">
+      {renderGroup("Vencidos", "red", expired)}
+      {renderGroup("Próximos a vencer", "amber", near)}
+    </div>
+  )
+}
+
 type CountItem = {
   id: number
   name: string
@@ -13055,8 +14280,8 @@ function PhysicalCount({
       : medicines.map((item) => ({
           id: item.id,
           name: item.name,
-          system: item.stock,
-          unit: "ítems",
+          system: medicineBalance(item),
+          unit: "ml",
         }))
   const [counts, setCounts] = useState<Record<number, string>>({})
   return (
@@ -13307,6 +14532,282 @@ function PurchaseModal({
   )
 }
 
+function MedicinePurchaseModal({
+  medicines,
+  product,
+  onClose,
+  onSave,
+}: {
+  medicines: MedicineItem[]
+  product?: string
+  onClose: () => void
+  onSave: (medicineName: string, lot: MedicineLot) => void
+}) {
+  const initialSelection =
+    medicines.find((medicine) => medicine.name === product) ?? medicines[0]
+  const [form, setForm] = useState({
+    medicine: initialSelection?.name ?? "",
+    date: TODAY_ISO,
+    lot: "",
+    expiry: "",
+    ica: initialSelection?.ica ?? "",
+    laboratory: initialSelection?.laboratory ?? "",
+    withdrawal: initialSelection ? String(initialSelection.withdrawal) : "",
+    place: "Bodega sanitaria",
+    containerType: "Frasco",
+    content: "",
+    unit: "ml",
+    containers: "",
+    costMode: "Total",
+    cost: "",
+    notes: "",
+  })
+  const [invoice, setInvoice] = useState("")
+  const [submitted, setSubmitted] = useState(false)
+  const submit = (event: FormEvent) => {
+    event.preventDefault()
+    setSubmitted(true)
+    if (
+      !form.medicine ||
+      !form.date ||
+      !form.lot ||
+      !form.expiry ||
+      !form.ica ||
+      !form.laboratory ||
+      !form.content ||
+      !form.containers
+    )
+      return
+    const contentMl = parseColombianNumber(form.content)
+    const sealed = Math.trunc(parseColombianNumber(form.containers))
+    onSave(form.medicine, {
+      id: Date.now(),
+      code: form.lot,
+      expiry: form.expiry,
+      place: form.place || "Sin asignar",
+      container: `${form.containerType} ${formatDecimal(contentMl)} ${form.unit}`,
+      contentMl,
+      sealed,
+      openRemaining: 0,
+      entries: sealed,
+    })
+  }
+  const requiredClass = (value: string) =>
+    submitted && !value ? "has-error" : ""
+  return (
+    <DialogShell
+      title="Registrar compra de medicamento"
+      onClose={onClose}
+      size="wide"
+    >
+      <form onSubmit={submit}>
+        <div className="form-content medicine-purchase-form">
+          <div className="form-grid">
+            <label className={`field ${requiredClass(form.medicine)}`}>
+              <span>
+                Medicamento <em>* obligatorio</em>
+              </span>
+              <select
+                value={form.medicine}
+                onChange={(e) => {
+                  const medicine = medicines.find(
+                    (item) => item.name === e.target.value,
+                  )
+                  setForm({
+                    ...form,
+                    medicine: e.target.value,
+                    ica: medicine?.ica ?? "",
+                    laboratory: medicine?.laboratory ?? "",
+                    withdrawal: medicine ? String(medicine.withdrawal) : "",
+                  })
+                }}
+              >
+                {medicines.map((item) => (
+                  <option key={item.id}>{item.name}</option>
+                ))}
+              </select>
+            </label>
+            <label className={`field ${requiredClass(form.date)}`}>
+              <span>
+                Fecha <em>* obligatorio</em>
+              </span>
+              <DatePicker
+                value={form.date}
+                max={TODAY_ISO}
+                onChange={(value) => setForm({ ...form, date: value })}
+                label="Fecha de compra del medicamento"
+              />
+            </label>
+            <label className={`field ${requiredClass(form.lot)}`}>
+              <span>
+                Lote <em>* obligatorio</em>
+              </span>
+              <input
+                value={form.lot}
+                onChange={(e) =>
+                  setForm({ ...form, lot: e.target.value.toUpperCase() })
+                }
+                placeholder="Ej. OX-2610"
+              />
+            </label>
+            <label className={`field ${requiredClass(form.expiry)}`}>
+              <span>
+                Vencimiento <em>* obligatorio</em>
+              </span>
+              <DatePicker
+                value={form.expiry}
+                min={TODAY_ISO}
+                onChange={(value) => setForm({ ...form, expiry: value })}
+                label="Vencimiento del medicamento"
+              />
+            </label>
+            <label className={`field ${requiredClass(form.ica)}`}>
+              <span>
+                Registro ICA <em>* obligatorio</em>
+              </span>
+              <input
+                value={form.ica}
+                onChange={(e) => setForm({ ...form, ica: e.target.value })}
+                placeholder="ICA 0000-MV"
+              />
+            </label>
+            <label className={`field ${requiredClass(form.laboratory)}`}>
+              <span>
+                Laboratorio <em>* obligatorio</em>
+              </span>
+              <input
+                value={form.laboratory}
+                onChange={(e) =>
+                  setForm({ ...form, laboratory: e.target.value })
+                }
+              />
+            </label>
+            <label className="field">
+              <span>Retiro (días)</span>
+              <ColombianNumberInput
+                value={form.withdrawal}
+                onChange={(value) => setForm({ ...form, withdrawal: value })}
+                integer
+                placeholder="0"
+              />
+            </label>
+            <label className="field">
+              <span>Lugar</span>
+              <select
+                value={form.place}
+                onChange={(e) => setForm({ ...form, place: e.target.value })}
+              >
+                <option>Bodega sanitaria</option>
+                <option>Nevera sanitaria</option>
+                <option>Botiquín general</option>
+                <option>Botiquín maternidad</option>
+              </select>
+            </label>
+            <label className="field">
+              <span>
+                Tipo de envase <em>* obligatorio</em>
+              </span>
+              <select
+                value={form.containerType}
+                onChange={(e) =>
+                  setForm({ ...form, containerType: e.target.value })
+                }
+              >
+                <option>Frasco</option>
+                <option>Ampolla</option>
+                <option>Caja</option>
+                <option>Tableta</option>
+                <option>Sobre</option>
+              </select>
+            </label>
+            <label className={`field ${requiredClass(form.content)}`}>
+              <span>
+                Contenido por envase <em>* obligatorio</em>
+              </span>
+              <ColombianNumberInput
+                value={form.content}
+                onChange={(value) => setForm({ ...form, content: value })}
+                placeholder="Ej. 20"
+              />
+            </label>
+            <label className="field">
+              <span>
+                Unidad <em>* obligatorio</em>
+              </span>
+              <select
+                value={form.unit}
+                onChange={(e) => setForm({ ...form, unit: e.target.value })}
+              >
+                <option>ml</option>
+                <option>mg</option>
+                <option>g</option>
+                <option>tabletas</option>
+                <option>dosis</option>
+              </select>
+            </label>
+            <label className={`field ${requiredClass(form.containers)}`}>
+              <span>
+                Cantidad de envases <em>* obligatorio</em>
+              </span>
+              <ColombianNumberInput
+                value={form.containers}
+                onChange={(value) => setForm({ ...form, containers: value })}
+                integer
+                placeholder="Ej. 10"
+              />
+            </label>
+            <div className="field cost-field">
+              <span>Costo</span>
+              <div>
+                <select
+                  value={form.costMode}
+                  onChange={(e) =>
+                    setForm({ ...form, costMode: e.target.value })
+                  }
+                >
+                  <option>Total</option>
+                  <option>Por envase</option>
+                </select>
+                <ColombianNumberInput
+                  value={form.cost}
+                  onChange={(value) => setForm({ ...form, cost: value })}
+                  placeholder="$ 0"
+                />
+              </div>
+            </div>
+            <label className="field invoice-upload">
+              <span>Foto de la factura</span>
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                onChange={(e) => setInvoice(e.target.files?.[0]?.name ?? "")}
+              />
+              <span className="upload-control">
+                <Icon name="camera" size={18} />
+                {invoice || "Adjuntar foto o PDF"}
+              </span>
+            </label>
+            <label className="field medicine-purchase-notes">
+              <span>Notas</span>
+              <textarea
+                value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                placeholder="Observaciones de la compra"
+              />
+            </label>
+          </div>
+        </div>
+        <div className="modal-actions large-actions">
+          <button type="button" className="button secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="button primary">Registrar compra</button>
+        </div>
+      </form>
+    </DialogShell>
+  )
+}
+
 function InventoryPage({
   farmName,
   attention,
@@ -13341,15 +14842,24 @@ function InventoryPage({
       : initialMedicineItems.map((item) => ({
           ...item,
           id: item.id + (farmName === "Granja El Porvenir" ? 20 : 40),
-          stock:
-            farmName === "Granja El Porvenir"
-              ? Math.max(1, item.stock - 1)
-              : item.stock + 2,
+          lots: item.lots.map((lot) => ({
+            ...lot,
+            id: lot.id + (farmName === "Granja El Porvenir" ? 2000 : 4000),
+          })),
         })),
   )
   const [query, setQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("Todos")
+  const [stockOnly, setStockOnly] = useState(false)
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
+  const [expandedMedicine, setExpandedMedicine] = useState<number | null>(1)
+  const [consumptionMedicine, setConsumptionMedicine] =
+    useState<MedicineItem | null>(null)
+  const [historyMedicine, setHistoryMedicine] = useState<MedicineItem | null>(
+    null,
+  )
+  const [countMedicine, setCountMedicine] = useState<MedicineItem | null>(null)
+  const [newMedicineOpen, setNewMedicineOpen] = useState(false)
   const [purchase, setPurchase] = useState<{
     category: InventoryCategory
     product?: string
@@ -13370,13 +14880,18 @@ function InventoryPage({
   const filteredMedicines = medicines.filter(
     (item) =>
       item.name.toLowerCase().includes(query.toLowerCase()) &&
-      (statusFilter === "Todos" ||
-        (statusFilter === "Stock bajo"
-          ? item.stock < item.minimum
-          : item.stock >= item.minimum)),
+      (!stockOnly || medicineBalance(item) > 0),
   )
   const foodTotal = foods.reduce((sum, item) => sum + item.stock, 0)
-  const medicineTotal = medicines.reduce((sum, item) => sum + item.stock, 0)
+  const medicineTotal = medicines.reduce(
+    (sum, item) => sum + medicineBalance(item),
+    0,
+  )
+  const medicineAlertCount = medicines.reduce(
+    (sum, item) =>
+      sum + item.lots.filter((lot) => lot.expiry <= "2026-04-15").length,
+    0,
+  )
 
   return (
     <>
@@ -13416,7 +14931,7 @@ function InventoryPage({
             </span>
             <div>
               <span>Medicamentos</span>
-              <strong>{medicineTotal} ítems</strong>
+              <strong>{formatDecimal(medicineTotal)} ml</strong>
             </div>
           </div>
         </div>
@@ -13427,8 +14942,10 @@ function InventoryPage({
                 className={category === item ? "active" : ""}
                 onClick={() => {
                   setCategory(item)
+                  setView("Inventario")
                   setQuery("")
                   setStatusFilter("Todos")
+                  setStockOnly(false)
                 }}
                 key={item}
               >
@@ -13438,17 +14955,23 @@ function InventoryPage({
           </div>
           <div className="inventory-view-bar">
             <div className="inventory-views">
-              {(["Inventario", "Historial", "Conteo físico"] as const).map(
-                (item) => (
-                  <button
-                    className={view === item ? "active" : ""}
-                    onClick={() => setView(item)}
-                    key={item}
-                  >
-                    {item}
-                  </button>
-                ),
-              )}
+              {(category === "Medicamentos"
+                ? ["Inventario", "Catálogo", "Historial", "Alertas"] as const
+                : ["Inventario", "Historial", "Conteo físico"] as const
+              ).map((item) => (
+                <button
+                  className={view === item ? "active" : ""}
+                  onClick={() => setView(item)}
+                  key={item}
+                >
+                  {item}
+                  {item === "Alertas" && (
+                    <span className="inventory-tab-count">
+                      {medicineAlertCount}
+                    </span>
+                  )}
+                </button>
+              ))}
             </div>
             {view === "Inventario" && (
               <div className="inventory-filters">
@@ -13460,14 +14983,35 @@ function InventoryPage({
                     placeholder={`Buscar en ${category.toLowerCase()}`}
                   />
                 </label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <option>Todos</option>
-                  <option>Disponible</option>
-                  <option>Stock bajo</option>
-                </select>
+                {category === "Medicamentos" ? (
+                  <>
+                    <label className="stock-toggle">
+                      <input
+                        type="checkbox"
+                        checked={stockOnly}
+                        onChange={(e) => setStockOnly(e.target.checked)}
+                      />
+                      <span aria-hidden="true" />
+                      Solo con stock
+                    </label>
+                    <button
+                      className="button primary medicine-toolbar-purchase"
+                      onClick={() => setPurchase({ category: "Medicamentos" })}
+                    >
+                      <Icon name="plus" size={17} />
+                      Registrar compra
+                    </button>
+                  </>
+                ) : (
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                  >
+                    <option>Todos</option>
+                    <option>Disponible</option>
+                    <option>Stock bajo</option>
+                  </select>
+                )}
               </div>
             )}
           </div>
@@ -13492,7 +15036,29 @@ function InventoryPage({
                   items={filteredMedicines}
                   menuOpen={menuOpen}
                   setMenuOpen={setMenuOpen}
-                  onView={setView}
+                  expanded={expandedMedicine}
+                  setExpanded={setExpandedMedicine}
+                  onConsume={setConsumptionMedicine}
+                  onHistory={setHistoryMedicine}
+                  onCount={(item) => {
+                    setCountMedicine(item)
+                    setView("Conteo físico")
+                  }}
+                  onDeleteLot={(medicine, lot) => {
+                    setMedicines(
+                      medicines.map((item) =>
+                        item.id === medicine.id
+                          ? {
+                              ...item,
+                              lots: item.lots.filter(
+                                (candidate) => candidate.id !== lot.id,
+                              ),
+                            }
+                          : item,
+                      ),
+                    )
+                    onNotice(`Lote ${lot.code} eliminado`)
+                  }}
                   onNotice={onNotice}
                   onRemove={(item) => {
                     setPendingRemoval({
@@ -13502,88 +15068,149 @@ function InventoryPage({
                   }}
                 />
               ))}
-            {view === "Historial" && <InventoryHistory category={category} />}
-            {view === "Conteo físico" && (
-              <PhysicalCount
-                key={category}
-                category={category}
-                foods={foods}
+            {view === "Catálogo" && category === "Medicamentos" && (
+              <MedicineCatalog
                 medicines={medicines}
-                onSave={() => onNotice("Conteo físico guardado")}
+                onNew={() => setNewMedicineOpen(true)}
+                onNotice={onNotice}
               />
             )}
+            {view === "Historial" &&
+              (category === "Medicamentos" ? (
+                <MedicineHistoryTable />
+              ) : (
+                <InventoryHistory category={category} />
+              ))}
+            {view === "Alertas" && category === "Medicamentos" && (
+              <MedicineAlerts medicines={medicines} />
+            )}
+            {view === "Conteo físico" &&
+              (category === "Medicamentos" ? (
+                <MedicinePhysicalCount
+                  medicines={medicines}
+                  focusMedicine={countMedicine ?? undefined}
+                  onSave={() => {
+                    onNotice("Conteo físico guardado")
+                    setCountMedicine(null)
+                    setView("Inventario")
+                  }}
+                />
+              ) : (
+                <PhysicalCount
+                  key={category}
+                  category={category}
+                  foods={foods}
+                  medicines={medicines}
+                  onSave={() => onNotice("Conteo físico guardado")}
+                />
+              ))}
           </div>
         </section>
       </div>
-      {purchase && (
+      {purchase?.category === "Alimentos" && (
         <PurchaseModal
-          category={purchase.category}
+          category="Alimentos"
           product={purchase.product}
           onClose={() => setPurchase(null)}
           onSave={(draft) => {
-            if (draft.category === "Alimentos") {
-              const existing = foods.find(
-                (item) =>
-                  item.name.toLowerCase() === draft.product.toLowerCase(),
-              )
-              setFoods(
-                existing
-                  ? foods.map((item) =>
-                      item.id === existing.id
-                        ? { ...item, stock: item.stock + draft.quantity }
-                        : item,
-                    )
-                  : [
-                      ...foods,
-                      {
-                        id: Date.now(),
-                        name: draft.product,
-                        stock: draft.quantity,
-                        minimum: 0,
-                        unit: "kg",
-                        lot: "Sin lote",
-                        lastPurchase: formatDate(
-                          new Date(`${TODAY_ISO}T12:00:00`),
-                        ),
-                      },
-                    ],
-              )
-            } else {
-              const existing = medicines.find(
-                (item) =>
-                  item.name.toLowerCase() === draft.product.toLowerCase(),
-              )
-              setMedicines(
-                existing
-                  ? medicines.map((item) =>
-                      item.id === existing.id
-                        ? { ...item, stock: item.stock + draft.quantity }
-                        : item,
-                    )
-                  : [
-                      ...medicines,
-                      {
-                        id: Date.now(),
-                        name: draft.product,
-                        stock: draft.quantity,
-                        minimum: 0,
-                        sealed: draft.quantity,
-                        open: 0,
-                        openLevel: 0,
-                        empty: 0,
-                        expiry: "Sin registrar",
-                      },
-                    ],
-              )
-            }
-            setAttention(
-              attention.filter(
-                (item) =>
-                  item.product.toLowerCase() !== draft.product.toLowerCase(),
-              ),
+            const existing = foods.find(
+              (item) => item.name.toLowerCase() === draft.product.toLowerCase(),
+            )
+            setFoods(
+              existing
+                ? foods.map((item) =>
+                    item.id === existing.id
+                      ? { ...item, stock: item.stock + draft.quantity }
+                      : item,
+                  )
+                : [
+                    ...foods,
+                    {
+                      id: Date.now(),
+                      name: draft.product,
+                      stock: draft.quantity,
+                      minimum: 0,
+                      unit: "kg",
+                      lot: "Sin lote",
+                      lastPurchase: formatDate(
+                        new Date(`${TODAY_ISO}T12:00:00`),
+                      ),
+                    },
+                  ],
             )
             setPurchase(null)
             onNotice("Compra registrada")
+          }}
+        />
+      )}
+      {purchase?.category === "Medicamentos" && (
+        <MedicinePurchaseModal
+          medicines={medicines}
+          product={purchase.product}
+          onClose={() => setPurchase(null)}
+          onSave={(medicineName, lot) => {
+            setMedicines(
+              medicines.map((medicine) =>
+                medicine.name === medicineName
+                  ? { ...medicine, lots: [...medicine.lots, lot] }
+                  : medicine,
+              ),
+            )
+            setPurchase(null)
+            onNotice("Compra de medicamento registrada")
+          }}
+        />
+      )}
+      {consumptionMedicine && (
+        <MedicineConsumptionModal
+          medicine={
+            medicines.find((item) => item.id === consumptionMedicine.id) ??
+            consumptionMedicine
+          }
+          onClose={() => setConsumptionMedicine(null)}
+          onSave={(quantity, kind) => {
+            setMedicines(
+              medicines.map((medicine) => {
+                if (medicine.id !== consumptionMedicine.id) return medicine
+                let remaining = quantity
+                const lots = [...medicine.lots]
+                  .sort((a, b) => a.expiry.localeCompare(b.expiry))
+                  .map((lot) => ({ ...lot }))
+                for (const lot of lots) {
+                  if (remaining <= 0) break
+                  const fromOpen = Math.min(lot.openRemaining, remaining)
+                  lot.openRemaining -= fromOpen
+                  remaining -= fromOpen
+                  while (remaining > 0 && lot.sealed > 0) {
+                    lot.sealed -= 1
+                    const used = Math.min(lot.contentMl, remaining)
+                    remaining -= used
+                    lot.openRemaining = lot.contentMl - used
+                  }
+                }
+                return { ...medicine, lots }
+              }),
+            )
+            setConsumptionMedicine(null)
+            onNotice(
+              `${kind} registrado: ${formatDecimal(quantity)} ml descontados`,
+            )
+          }}
+        />
+      )}
+      {historyMedicine && (
+        <MedicineHistoryPanel
+          medicine={historyMedicine}
+          onClose={() => setHistoryMedicine(null)}
+        />
+      )}
+      {newMedicineOpen && (
+        <NewMedicineModal
+          onClose={() => setNewMedicineOpen(false)}
+          onSave={(medicine) => {
+            setMedicines([...medicines, medicine])
+            setNewMedicineOpen(false)
+            onNotice("Medicamento agregado al catálogo")
           }}
         />
       )}
